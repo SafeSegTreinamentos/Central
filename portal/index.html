@@ -1093,11 +1093,12 @@ async function renderizarGradeAgenda(ehAdmin){
 function agTipoMudou(){
   document.getElementById('ag-empresa-wrap').style.display=document.getElementById('ag-tipo').value==='privado'?'block':'none';
 }
-function abrirNovoAgendamento(dataStr){
+async function abrirNovoAgendamento(dataStr){
   document.getElementById('ag-modal-title').textContent='📅 Novo Agendamento';
   document.getElementById('ag-data').value=dataStr;
   document.getElementById('ag-tipo').value='privado';
   agTipoMudou();
+  await carregarModelosDisponiveis();
   const selCurso=document.getElementById('ag-curso');
   selCurso.innerHTML='<option value="">Selecione...</option>'+cursosUnicosComId().map(c=>`<option value="${c}">${c}</option>`).join('');
   const selEmp=document.getElementById('ag-empresa');
