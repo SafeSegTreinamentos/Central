@@ -195,7 +195,10 @@ select.finp{cursor:pointer;}
         <option>Everton André Steinhaus</option>
       </select></div>
     </div>
-    <div class="fg"><label class="flbl">Link do modelo (Slides)</label><input class="finp" id="mod-link" placeholder="https://docs.google.com/presentation/d/..."></div>
+    <div class="frow">
+      <div class="fg"><label class="flbl">Validade (anos)</label><input class="finp" type="number" step="1" min="0" id="mod-anos" placeholder="Ex: 2"></div>
+      <div class="fg"><label class="flbl">Link do modelo (Slides)</label><input class="finp" id="mod-link" placeholder="https://docs.google.com/presentation/d/..."></div>
+    </div>
     <button class="btn btn-gold" style="width:100%" onclick="salvarModeloCert()">Salvar modelo</button>
     <div style="font-size:.66rem;color:var(--t3);margin:16px 0 6px;letter-spacing:1px;text-transform:uppercase">Modelos cadastrados</div>
     <div id="modelos-list" style="max-height:220px;overflow-y:auto">Carregando...</div>
@@ -658,7 +661,7 @@ function exportarRelatorioCliente(){
 }
 
 async function renderColecaoAdmin(c,tipo){
-  c.innerHTML=empresaSelectHtml()+`<div class="ph"><div class="ph-title">${TITULOS[tipo]}</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-ghost" onclick="abrirColarMassa('${tipo}')">📋 Colar em massa</button>${tipo==='certificados'?`<button class="btn btn-ghost" onclick="abrirModelos()">🗂️ Modelos</button><button class="btn btn-ghost" onclick="abrirTurmaCert()">🎓 Gerar Turma</button><button class="btn btn-ghost" onclick="imprimirQrCodesEmpresa()">🖨️ QR Codes</button>`:''}<button class="btn btn-gold" onclick="abrirModalItem('${tipo}')">+ Novo</button></div></div><div id="col-list">Carregando...</div>`;
+  c.innerHTML=empresaSelectHtml()+`<div class="ph"><div class="ph-title">${TITULOS[tipo]}</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-ghost" onclick="abrirColarMassa('${tipo}')">📋 Colar em massa</button>${tipo==='certificados'?`<button class="btn btn-ghost" onclick="abrirModelos()">🗂️ Modelos</button><button class="btn btn-ghost" onclick="abrirTurmaCert()">🎓 Gerar Turma</button><button class="btn btn-ghost" onclick="imprimirQrCodesEmpresa()">🖨️ QR Codes</button><button class="btn btn-ghost" onclick="gerarQrPendentes()">🔁 Gerar QR pendentes</button>`:''}<button class="btn btn-gold" onclick="abrirModalItem('${tipo}')">+ Novo</button></div></div><div id="col-list">Carregando...</div>`;
   if(tipo==='certificados')carregarModelosDisponiveis();
   const snap=await db.collection('empresas').doc(empresaAtivaId).collection(tipo).get();
   const itens=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>{
@@ -786,7 +789,7 @@ function cursosUnicosComId(){
   return Array.from(nomes).sort((a,b)=>a.localeCompare(b));
 }
 async function abrirModelos(){
-  document.getElementById('mod-nr').value='';document.getElementById('mod-link').value='';document.getElementById('mod-instrutor').value='';
+  document.getElementById('mod-nr').value='';document.getElementById('mod-link').value='';document.getElementById('mod-instrutor').value='';document.getElementById('mod-anos').value='';
   document.getElementById('modal-modelos').classList.add('open');
   await carregarModelosCert();
 }
@@ -797,10 +800,11 @@ async function carregarModelosCert(){
   await carregarModelosDisponiveis();
   if(!modelosDisponiveis.length){list.innerHTML='<div class="empty-state" style="padding:14px">Nenhum modelo cadastrado ainda.</div>';return;}
   list.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:.78rem">
-    <thead><tr><th style="text-align:left;padding:6px;color:var(--ouro);font-size:.6rem;letter-spacing:1px;text-transform:uppercase">Curso</th><th style="text-align:left;padding:6px;color:var(--ouro);font-size:.6rem;letter-spacing:1px;text-transform:uppercase">Instrutor</th><th style="text-align:left;padding:6px;color:var(--ouro);font-size:.6rem;letter-spacing:1px;text-transform:uppercase">ID do modelo</th><th></th><th></th></tr></thead>
+    <thead><tr><th style="text-align:left;padding:6px;color:var(--ouro);font-size:.6rem;letter-spacing:1px;text-transform:uppercase">Curso</th><th style="text-align:left;padding:6px;color:var(--ouro);font-size:.6rem;letter-spacing:1px;text-transform:uppercase">Instrutor</th><th style="text-align:left;padding:6px;color:var(--ouro);font-size:.6rem;letter-spacing:1px;text-transform:uppercase">Validade (anos)</th><th style="text-align:left;padding:6px;color:var(--ouro);font-size:.6rem;letter-spacing:1px;text-transform:uppercase">ID do modelo</th><th></th><th></th></tr></thead>
     <tbody>${modelosDisponiveis.map((m,i)=>`<tr style="border-top:1px solid var(--p4)">
       <td style="padding:6px;color:var(--t2)">${m.curso}</td>
       <td style="padding:6px"><input class="finp" style="padding:6px 8px;font-size:.76rem" id="modinst-${i}" value="${(m.instrutor||'').replace(/"/g,'&quot;')}" placeholder="genérico"></td>
+      <td style="padding:6px"><input class="finp" style="padding:6px 8px;font-size:.76rem;width:80px" type="number" step="1" min="0" id="modanos-${i}" value="${m.anos||''}" placeholder="anos"></td>
       <td style="padding:6px"><input class="finp" style="padding:6px 8px;font-size:.76rem" id="modid-${i}" value="${m.fileId||''}" placeholder="cole o ID ou link"></td>
       <td style="padding:6px"><button class="icon-btn" title="Salvar" onclick="salvarLinhaModelo(${i})">💾</button></td>
       <td style="padding:6px"><button class="icon-btn" title="Excluir modelo" onclick="excluirLinhaModelo(${i})">🗑</button></td>
@@ -809,11 +813,12 @@ async function carregarModelosCert(){
 async function salvarLinhaModelo(i){
   const m=modelosDisponiveis[i];
   const novoInstrutor=document.getElementById('modinst-'+i).value.trim();
+  const novoAnos=document.getElementById('modanos-'+i).value.trim();
   const link=document.getElementById('modid-'+i).value.trim();
   toast('⏳ Salvando...');
   try{
     const resp=await fetch(APPS_SCRIPT_CERT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({
-      acao:'atualizarModelo', cursoOriginal:m.curso, instrutorOriginal:m.instrutor||'', cursoNovo:m.curso, instrutorNovo:novoInstrutor, linkModelo:link
+      acao:'atualizarModelo', cursoOriginal:m.curso, instrutorOriginal:m.instrutor||'', cursoNovo:m.curso, instrutorNovo:novoInstrutor, linkModelo:link, anos:novoAnos
     })});
     const data=await resp.json();
     if(!data.sucesso){toast('⚠️ '+(data.erro||'Erro ao salvar'),true);return;}
@@ -839,15 +844,16 @@ async function salvarModeloCert(){
   const nr=document.getElementById('mod-nr').value.trim();
   const link=document.getElementById('mod-link').value.trim();
   const instrutor=document.getElementById('mod-instrutor').value;
+  const anos=document.getElementById('mod-anos').value.trim();
   if(!nr||!link){toast('⚠️ Preencha a NR e o link do modelo.',true);return;}
   if(!APPS_SCRIPT_CERT_URL||APPS_SCRIPT_CERT_URL==='COLE_AQUI'){toast('⚠️ Configure a URL do Apps Script primeiro.',true);return;}
   toast('⏳ Salvando modelo...');
   try{
-    const resp=await fetch(APPS_SCRIPT_CERT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({acao:'salvarModelo',curso:nr,instrutor,linkModelo:link})});
+    const resp=await fetch(APPS_SCRIPT_CERT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({acao:'salvarModelo',curso:nr,instrutor,anos,linkModelo:link})});
     const data=await resp.json();
     if(!data.sucesso){toast('⚠️ '+(data.erro||'Erro ao salvar'),true);return;}
     toast('✅ Modelo salvo para "'+nr+'"'+(instrutor?' ('+instrutor+')':'')+'!');
-    document.getElementById('mod-nr').value='';document.getElementById('mod-link').value='';document.getElementById('mod-instrutor').value='';
+    document.getElementById('mod-nr').value='';document.getElementById('mod-link').value='';document.getElementById('mod-instrutor').value='';document.getElementById('mod-anos').value='';
     carregarModelosCert();
   }catch(e){toast('⚠️ '+e.message,true);}
 }
@@ -926,6 +932,29 @@ async function tcGerarTodos(){
   progresso.textContent=`Concluído: ${ok} gerado(s)${falhas?`, ${falhas} com erro`:''}.`;
   toast(falhas?`⚠️ ${ok} ok, ${falhas} com erro`:`✅ ${ok} certificados gerados!`,!!falhas);
   if(abaAtiva==='certificados')renderConteudoAdmin();
+}
+
+// ── GERAR QR PENDENTES (pra quem já tem certificado cadastrado mas ainda não tem QR salvo) ──
+async function gerarQrPendentes(){
+  if(!empresaAtivaId){toast('⚠️ Selecione uma empresa primeiro.',true);return;}
+  const snap=await db.collection('empresas').doc(empresaAtivaId).collection('certificados').get();
+  const vistos={};
+  snap.docs.forEach(d=>{
+    const it=d.data();
+    if(it.nome)vistos[it.cpf||('__sem-cpf-'+it.nome)]=it;
+  });
+  const pessoas=Object.values(vistos);
+  if(!pessoas.length){toast('⚠️ Nenhum certificado cadastrado nessa empresa.',true);return;}
+  const empresaNome=nomeEmpresa(empresaAtivaId);
+  let ok=0,semCpf=0;
+  for(const p of pessoas){
+    if(!p.cpf){semCpf++;continue;}
+    try{
+      await fetch(APPS_SCRIPT_CERT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({acao:'gerarQrPessoa',empresa:empresaNome,nome:p.nome,cpf:p.cpf})});
+      ok++;
+    }catch(e){}
+  }
+  toast(`✅ QR gerado/conferido para ${ok} pessoa(s)${semCpf?`. ${semCpf} sem CPF cadastrado — pulado(s).`:''}`);
 }
 
 // ── IMPRIMIR TODOS OS QR CODES DE UMA EMPRESA (não depende do Drive — gera na hora) ──
