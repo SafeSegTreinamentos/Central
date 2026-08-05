@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SafeSeg — Validação de Certificados</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ouro:#D4A017;--oc:#F5C842;--oe:#A07810;
+  --p0:#070707;--p1:#0d0d0d;--p2:#111;--p4:#1c1c1c;
+  --t1:#F0E6C8;--t2:#c8b98a;--t3:#7A6A4A;
+  --gg:linear-gradient(135deg,#8A6608 0%,#F5C842 45%,#FFE066 58%,#C49010 100%);
+  --gt:linear-gradient(135deg,#B8820A,#FFE066,#C49010);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Barlow',sans-serif;background:var(--p0);color:var(--t1);min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:26px 16px;}
+.card{background:var(--p2);border:1px solid rgba(212,160,23,.18);border-radius:16px;padding:28px 24px;width:100%;max-width:440px;}
+.logo{width:48px;height:48px;background:var(--gg);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 10px;}
+.brand{font-family:'Bebas Neue',cursive;font-size:1.7rem;letter-spacing:4px;text-align:center;background:var(--gt);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.tag{font-size:.66rem;color:var(--t3);text-align:center;letter-spacing:2px;text-transform:uppercase;margin-bottom:22px;}
+.fg{margin-bottom:12px;}
+input{width:100%;padding:11px 13px;background:var(--p0);border:1px solid var(--p4);border-radius:8px;color:var(--t1);font-family:'Barlow',sans-serif;font-size:.9rem;outline:none;}
+input:focus{border-color:var(--ouro);}
+button{width:100%;padding:11px;background:var(--gg);border:none;border-radius:8px;color:var(--p0);font-family:'Barlow',sans-serif;font-size:.86rem;font-weight:700;cursor:pointer;}
+button:hover{opacity:.88;}
+.msg{text-align:center;font-size:.84rem;color:var(--t3);padding:20px 0;}
+.nome{font-family:'Bebas Neue',cursive;font-size:1.5rem;letter-spacing:1px;color:var(--oc);text-align:center;margin:14px 0 16px;}
+.item{background:var(--p0);border:1px solid var(--p4);border-radius:10px;padding:13px 15px;margin-bottom:9px;}
+.item-curso{font-weight:700;font-size:.86rem;color:var(--t1);margin-bottom:4px;}
+.item-sub{font-size:.72rem;color:var(--t3);}
+.item-link{display:inline-block;margin-top:8px;font-size:.72rem;color:var(--oc);text-decoration:underline;}
+.badge-ok{display:inline-flex;align-items:center;gap:6px;justify-content:center;width:100%;padding:8px;background:rgba(37,211,102,.12);border:1px solid rgba(37,211,102,.25);border-radius:8px;color:#25D366;font-size:.78rem;font-weight:700;margin-bottom:14px;}
+.erro{text-align:center;color:#ef9a9a;font-size:.84rem;padding:16px 0;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">🛡️</div>
+  <div class="brand">SAFESEG</div>
+  <div class="tag">Validação de Certificados</div>
+
+  <div id="busca">
+    <div class="fg"><input type="text" id="cpf-input" placeholder="Digite o CPF (só números)" inputmode="numeric"></div>
+    <button onclick="buscar()">Consultar</button>
+  </div>
+
+  <div id="resultado"></div>
+</div>
+
+<script>
+// ⚠️ Cole aqui a URL /exec do Apps Script do gerador de certificados
+const APPS_SCRIPT_URL = "COLE_AQUI";
+
+function fmtCpf(c){
+  c=(c||'').replace(/\D/g,'');
+  if(c.length!==11)return c;
+  return c.slice(0,3)+'.'+c.slice(3,6)+'.'+c.slice(6,9)+'-'+c.slice(9);
+}
+
+async function buscar(){
+  const cpf=document.getElementById('cpf-input').value.trim();
+  if(!cpf){return;}
+  await consultar(cpf);
+}
+
+async function consultar(cpf){
+  const res=document.getElementById('resultado');
+  res.innerHTML='<div class="msg">Consultando...</div>';
+  if(!APPS_SCRIPT_URL||APPS_SCRIPT_URL==='COLE_AQUI'){
+    res.innerHTML='<div class="erro">Página ainda não configurada. Cole a URL do Apps Script no arquivo.</div>';
+    return;
+  }
+  try{
+    const resp=await fetch(APPS_SCRIPT_URL+'?cpf='+encodeURIComponent(cpf));
+    const data=await resp.json();
+    if(!data.sucesso){res.innerHTML='<div class="erro">⚠️ '+(data.erro||'Erro ao consultar')+'</div>';return;}
+    if(!data.encontrado){res.innerHTML='<div class="erro">Nenhum certificado encontrado para o CPF '+fmtCpf(cpf)+'.</div>';return;}
+    let html='<div class="badge-ok">✅ Certificados encontrados</div>';
+    html+='<div class="nome">'+data.nome+'</div>';
+    data.treinamentos.forEach(t=>{
+      html+=`<div class="item">
+        <div class="item-curso">${t.curso}</div>
+        <div class="item-sub">Concluído em ${t.dataFim}${t.instrutor?' · '+t.instrutor:''} · Nº ${t.cont}</div>
+        ${t.pdfUrl?`<a class="item-link" href="${t.pdfUrl}" target="_blank">Ver certificado (PDF) ↗</a>`:''}
+      </div>`;
+    });
+    res.innerHTML=html;
+  }catch(e){
+    res.innerHTML='<div class="erro">⚠️ Não foi possível consultar agora. Tente novamente.</div>';
+  }
+}
+
+// Se a URL já veio com ?cpf=... (do QR code do certificado), busca direto
+(function(){
+  const params=new URLSearchParams(window.location.search);
+  const cpf=params.get('cpf');
+  if(cpf){
+    document.getElementById('cpf-input').value=cpf;
+    document.getElementById('busca').style.display='none';
+    consultar(cpf);
+  }
+})();
+</script>
+</body>
+</html>
