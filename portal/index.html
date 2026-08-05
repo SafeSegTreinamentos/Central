@@ -244,6 +244,24 @@ select.finp{cursor:pointer;}
   </div>
 </div>
 
+<!-- ══ MODAL AGENDAMENTO ══ -->
+<div class="modal-overlay" id="modal-agendamento">
+  <div class="modal">
+    <div class="modal-title" id="ag-modal-title">📅 Novo Agendamento</div>
+    <div class="fg"><label class="flbl">Data</label><input class="finp" type="date" id="ag-data"></div>
+    <div class="fg"><label class="flbl">Curso / NR</label><select class="finp" id="ag-curso"><option value="">Selecione...</option></select></div>
+    <div class="fg"><label class="flbl">Tipo</label><select class="finp" id="ag-tipo" onchange="agTipoMudou()">
+      <option value="privado">Privado (só a empresa escolhida)</option>
+      <option value="aberto">Aberto (visível pra todas as empresas)</option>
+    </select></div>
+    <div class="fg" id="ag-empresa-wrap"><label class="flbl">Empresa</label><select class="finp" id="ag-empresa"><option value="">Selecione...</option></select></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modal-agendamento')">Cancelar</button>
+      <button class="btn btn-gold" style="margin-left:auto" onclick="salvarAgendamento()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -340,7 +358,7 @@ async function carregarEmpresas(){
   empresas=snap.docs.map(d=>({id:d.id,...d.data()}));
 }
 function montarTabsAdmin(){
-  const tabs=[['dashboard','📊 Dashboard'],['relatorios','📥 Relatórios'],['empresas','🏢 Empresas'],['certificados','🏅 Certificados'],['documentos','📁 Documentos'],['contratos','📃 Contratos'],['financeiro','💰 Financeiro'],['checklist','📋 Checklist']];
+  const tabs=[['dashboard','📊 Dashboard'],['relatorios','📥 Relatórios'],['empresas','🏢 Empresas'],['certificados','🏅 Certificados'],['documentos','📁 Documentos'],['contratos','📃 Contratos'],['financeiro','💰 Financeiro'],['agendado','📅 Agendado'],['checklist','📋 Checklist']];
   document.getElementById('tabs').innerHTML=tabs.map(([id,lbl])=>`<button class="tab${id===abaAtiva?' active':''}" onclick="irPara('${id}')">${lbl}</button>`).join('');
   renderConteudoAdmin();
 }
@@ -356,6 +374,7 @@ function renderConteudoAdmin(){
   if(abaAtiva==='dashboard'){renderDashboardAdmin(c);return;}
   if(abaAtiva==='relatorios'){renderRelatoriosAdmin(c);return;}
   if(abaAtiva==='empresas'){renderEmpresasAdmin(c);return;}
+  if(abaAtiva==='agendado'){renderAgendaAdmin(c);return;}
   if(!empresaAtivaId){c.innerHTML=empresaSelectHtml()+'<div class="empty-state">Selecione uma empresa acima para ver os dados.</div>';return;}
   if(abaAtiva==='checklist'){renderChecklistAdmin(c);return;}
   renderColecaoAdmin(c,abaAtiva);
@@ -671,7 +690,7 @@ async function renderColecaoAdmin(c,tipo){
   const list=document.getElementById('col-list');
   if(!itens.length){list.innerHTML='<div class="empty-state">Nada cadastrado ainda.</div>';return;}
 
-  if(tipo==='certificados'){renderCertificadosAgrupados(list,itens,true);return;}
+  if(tipo==='certificados'){renderCertificadosView(list,itens,true,empresaAtivaId);return;}
 
   const camposF=CAMPOS[tipo];
   list.innerHTML=itens.map(it=>{
@@ -690,6 +709,38 @@ async function renderColecaoAdmin(c,tipo){
 }
 
 // ── Certificados agrupados por colaborador (evita repetir a pessoa várias vezes) ──
+let certFiltroAtivo='ativo'; // aba ativos/inativos dentro de Certificados
+function cpfChave(cpf){return (cpf||'').toString().replace(/\D/g,'');}
+async function garantirFuncionario(empresaId,nome,cpf){
+  const chave=cpfChave(cpf);
+  if(!chave||!empresaId)return;
+  const ref=db.collection('empresas').doc(empresaId).collection('funcionarios').doc(chave);
+  try{
+    const doc=await ref.get();
+    if(doc.exists){if(nome)await ref.update({nome});}
+    else await ref.set({nome:nome||'',status:'ativo',atualizadoEm:new Date().toISOString()});
+  }catch(e){/* não trava o fluxo principal */}
+}
+async function carregarFuncionariosMap(empresaId){
+  const map={};
+  try{
+    const snap=await db.collection('empresas').doc(empresaId).collection('funcionarios').get();
+    snap.docs.forEach(d=>{map[d.id]=d.data().status||'ativo';});
+  }catch(e){}
+  return map;
+}
+function renderConteudoAtual(){
+  if(perfil.role==='admin')renderConteudoAdmin(); else montarTabsCliente();
+}
+async function toggleFuncionarioStatus(empresaId,cpf,statusAtual){
+  const novo=statusAtual==='inativo'?'ativo':'inativo';
+  try{
+    await db.collection('empresas').doc(empresaId).collection('funcionarios').doc(cpfChave(cpf)).set({status:novo,atualizadoEm:new Date().toISOString()},{merge:true});
+    toast(novo==='ativo'?'🟢 Marcado como ativo':'⚪ Marcado como inativo');
+    renderConteudoAtual();
+  }catch(e){toast('⚠️ '+e.message,true);}
+}
+
 function agruparPorNome(itens){
   const grupos={};
   itens.forEach(it=>{
@@ -704,29 +755,49 @@ function piorStatusCert(certs){
   if(certs.some(c=>calcularStatus('certificados',c)==='Vencendo'))return'Vencendo';
   return'Válido';
 }
-function renderCertificadosAgrupados(list,itens,editavel){
-  const grupos=agruparPorNome(itens);
-  list.innerHTML=grupos.map((g,i)=>{
-    const st=piorStatusCert(g.certs);
-    const linhas=g.certs.slice().sort((a,b)=>(a.validade||'9999').localeCompare(b.validade||'9999')).map(c=>{
-      const cst=calcularStatus('certificados',c);
-      const detalhe=[c.nr,c.carga,c.data?'realizado '+fmtDate(c.data):'',c.validade?'val. '+fmtDate(c.validade):''].filter(Boolean).join(' · ');
-      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--p4)">
-        <div style="flex:1;font-size:.8rem;color:var(--t2)">${detalhe}</div>
-        <span class="badge ${STATUS_BADGE(cst)}">${cst}</span>
-        <button class="icon-btn" title="Gerar PDF" onclick='gerarCertificadoPDF(${JSON.stringify(c).replace(/'/g,"&apos;")})'>🖨️</button>
-        ${editavel?`<button class="icon-btn" onclick='abrirModalItem("certificados",${JSON.stringify(c).replace(/'/g,"&apos;")})'>✏️</button>`:''}
+async function renderCertificadosView(list,itens,editavel,empresaId){
+  const funcMap=await carregarFuncionariosMap(empresaId);
+  const grupos=agruparPorNome(itens).map(g=>{
+    const cpfRef=(g.certs.find(c=>c.cpf)||{}).cpf||'';
+    const status=funcMap[cpfChave(cpfRef)]||'ativo';
+    return {...g,cpfRef,status};
+  });
+  const contAtivos=grupos.filter(g=>g.status==='ativo').length;
+  const contInativos=grupos.filter(g=>g.status==='inativo').length;
+  const filtrados=grupos.filter(g=>g.status===certFiltroAtivo);
+
+  let html=`<div style="display:flex;gap:8px;margin-bottom:14px">
+    <button class="fpill ${certFiltroAtivo==='ativo'?'active':''}" onclick="certFiltroAtivo='ativo';renderConteudoAtual()">🟢 Ativos (${contAtivos})</button>
+    <button class="fpill ${certFiltroAtivo==='inativo'?'active':''}" onclick="certFiltroAtivo='inativo';renderConteudoAtual()">⚪ Inativos (${contInativos})</button>
+  </div>`;
+
+  if(!filtrados.length){html+='<div class="empty-state">Nenhum funcionário nessa lista.</div>';}
+  else{
+    html+=filtrados.map((g,i)=>{
+      const stCert=piorStatusCert(g.certs);
+      const labelTopo=stCert==='Vencido'?'Pendente':stCert;
+      const linhas=g.certs.slice().sort((a,b)=>(a.validade||'9999').localeCompare(b.validade||'9999')).map(c=>{
+        const cst=calcularStatus('certificados',c);
+        const detalhe=[c.nr,c.carga,c.data?'realizado '+fmtDate(c.data):'',c.validade?'val. '+fmtDate(c.validade):''].filter(Boolean).join(' · ');
+        return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--p4)">
+          <div style="flex:1;font-size:.8rem;color:var(--t2)">${detalhe}</div>
+          <span class="badge ${STATUS_BADGE(cst)}">${cst}</span>
+          <button class="icon-btn" title="Gerar PDF" onclick='gerarCertificadoPDF(${JSON.stringify(c).replace(/'/g,"&apos;")})'>🖨️</button>
+          ${editavel?`<button class="icon-btn" onclick='abrirModalItem("certificados",${JSON.stringify(c).replace(/'/g,"&apos;")})'>✏️</button>`:''}
+        </div>`;
+      }).join('');
+      return `<div class="card">
+        <div class="card-row" style="cursor:pointer" onclick="toggleGrupo(${i})">
+          <div class="card-main"><div class="card-title">${g.nome}</div><div class="card-sub">${g.certs.length} certificado(s)</div></div>
+          <span class="badge ${stCert==='Vencido'?'b-bad':STATUS_BADGE(stCert)}">${labelTopo}</span>
+          <button class="icon-btn" title="${g.status==='ativo'?'Marcar inativo':'Marcar ativo'}" onclick="event.stopPropagation();toggleFuncionarioStatus('${empresaId}','${g.cpfRef}','${g.status}')">${g.status==='ativo'?'🟢':'⚪'}</button>
+          <span class="icon-btn" id="seta-${i}" style="pointer-events:none">▾</span>
+        </div>
+        <div id="grupo-${i}" style="display:none">${linhas}</div>
       </div>`;
     }).join('');
-    return `<div class="card">
-      <div class="card-row" style="cursor:pointer" onclick="toggleGrupo(${i})">
-        <div class="card-main"><div class="card-title">${g.nome}</div><div class="card-sub">${g.certs.length} certificado(s)</div></div>
-        <span class="badge ${STATUS_BADGE(st)}">${st}</span>
-        <span class="icon-btn" id="seta-${i}" style="pointer-events:none">▾</span>
-      </div>
-      <div id="grupo-${i}" style="display:none">${linhas}</div>
-    </div>`;
-  }).join('');
+  }
+  list.innerHTML=html;
 }
 function toggleGrupo(i){
   const el=document.getElementById('grupo-'+i),seta=document.getElementById('seta-'+i);
@@ -763,6 +834,7 @@ async function salvarItem(){
       await ref.doc(itemAtualId).update(dados);
     }
     else await ref.add(dados);
+    if(itemAtualTipo==='certificados')await garantirFuncionario(empresaAtivaId,dados.nome,dados.cpf);
     fecharModal('modal-item');renderConteudoAdmin();toast('✅ Salvo!');
   }catch(e){toast('⚠️ '+e.message,true);}
 }
@@ -920,6 +992,7 @@ async function tcGerarTodos(){
       const docRef=await db.collection('empresas').doc(p.empresaId).collection('certificados').add({
         nome:p.nome,cpf:p.cpf||'',nr:curso,instrutor:instrutor||'',art:art||'',carga:carga||'',cidade:cidade||'',dataInicio:dataInicio||'',data:dataFim,validade:''
       });
+      await garantirFuncionario(p.empresaId,p.nome,p.cpf);
       const payload={acao:'gerarCertificado',nome:p.nome,cpf:p.cpf||'',curso,instrutor:instrutor||'',art:art||'',carga:carga||'',cidade:cidade||'',empresa:(empresas.find(e=>e.id===p.empresaId)||{}).nome||'',dataInicioISO:dataInicio||dataFim,dataFimISO:dataFim};
       const resp=await fetch(APPS_SCRIPT_CERT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
       const data=await resp.json();
@@ -932,6 +1005,136 @@ async function tcGerarTodos(){
   progresso.textContent=`Concluído: ${ok} gerado(s)${falhas?`, ${falhas} com erro`:''}.`;
   toast(falhas?`⚠️ ${ok} ok, ${falhas} com erro`:`✅ ${ok} certificados gerados!`,!!falhas);
   if(abaAtiva==='certificados')renderConteudoAdmin();
+}
+
+// ── CALENDÁRIO DE AGENDAMENTO ──
+let agendaMesAtual=new Date();
+const AGENDA_MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+async function renderAgendaAdmin(c){
+  c.innerHTML=`<div class="ph"><div class="ph-title">Agendado</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn btn-ghost" onclick="agendaNavMes(-1)">← Anterior</button>
+      <span id="agenda-mes-label" style="font-family:'Bebas Neue',cursive;font-size:1.1rem;color:var(--oc);min-width:140px;text-align:center;display:inline-block"></span>
+      <button class="btn btn-ghost" onclick="agendaNavMes(1)">Próximo →</button>
+    </div></div>
+    <div style="font-size:.72rem;color:var(--t3);margin-bottom:10px">Clique num dia pra criar um agendamento novo.</div>
+    <div id="agenda-grid">Carregando...</div>`;
+  await renderizarGradeAgenda(true);
+}
+async function renderAgendaCliente(){
+  const c=document.getElementById('content');
+  c.innerHTML=`<div class="ph"><div class="ph-title">Agendado</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn btn-ghost" onclick="agendaNavMes(-1)">← Anterior</button>
+      <span id="agenda-mes-label" style="font-family:'Bebas Neue',cursive;font-size:1.1rem;color:var(--oc);min-width:140px;text-align:center;display:inline-block"></span>
+      <button class="btn btn-ghost" onclick="agendaNavMes(1)">Próximo →</button>
+    </div></div>
+    <div id="agenda-grid">Carregando...</div>`;
+  await renderizarGradeAgenda(false);
+}
+function agendaNavMes(delta){
+  agendaMesAtual.setMonth(agendaMesAtual.getMonth()+delta);
+  renderizarGradeAgenda(perfil.role==='admin');
+}
+async function buscarAgendaDados(ehAdmin){
+  const dispSnap=await db.collection('agenda_disponibilidade').get();
+  const diasOcupados=new Set(dispSnap.docs.map(d=>d.id));
+
+  let itens=[];
+  if(ehAdmin){
+    const snap=await db.collection('agenda').get();
+    itens=snap.docs.map(d=>({id:d.id,...d.data()}));
+  } else {
+    const [abertosSnap,propriosSnap]=await Promise.all([
+      db.collection('agenda').where('tipo','==','aberto').get(),
+      db.collection('agenda').where('empresaId','==',empresaAtivaId).get()
+    ]);
+    const vistos={};
+    [...abertosSnap.docs,...propriosSnap.docs].forEach(d=>{vistos[d.id]={id:d.id,...d.data()};});
+    itens=Object.values(vistos);
+  }
+  return {diasOcupados,itens};
+}
+async function renderizarGradeAgenda(ehAdmin){
+  const {diasOcupados,itens}=await buscarAgendaDados(ehAdmin);
+  const y=agendaMesAtual.getFullYear(),m=agendaMesAtual.getMonth();
+  document.getElementById('agenda-mes-label').textContent=AGENDA_MESES[m]+' '+y;
+
+  const itensPorDia={};
+  itens.forEach(it=>{if(!itensPorDia[it.data])itensPorDia[it.data]=[];itensPorDia[it.data].push(it);});
+
+  const primeiroDiaSemana=new Date(y,m,1).getDay();
+  const diasNoMes=new Date(y,m+1,0).getDate();
+  const hojeStr=new Date().toISOString().slice(0,10);
+
+  let grid=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--p4);border:1px solid var(--p4);border-radius:var(--r12);overflow:hidden">`;
+  ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].forEach(d=>{grid+=`<div style="background:var(--p3);padding:7px;text-align:center;font-size:.6rem;color:var(--t3);letter-spacing:1px;font-weight:700">${d}</div>`;});
+  for(let i=0;i<primeiroDiaSemana;i++)grid+=`<div style="background:var(--p1);min-height:80px"></div>`;
+  for(let dia=1;dia<=diasNoMes;dia++){
+    const dataStr=`${y}-${String(m+1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
+    const isHoje=dataStr===hojeStr;
+    const evsDoDia=itensPorDia[dataStr]||[];
+    const ocupadoSemDetalhe=diasOcupados.has(dataStr)&&!evsDoDia.length;
+    let conteudo='';
+    if(evsDoDia.length){
+      conteudo=evsDoDia.map(ev=>`<div style="font-size:.6rem;padding:2px 4px;border-radius:4px;margin-top:2px;background:${ev.tipo==='aberto'?'rgba(37,211,102,.18)':'rgba(212,160,23,.18)'};color:${ev.tipo==='aberto'?'#25D366':'var(--oc)'};cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" onclick="event.stopPropagation();abrirDetalheAgenda('${ev.id}')">${ev.curso}</div>`).join('');
+    } else if(ocupadoSemDetalhe){
+      conteudo=`<div style="font-size:.6rem;padding:2px 4px;border-radius:4px;margin-top:2px;background:rgba(239,83,80,.18);color:#ef9a9a">Data ocupada</div>`;
+    }
+    grid+=`<div style="background:var(--p2);min-height:80px;padding:6px;${isHoje?'box-shadow:inset 0 0 0 1px var(--ouro)':''};cursor:${ehAdmin?'pointer':'default'}" ${ehAdmin?`onclick="abrirNovoAgendamento('${dataStr}')"`:''}>
+      <div style="font-family:'Bebas Neue',cursive;font-size:.85rem;color:${isHoje?'var(--oc)':'var(--t3)'}">${dia}</div>
+      ${conteudo}
+    </div>`;
+  }
+  grid+=`</div>`;
+  document.getElementById('agenda-grid').innerHTML=grid;
+}
+function agTipoMudou(){
+  document.getElementById('ag-empresa-wrap').style.display=document.getElementById('ag-tipo').value==='privado'?'block':'none';
+}
+function abrirNovoAgendamento(dataStr){
+  document.getElementById('ag-modal-title').textContent='📅 Novo Agendamento';
+  document.getElementById('ag-data').value=dataStr;
+  document.getElementById('ag-tipo').value='privado';
+  agTipoMudou();
+  const selCurso=document.getElementById('ag-curso');
+  selCurso.innerHTML='<option value="">Selecione...</option>'+cursosUnicosComId().map(c=>`<option value="${c}">${c}</option>`).join('');
+  const selEmp=document.getElementById('ag-empresa');
+  selEmp.innerHTML='<option value="">Selecione...</option>'+empresas.map(e=>`<option value="${e.id}">${e.nome}</option>`).join('');
+  document.getElementById('modal-agendamento').classList.add('open');
+}
+async function salvarAgendamento(){
+  const data=document.getElementById('ag-data').value;
+  const curso=document.getElementById('ag-curso').value;
+  const tipo=document.getElementById('ag-tipo').value;
+  const empresaId=document.getElementById('ag-empresa').value;
+  if(!data||!curso){toast('⚠️ Preencha data e curso.',true);return;}
+  if(tipo==='privado'&&!empresaId){toast('⚠️ Selecione a empresa (ou marque como Aberto).',true);return;}
+  try{
+    await db.collection('agenda').add({data,curso,tipo,empresaId:tipo==='privado'?empresaId:'',criadoEm:new Date().toISOString()});
+    await db.collection('agenda_disponibilidade').doc(data).set({data});
+    fecharModal('modal-agendamento');
+    toast('✅ Agendamento criado!');
+    renderizarGradeAgenda(true);
+  }catch(e){toast('⚠️ '+e.message,true);}
+}
+async function abrirDetalheAgenda(id){
+  try{
+    const doc=await db.collection('agenda').doc(id).get();
+    if(!doc.exists){toast('⚠️ Agendamento não encontrado.',true);return;}
+    const ev=doc.data();
+    const empresaTxt=ev.tipo==='aberto'?'Aberto para todas as empresas':nomeEmpresa(ev.empresaId);
+    if(perfil.role==='admin'){
+      if(confirm(`${ev.curso}\n${fmtDate(ev.data)}\n${empresaTxt}\n\nExcluir este agendamento?`)){
+        await db.collection('agenda').doc(id).delete();
+        toast('🗑 Agendamento excluído.');
+        renderizarGradeAgenda(true);
+      }
+    } else {
+      alert(`${ev.curso}\n${fmtDate(ev.data)}\n${empresaTxt}`);
+    }
+  }catch(e){toast('⚠️ '+e.message,true);}
 }
 
 // ── GERAR QR PENDENTES (pra quem já tem certificado cadastrado mas ainda não tem QR salvo) ──
@@ -1152,6 +1355,9 @@ async function importarColagem(){
       if(contador===450){await batch.commit();batch=db.batch();contador=0;}
     }
     if(contador>0)await batch.commit();
+    if(tipo==='certificados'){
+      for(const it of itens){await garantirFuncionario(empresaAtivaId,it.nome,it.cpf);}
+    }
     fecharModal('modal-colar');renderConteudoAdmin();
     toast(`✅ ${totalOk} item(ns) importado(s)!`);
   }catch(e){toast('⚠️ '+e.message,true);}
@@ -1198,11 +1404,12 @@ async function excluirPergunta(id){
 // CLIENTE
 // ══════════════════════════════════════════
 function montarTabsCliente(){
-  const tabs=[['dashboard','📊 Painel'],['certificados','🏅 Certificados'],['documentos','📁 Documentos'],['contratos','📃 Contratos'],['financeiro','💰 Financeiro'],['relatorios','📥 Relatórios'],['checklist','📋 Checklist']];
+  const tabs=[['dashboard','📊 Painel'],['certificados','🏅 Certificados'],['documentos','📁 Documentos'],['contratos','📃 Contratos'],['financeiro','💰 Financeiro'],['agendado','📅 Agendado'],['relatorios','📥 Relatórios'],['checklist','📋 Checklist']];
   document.getElementById('tabs').innerHTML=tabs.map(([id,lbl])=>`<button class="tab${id===abaAtiva?' active':''}" onclick="abaAtiva='${id}';montarTabsCliente()">${lbl}</button>`).join('');
   if(abaAtiva==='dashboard')renderDashboardCliente();
   else if(abaAtiva==='checklist')renderChecklistCliente();
   else if(abaAtiva==='relatorios')renderRelatoriosCliente();
+  else if(abaAtiva==='agendado')renderAgendaCliente();
   else renderColecaoCliente(abaAtiva);
 }
 async function renderColecaoCliente(tipo){
@@ -1213,7 +1420,7 @@ async function renderColecaoCliente(tipo){
   const list=document.getElementById('col-list');
   if(!itens.length){list.innerHTML='<div class="empty-state">Nada por aqui ainda.</div>';return;}
 
-  if(tipo==='certificados'){renderCertificadosAgrupados(list,itens,false);return;}
+  if(tipo==='certificados'){renderCertificadosView(list,itens,false,empresaAtivaId);return;}
 
   const camposF=CAMPOS[tipo];
   list.innerHTML=itens.map(it=>{
