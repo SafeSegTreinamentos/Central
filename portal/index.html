@@ -944,7 +944,7 @@ async function imprimirQrCodesEmpresa(){
   if(!w){toast('⚠️ Permita pop-ups para gerar a folha de QR Codes.',true);return;}
   const itensHtml=pessoas.map(p=>{
     const cpfLimpo=p.cpf.replace(/\D/g,'');
-    const url='https://safesegtreinamentos.github.io/validador/?cpf='+cpfLimpo;
+    const url='https://safesegtreinamentos.github.io/Central/validador/?cpf='+cpfLimpo;
     const qrImg='https://api.qrserver.com/v1/create-qr-code/?size=220x220&data='+encodeURIComponent(url);
     return `<div class="qc"><img src="${qrImg}"><div class="nm">${p.nome}</div></div>`;
   }).join('');
