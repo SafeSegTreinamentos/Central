@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SafeSeg — Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<style>
+:root{
+  --ouro:#D4A017;--oc:#F5C842;--oe:#A07810;
+  --p0:#070707;--p1:#0d0d0d;--p2:#111;--p3:#161616;--p4:#1c1c1c;--p5:#242424;
+  --t1:#F0E6C8;--t2:#c8b98a;--t3:#7A6A4A;
+  --gg:linear-gradient(135deg,#8A6608 0%,#F5C842 45%,#FFE066 58%,#C49010 100%);
+  --gt:linear-gradient(135deg,#B8820A,#FFE066,#C49010);
+  --r8:8px;--r12:12px;--r16:16px;--sh2:0 8px 40px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Barlow',sans-serif;background:var(--p0);color:var(--t1);min-height:100vh;}
+.hidden{display:none!important;}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:var(--oe);}
+
+/* LOGIN */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+.login-box{background:var(--p2);border:1px solid rgba(212,160,23,.18);border-radius:var(--r16);padding:36px 32px;width:100%;max-width:380px;box-shadow:var(--sh2);}
+.login-logo{width:52px;height:52px;background:var(--gg);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 14px;}
+.login-brand{font-family:'Bebas Neue',cursive;font-size:1.8rem;letter-spacing:4px;text-align:center;background:var(--gt);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.login-tag{font-size:.68rem;color:var(--t3);text-align:center;letter-spacing:2px;text-transform:uppercase;margin-bottom:26px;}
+.fg{margin-bottom:14px;}
+.flbl{display:block;font-size:.6rem;color:var(--t3);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:5px;}
+.finp{width:100%;padding:10px 13px;background:var(--p0);border:1px solid var(--p4);border-radius:var(--r8);color:var(--t1);font-family:'Barlow',sans-serif;font-size:.88rem;outline:none;}
+.finp:focus{border-color:var(--ouro);}
+select.finp{cursor:pointer;}
+.btn{padding:10px 18px;border-radius:var(--r8);border:none;font-family:'Barlow',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:7px;justify-content:center;}
+.btn-gold{background:var(--gg);color:var(--p0);width:100%;}.btn-gold:hover{opacity:.85;}
+.btn-ghost{background:transparent;color:var(--oc);border:1px solid rgba(212,160,23,.3);}
+.btn-danger{background:transparent;color:#ef9a9a;border:1px solid rgba(239,83,80,.25);}
+.login-alt{text-align:center;margin-top:14px;font-size:.74rem;color:var(--t3);}
+.login-alt a{color:var(--oc);cursor:pointer;text-decoration:underline;}
+.login-msg{font-size:.76rem;padding:9px 12px;border-radius:var(--r8);margin-bottom:14px;display:none;}
+.login-msg.err{display:block;background:rgba(239,83,80,.1);color:#ef9a9a;border:1px solid rgba(239,83,80,.2);}
+.login-msg.ok{display:block;background:rgba(37,211,102,.1);color:#81c784;border:1px solid rgba(37,211,102,.2);}
+
+/* APP SHELL */
+.topbar{background:var(--p1);border-bottom:1px solid var(--p4);padding:0 22px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.tb-brand{display:flex;align-items:center;gap:10px;}
+.tb-logo{width:34px;height:34px;background:var(--gg);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.tb-name{font-family:'Bebas Neue',cursive;font-size:1.2rem;letter-spacing:3px;background:var(--gt);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.tb-role{font-size:.6rem;padding:2px 9px;border-radius:20px;background:rgba(212,160,23,.12);color:var(--oc);border:1px solid rgba(212,160,23,.2);text-transform:uppercase;letter-spacing:1px;font-weight:700;}
+.tb-right{display:flex;align-items:center;gap:12px;font-size:.78rem;color:var(--t3);}
+
+.tabs{display:flex;gap:4px;padding:14px 22px 0;flex-wrap:wrap;border-bottom:1px solid var(--p4);}
+.tab{padding:9px 16px;border-radius:8px 8px 0 0;background:transparent;border:1px solid transparent;color:var(--t3);font-family:'Barlow Condensed',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;}
+.tab.active{background:var(--p2);border-color:var(--p4);border-bottom-color:var(--p2);color:var(--oc);margin-bottom:-1px;}
+
+.content{padding:22px;max-width:1100px;margin:0 auto;}
+.empresa-select-row{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+.empresa-select-row select{max-width:340px;}
+
+.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+.ph-title{font-family:'Bebas Neue',cursive;font-size:1.5rem;letter-spacing:1.5px;color:var(--oc);}
+
+.card{background:var(--p2);border:1px solid var(--p4);border-radius:var(--r12);padding:16px 18px;margin-bottom:10px;}
+.card-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.card-main{flex:1;min-width:180px;}
+.card-title{font-weight:700;font-size:.9rem;color:var(--t1);}
+.card-sub{font-size:.72rem;color:var(--t3);margin-top:2px;}
+.badge{font-size:.6rem;padding:3px 10px;border-radius:20px;font-weight:700;text-transform:uppercase;white-space:nowrap;}
+.b-ok{background:rgba(37,211,102,.14);color:#25D366;border:1px solid rgba(37,211,102,.22);}
+.b-warn{background:rgba(255,183,77,.14);color:#ffb74d;border:1px solid rgba(255,183,77,.22);}
+.b-bad{background:rgba(239,83,80,.12);color:#ef9a9a;border:1px solid rgba(239,83,80,.2);}
+.b-neutro{background:var(--p4);color:var(--t3);border:1px solid var(--p5);}
+.icon-btn{width:30px;height:30px;border-radius:7px;border:1px solid var(--p4);background:var(--p3);color:var(--t3);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;}
+.icon-btn:hover{border-color:rgba(212,160,23,.3);color:var(--oc);}
+.empty-state{text-align:center;padding:44px 20px;color:var(--t3);font-size:.85rem;}
+
+.checklist-item{background:var(--p2);border:1px solid var(--p4);border-radius:var(--r12);padding:16px 18px;margin-bottom:10px;}
+.chk-pergunta{font-weight:700;font-size:.88rem;color:var(--t1);margin-bottom:8px;}
+.chk-textarea{width:100%;background:var(--p0);border:1px solid var(--p4);border-radius:var(--r8);color:var(--t1);font-family:'Barlow',sans-serif;font-size:.84rem;padding:10px;min-height:70px;outline:none;resize:vertical;}
+.chk-textarea:focus{border-color:var(--ouro);}
+.chk-foot{display:flex;justify-content:space-between;align-items:center;margin-top:9px;gap:10px;}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--p2);border:1px solid rgba(212,160,23,.2);border-radius:var(--r16);width:100%;max-width:440px;padding:24px;max-height:88vh;overflow-y:auto;}
+.modal-title{font-family:'Barlow Condensed',sans-serif;font-size:1.05rem;font-weight:700;color:var(--oc);margin-bottom:16px;}
+.modal-footer{display:flex;justify-content:space-between;gap:10px;margin-top:16px;}
+.toast{position:fixed;bottom:20px;right:20px;padding:10px 20px;border-radius:var(--r8);font-family:'Barlow',sans-serif;font-size:.8rem;font-weight:700;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;box-shadow:var(--sh2);}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══ -->
+<div class="login-wrap" id="tela-login">
+  <div class="login-box">
+    <div class="login-logo">🛡️</div>
+    <div class="login-brand">SAFESEG</div>
+    <div class="login-tag" id="login-modo-tag">Portal — Entrar</div>
+    <div class="login-msg" id="login-msg"></div>
+    <div class="fg"><label class="flbl">E-mail</label><input class="finp" type="email" id="lg-email" autocomplete="username"></div>
+    <div class="fg"><label class="flbl">Senha</label><input class="finp" type="password" id="lg-senha" autocomplete="current-password"></div>
+    <button class="btn btn-gold" id="lg-btn" onclick="entrar()">Entrar</button>
+    <div class="login-alt" id="login-alt-signup">Primeiro acesso do administrador? <a onclick="modoCadastro()">Criar conta</a></div>
+    <div class="login-alt hidden" id="login-alt-login">Já tem conta? <a onclick="modoLogin()">Entrar</a></div>
+  </div>
+</div>
+
+<!-- ══ SEM PERFIL ══ -->
+<div class="login-wrap hidden" id="tela-sem-perfil">
+  <div class="login-box" style="text-align:center">
+    <div class="login-logo">⏳</div>
+    <div class="login-brand" style="font-size:1.3rem">Aguardando liberação</div>
+    <div style="font-size:.8rem;color:var(--t3);line-height:1.6;margin:14px 0">Sua conta foi criada, mas ainda não tem um perfil de acesso configurado. Se você é o administrador, configure seu perfil no console do Firebase (veja as instruções). Se você é cliente, avise a SafeSeg para liberar seu acesso.</div>
+    <button class="btn btn-ghost" onclick="sair()">Sair</button>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div class="hidden" id="app">
+  <div class="topbar">
+    <div class="tb-brand"><div class="tb-logo">🛡️</div><div class="tb-name">SAFESEG</div><span class="tb-role" id="tb-role"></span></div>
+    <div class="tb-right"><span id="tb-user"></span><button class="btn btn-ghost" style="padding:6px 14px" onclick="sair()">Sair</button></div>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="content" id="content"></div>
+</div>
+
+<!-- ══ MODAL GENÉRICO ══ -->
+<div class="modal-overlay" id="modal-item">
+  <div class="modal">
+    <div class="modal-title" id="mi-title">Item</div>
+    <div id="mi-fields"></div>
+    <div class="modal-footer">
+      <button class="btn btn-danger hidden" id="mi-del" onclick="excluirItem()">🗑 Excluir</button>
+      <div style="display:flex;gap:10px;margin-left:auto">
+        <button class="btn btn-ghost" onclick="fecharModal('modal-item')">Cancelar</button>
+        <button class="btn btn-gold" onclick="salvarItem()">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL EMPRESA ══ -->
+<div class="modal-overlay" id="modal-empresa">
+  <div class="modal">
+    <div class="modal-title" id="me-title">Nova Empresa</div>
+    <div class="fg"><label class="flbl">Nome</label><input class="finp" id="me-nome"></div>
+    <div class="fg"><label class="flbl">CNPJ</label><input class="finp" id="me-cnpj"></div>
+    <div class="fg"><label class="flbl">Segmento</label><input class="finp" id="me-seg"></div>
+    <div class="fg"><label class="flbl">Cidade</label><input class="finp" id="me-cidade"></div>
+    <div class="fg"><label class="flbl">Responsável</label><input class="finp" id="me-resp"></div>
+    <input type="hidden" id="me-id">
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="fecharModal('modal-empresa')">Cancelar</button><button class="btn btn-gold" onclick="salvarEmpresa()">Salvar</button></div>
+  </div>
+</div>
+
+<!-- ══ MODAL ACESSOS ══ -->
+<div class="modal-overlay" id="modal-acessos">
+  <div class="modal">
+    <div class="modal-title" id="ac-title">Acessos</div>
+    <div id="ac-list" style="margin-bottom:14px"></div>
+    <button class="btn btn-ghost" style="width:100%" onclick="adicionarAcessoModal()">+ Adicionar novo acesso</button>
+    <div class="modal-footer"><button class="btn btn-gold" style="margin-left:auto" onclick="fecharModal('modal-acessos')">Fechar</button></div>
+  </div>
+</div>
+
+<!-- ══ MODAL COLAR EM MASSA ══ -->
+<div class="modal-overlay" id="modal-colar">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-title" id="cm-title">Colar em massa</div>
+    <div style="font-size:.76rem;color:var(--t3);margin-bottom:10px;line-height:1.5" id="cm-instrucoes"></div>
+    <div style="font-size:.72rem;color:var(--t3);margin-bottom:10px">Cole direto do Excel/Google Sheets (uma linha por item) ou separe as colunas por ponto e vírgula. Se colar a linha de cabeçalho, ela é detectada e ignorada.</div>
+    <textarea class="finp" id="cm-texto" rows="10" style="font-family:monospace;font-size:.78rem;resize:vertical" placeholder="Cole aqui..."></textarea>
+    <div id="cm-preview" style="font-size:.74rem;color:var(--oc);margin-top:8px"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modal-colar')">Cancelar</button>
+      <button class="btn btn-gold" style="margin-left:auto" onclick="importarColagem()">Importar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL MODELOS DE CERTIFICADO ══ -->
+<div class="modal-overlay" id="modal-modelos">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-title">🗂️ Modelos de Certificado por NR</div>
+    <div style="font-size:.76rem;color:var(--t3);margin-bottom:12px;line-height:1.5">Cada NR usa um modelo específico do Google Slides (salvo na pasta de Modelos). Cole o link do modelo e o nome da NR — precisa ser o mesmo texto que você digita no campo "NR/Treinamento" do certificado.</div>
+    <div class="frow">
+      <div class="fg"><label class="flbl">NR / Curso</label><input class="finp" id="mod-nr" placeholder="Ex: NR-35 — Trabalho em Altura"></div>
+      <div class="fg"><label class="flbl">Instrutor deste modelo</label><select class="finp" id="mod-instrutor">
+        <option value="">Genérico (qualquer instrutor)</option>
+        <option>Deverson R.F.Pomerenk</option>
+        <option>Everton André Steinhaus</option>
+      </select></div>
+    </div>
+    <div class="fg"><label class="flbl">Link do modelo (Slides)</label><input class="finp" id="mod-link" placeholder="https://docs.google.com/presentation/d/..."></div>
+    <button class="btn btn-gold" style="width:100%" onclick="salvarModeloCert()">Salvar modelo</button>
+    <div style="font-size:.66rem;color:var(--t3);margin:16px 0 6px;letter-spacing:1px;text-transform:uppercase">Modelos cadastrados</div>
+    <div id="modelos-list" style="max-height:220px;overflow-y:auto">Carregando...</div>
+    <div class="modal-footer"><button class="btn btn-ghost" style="margin-left:auto" onclick="fecharModal('modal-modelos')">Fechar</button></div>
+  </div>
+</div>
+
+<!-- ══ MODAL GERAR TURMA (certificados em lote) ══ -->
+<div class="modal-overlay" id="modal-turma-cert">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-title">🎓 Gerar Certificados em Lote (Turma)</div>
+    <div class="frow">
+      <div class="fg"><label class="flbl">Curso / NR</label><select class="finp" id="tc-curso"><option value="">Selecione...</option></select></div>
+      <div class="fg"><label class="flbl">Instrutor responsável</label><select class="finp" id="tc-instrutor">
+        <option value="">Genérico</option>
+        <option>Deverson R.F.Pomerenk</option>
+        <option>Everton André Steinhaus</option>
+      </select></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label class="flbl">Carga horária</label><input class="finp" id="tc-carga" placeholder="8h"></div>
+      <div class="fg"><label class="flbl">ART (opcional)</label><input class="finp" id="tc-art"></div>
+    </div>
+    <div class="fg"><label class="flbl">Cidade onde ocorreu o curso</label><input class="finp" id="tc-cidade" placeholder="Ex: São Paulo - SP"></div>
+    <div class="frow">
+      <div class="fg"><label class="flbl">Data de início (opcional)</label><input class="finp" type="date" id="tc-inicio"></div>
+      <div class="fg"><label class="flbl">Data de conclusão</label><input class="finp" type="date" id="tc-fim"></div>
+    </div>
+
+    <div style="font-size:.62rem;color:var(--t3);margin:16px 0 6px;letter-spacing:1px;text-transform:uppercase">Participantes</div>
+    <div style="font-size:.72rem;color:var(--t3);margin-bottom:8px">Cole no formato <code>Nome;CPF;Empresa</code> (uma pessoa por linha, nome da empresa igual ao cadastrado) ou adicione manualmente.</div>
+    <textarea class="finp" id="tc-colar" rows="4" style="font-family:monospace;font-size:.76rem" placeholder="João da Silva;123.456.789-00;Empresa X"></textarea>
+    <button class="btn btn-ghost" style="margin-top:6px" onclick="tcImportarLista()">Adicionar da lista colada</button>
+
+    <div id="tc-tabela" style="margin-top:12px"></div>
+    <button class="btn btn-ghost" style="width:100%;margin-top:6px" onclick="tcAddLinha()">+ Linha manual</button>
+
+    <div id="tc-progresso" style="margin-top:12px;font-size:.8rem;color:var(--oc)"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modal-turma-cert')">Cancelar</button>
+      <button class="btn btn-gold" style="margin-left:auto" onclick="tcGerarTodos()">Gerar Certificados</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+// 1) CONFIGURAÇÃO — cole aqui o config do SEU projeto Firebase
+// (Firebase Console → Configurações do projeto → Seus apps → SDK setup)
+// ══════════════════════════════════════════
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBWLjXZky00EbJOohMkU0MPdlZtxj0mrhs",
+  authDomain: "portal-safeseg.firebaseapp.com",
+  projectId: "portal-safeseg",
+  storageBucket: "portal-safeseg.firebasestorage.app",
+  messagingSenderId: "1079674980653",
+  appId: "1:1079674980653:web:a34490005877c271eceba4"
+};
+firebase.initializeApp(FIREBASE_CONFIG);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// ⚠️ Cole aqui a URL do seu Apps Script (termina em /exec) depois de reimplantar
+// Enquanto estiver "COLE_AQUI", o Portal usa um certificado de modelo padrão (fallback)
+const APPS_SCRIPT_CERT_URL = "https://script.google.com/macros/s/AKfycbz55Li88oyroPtFH1iTOV2nR58-xbuUAMkGcyb6GRzM3S6KQNARj7Sxvi1mZShhPg-WRg/exec";
+
+function appSecundario(){
+  try{ return firebase.app('Secundario'); }catch(e){ return firebase.initializeApp(FIREBASE_CONFIG,'Secundario'); }
+}
+
+let perfil=null, empresas=[], empresaAtivaId=null, minhaEmpresaNome='', abaAtiva='dashboard', dashboardFiltro='', relTipo='certificados', relFiltro='', modelosDisponiveis=[];
+const toast=(msg,err)=>{const t=document.getElementById('toast');t.style.background=err?'#c62828':'linear-gradient(135deg,#A07810,#F5C842)';t.style.color=err?'#fff':'#0A0A0A';t.textContent=msg;t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(()=>t.style.opacity='0',2400);};
+const fmtBRL=v=>'R$ '+parseFloat(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+const fmtDate=d=>d?new Date(d+'T12:00').toLocaleDateString('pt-BR'):'—';
+function fecharModal(id){document.getElementById(id).classList.remove('open');}
+
+// ── LOGIN ──
+let modoCadastroAtivo=false;
+function modoCadastro(){modoCadastroAtivo=true;document.getElementById('login-modo-tag').textContent='Criar conta de administrador';document.getElementById('login-alt-signup').classList.add('hidden');document.getElementById('login-alt-login').classList.remove('hidden');document.getElementById('lg-btn').textContent='Criar conta';}
+function modoLogin(){modoCadastroAtivo=false;document.getElementById('login-modo-tag').textContent='Portal — Entrar';document.getElementById('login-alt-signup').classList.remove('hidden');document.getElementById('login-alt-login').classList.add('hidden');document.getElementById('lg-btn').textContent='Entrar';}
+function loginMsg(msg,ok){const el=document.getElementById('login-msg');el.className='login-msg '+(ok?'ok':'err');el.textContent=msg;}
+async function entrar(){
+  const email=document.getElementById('lg-email').value.trim(),senha=document.getElementById('lg-senha').value;
+  if(!email||!senha){loginMsg('Preencha e-mail e senha.');return;}
+  try{
+    if(modoCadastroAtivo){
+      await auth.createUserWithEmailAndPassword(email,senha);
+      loginMsg('Conta criada! Agora configure seu perfil (veja instruções).','ok');
+    } else {
+      await auth.signInWithEmailAndPassword(email,senha);
+    }
+  }catch(e){loginMsg(traduzErro(e));}
+}
+function traduzErro(e){
+  const m={'auth/wrong-password':'Senha incorreta.','auth/user-not-found':'Conta não encontrada.','auth/email-already-in-use':'Este e-mail já tem conta — faça login.','auth/weak-password':'Senha muito fraca (mín. 6 caracteres).','auth/invalid-email':'E-mail inválido.'};
+  return m[e.code]||e.message;
+}
+function sair(){auth.signOut();}
+
+// ── ESTADO DE AUTENTICAÇÃO ──
+auth.onAuthStateChanged(async user=>{
+  if(!user){
+    document.getElementById('tela-login').classList.remove('hidden');
+    document.getElementById('tela-sem-perfil').classList.add('hidden');
+    document.getElementById('app').classList.add('hidden');
+    return;
+  }
+  try{
+    const doc=await db.collection('usuarios').doc(user.uid).get();
+    if(!doc.exists){
+      document.getElementById('tela-login').classList.add('hidden');
+      document.getElementById('tela-sem-perfil').classList.remove('hidden');
+      document.getElementById('app').classList.add('hidden');
+      return;
+    }
+    perfil={uid:user.uid,email:user.email,...doc.data()};
+    document.getElementById('tela-login').classList.add('hidden');
+    document.getElementById('tela-sem-perfil').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    document.getElementById('tb-user').textContent=perfil.email;
+    document.getElementById('tb-role').textContent=perfil.role==='admin'?'Administrador':'Cliente';
+    if(perfil.role==='admin'){await carregarEmpresas();montarTabsAdmin();}
+    else{
+      empresaAtivaId=perfil.empresaId;
+      const empDoc=await db.collection('empresas').doc(empresaAtivaId).get();
+      minhaEmpresaNome=empDoc.exists?(empDoc.data().nome||''):'';
+      montarTabsCliente();
+    }
+  }catch(e){toast('⚠️ '+e.message,true);}
+});
+
+// ══════════════════════════════════════════
+// ADMIN
+// ══════════════════════════════════════════
+async function carregarEmpresas(){
+  const snap=await db.collection('empresas').orderBy('nome').get();
+  empresas=snap.docs.map(d=>({id:d.id,...d.data()}));
+}
+function montarTabsAdmin(){
+  const tabs=[['dashboard','📊 Dashboard'],['relatorios','📥 Relatórios'],['empresas','🏢 Empresas'],['certificados','🏅 Certificados'],['documentos','📁 Documentos'],['contratos','📃 Contratos'],['financeiro','💰 Financeiro'],['checklist','📋 Checklist']];
+  document.getElementById('tabs').innerHTML=tabs.map(([id,lbl])=>`<button class="tab${id===abaAtiva?' active':''}" onclick="irPara('${id}')">${lbl}</button>`).join('');
+  renderConteudoAdmin();
+}
+function irPara(id){abaAtiva=id;montarTabsAdmin();}
+function empresaSelectHtml(){
+  return `<div class="empresa-select-row"><label class="flbl" style="margin:0">Empresa:</label><select class="finp" onchange="empresaAtivaId=this.value;renderConteudoAdmin()">
+    <option value="">Selecione...</option>
+    ${empresas.map(e=>`<option value="${e.id}" ${e.id===empresaAtivaId?'selected':''}>${e.nome}</option>`).join('')}
+  </select></div>`;
+}
+function renderConteudoAdmin(){
+  const c=document.getElementById('content');
+  if(abaAtiva==='dashboard'){renderDashboardAdmin(c);return;}
+  if(abaAtiva==='relatorios'){renderRelatoriosAdmin(c);return;}
+  if(abaAtiva==='empresas'){renderEmpresasAdmin(c);return;}
+  if(!empresaAtivaId){c.innerHTML=empresaSelectHtml()+'<div class="empty-state">Selecione uma empresa acima para ver os dados.</div>';return;}
+  if(abaAtiva==='checklist'){renderChecklistAdmin(c);return;}
+  renderColecaoAdmin(c,abaAtiva);
+}
+function renderEmpresasAdmin(c){
+  c.innerHTML=`<div class="ph"><div class="ph-title">Empresas</div><button class="btn btn-gold" onclick="abrirModalEmpresa()">+ Nova Empresa</button></div><div id="emp-list"></div>`;
+  const list=document.getElementById('emp-list');
+  if(!empresas.length){list.innerHTML='<div class="empty-state">Nenhuma empresa cadastrada.</div>';return;}
+  list.innerHTML=empresas.map(e=>`<div class="card"><div class="card-row">
+    <div class="card-main"><div class="card-title">${e.nome}</div><div class="card-sub">${[e.cnpj,e.seg,e.cidade].filter(Boolean).join(' · ')}${e.resp?' · '+e.resp:''}</div></div>
+    <button class="btn btn-ghost" style="padding:6px 12px;font-size:.72rem" onclick="abrirAcessos('${e.id}','${(e.nome||'').replace(/'/g,"\\'")}')">👥 Acessos</button>
+    <button class="icon-btn" onclick='abrirModalEmpresa(${JSON.stringify(e).replace(/'/g,"&apos;")})'>✏️</button>
+  </div></div>`).join('');
+}
+function abrirModalEmpresa(e){
+  document.getElementById('me-title').textContent=e?'Editar Empresa':'Nova Empresa';
+  document.getElementById('me-id').value=e?e.id:'';
+  document.getElementById('me-nome').value=e?e.nome||'':'';
+  document.getElementById('me-cnpj').value=e?e.cnpj||'':'';
+  document.getElementById('me-seg').value=e?e.seg||'':'';
+  document.getElementById('me-cidade').value=e?e.cidade||'':'';
+  document.getElementById('me-resp').value=e?e.resp||'':'';
+  document.getElementById('modal-empresa').classList.add('open');
+}
+async function salvarEmpresa(){
+  const nome=document.getElementById('me-nome').value.trim();
+  if(!nome){toast('⚠️ Informe o nome!',true);return;}
+  const dados={nome,cnpj:document.getElementById('me-cnpj').value,seg:document.getElementById('me-seg').value,cidade:document.getElementById('me-cidade').value,resp:document.getElementById('me-resp').value};
+  const id=document.getElementById('me-id').value;
+  try{
+    if(id)await db.collection('empresas').doc(id).update(dados);
+    else await db.collection('empresas').add(dados);
+    fecharModal('modal-empresa');await carregarEmpresas();renderConteudoAdmin();toast('✅ Empresa salva!');
+  }catch(e){toast('⚠️ '+e.message,true);}
+}
+async function criarAcessoCliente(empresaId,empresaNome){
+  const email=prompt('E-mail de acesso do cliente ('+empresaNome+'):');
+  if(!email)return;
+  const senha=prompt('Senha inicial (mín. 6 caracteres) — envie isso pro cliente com segurança:');
+  if(!senha||senha.length<6){toast('⚠️ Senha muito curta',true);return;}
+  const sec=appSecundario();
+  try{
+    const cred=await sec.auth().createUserWithEmailAndPassword(email,senha);
+    const uid=cred.user.uid;
+    await sec.auth().signOut();
+    await db.collection('usuarios').doc(uid).set({role:'cliente',empresaId,email,nome:empresaNome});
+    toast('✅ Acesso criado para '+email);
+  }catch(e){toast('⚠️ '+traduzErro(e),true);}
+}
+
+// ── GERENCIAR ACESSOS (reenviar senha, revogar) ──
+let acessoEmpresaId=null, acessoEmpresaNome=null;
+async function abrirAcessos(empresaId,nome){
+  acessoEmpresaId=empresaId;acessoEmpresaNome=nome;
+  document.getElementById('ac-title').textContent='Acessos — '+nome;
+  document.getElementById('modal-acessos').classList.add('open');
+  await renderAcessos();
+}
+async function renderAcessos(){
+  const list=document.getElementById('ac-list');
+  list.innerHTML='Carregando...';
+  const snap=await db.collection('usuarios').where('empresaId','==',acessoEmpresaId).get();
+  if(snap.empty){list.innerHTML='<div class="empty-state" style="padding:16px">Nenhum acesso criado ainda.</div>';return;}
+  list.innerHTML=snap.docs.map(d=>{
+    const u=d.data();
+    return `<div class="card" style="margin-bottom:8px;padding:12px 14px"><div class="card-row">
+      <div class="card-main"><div class="card-title" style="font-size:.82rem">${u.email}</div></div>
+      <button class="icon-btn" title="Enviar redefinição de senha por e-mail" onclick="reenviarSenha('${u.email}')">🔁</button>
+      <button class="icon-btn" title="Revogar acesso" onclick="revogarAcesso('${d.id}')">🚫</button>
+    </div></div>`;
+  }).join('');
+}
+async function reenviarSenha(email){
+  try{await auth.sendPasswordResetEmail(email);toast('✅ E-mail de redefinição enviado para '+email);}
+  catch(e){toast('⚠️ '+traduzErro(e),true);}
+}
+async function revogarAcesso(uid){
+  if(!confirm('Revogar este acesso? A pessoa não consegue mais entrar no portal (a conta em si continua existindo, só perde a permissão).'))return;
+  await db.collection('usuarios').doc(uid).delete();
+  toast('🚫 Acesso revogado.');renderAcessos();
+}
+async function adicionarAcessoModal(){
+  await criarAcessoCliente(acessoEmpresaId,acessoEmpresaNome);
+  renderAcessos();
+}
+
+// Campos por tipo de coleção — status é calculado automaticamente pela data quando possível (ver calcularStatus)
+const CAMPOS={
+  certificados:[{k:'nome',lbl:'Nome do colaborador',t:'text'},{k:'cpf',lbl:'CPF',t:'text'},{k:'nr',lbl:'NR / Treinamento (igual ao nome cadastrado no Config_Modelos)',t:'text'},{k:'instrutor',lbl:'Instrutor responsável',t:'select',opts:['Deverson R.F.Pomerenk','Everton André Steinhaus']},{k:'cidade',lbl:'Cidade onde ocorreu o curso',t:'text'},{k:'art',lbl:'ART (opcional)',t:'text'},{k:'carga',lbl:'Carga horária',t:'text'},{k:'dataInicio',lbl:'Data de início (só se for mais de 1 dia)',t:'date'},{k:'data',lbl:'Data de conclusão',t:'date'},{k:'validade',lbl:'Validade',t:'date'}],
+  documentos:[{k:'tipo',lbl:'Tipo',t:'select',opts:['PGR','PCMSO','LTCAT','PPR','PPCI','Outro']},{k:'data',lbl:'Elaboração',t:'date'},{k:'validade',lbl:'Validade',t:'date'},{k:'status',lbl:'Status',t:'select',opts:['Em elaboração','Entregue','Em revisão']}],
+  contratos:[{k:'tipo',lbl:'Tipo de contrato',t:'text'},{k:'inicio',lbl:'Início',t:'date'},{k:'fim',lbl:'Término',t:'date'},{k:'valor',lbl:'Valor mensal (R$)',t:'number'}],
+  financeiro:[{k:'descricao',lbl:'Descrição',t:'text'},{k:'valor',lbl:'Valor (R$)',t:'number'},{k:'vencimento',lbl:'Vencimento',t:'date'},{k:'status',lbl:'Status',t:'select',opts:['Pendente','Pago']}],
+};
+const TITULOS={certificados:'Certificados',documentos:'Documentos SST',contratos:'Contratos',financeiro:'Financeiro'};
+const STATUS_BADGE=s=>{const bad={'Válido':'b-ok','Entregue':'b-ok','Ativo':'b-ok','Pago':'b-ok','Vencendo':'b-warn','Em elaboração':'b-warn','Em revisão':'b-warn','Pendente':'b-warn','Vencido':'b-bad','Encerrado':'b-neutro'};return bad[s]||'b-neutro';};
+
+// Calcula o status automaticamente a partir da data — a fonte de verdade é sempre a data, nunca um campo digitado
+function diasAte(dataStr){if(!dataStr)return null;return Math.floor((new Date(dataStr+'T12:00')-new Date())/86400000);}
+function calcularStatus(tipo,item){
+  if(tipo==='certificados'){
+    const d=diasAte(item.validade);
+    if(d===null)return'Válido';
+    return d<0?'Vencido':d<30?'Vencendo':'Válido';
+  }
+  if(tipo==='contratos'){
+    const d=diasAte(item.fim);
+    if(d===null)return'Ativo';
+    return d<0?'Encerrado':d<30?'Vencendo':'Ativo';
+  }
+  if(tipo==='documentos'){
+    const d=diasAte(item.validade);
+    if(d!==null&&d<0)return'Vencido'; // vencido sempre prevalece, mesmo que marcado como entregue
+    return item.status||'Em elaboração';
+  }
+  if(tipo==='financeiro'){
+    if(item.status==='Pago')return'Pago';
+    const d=diasAte(item.vencimento);
+    if(d!==null&&d<0)return'Vencido';
+    return'Pendente';
+  }
+  return item.status||'—';
+}
+
+// ── BUSCA AGREGADA (uma ou todas as empresas) ──
+async function buscarTudoEmpresa(empresaId){
+  const ref=db.collection('empresas').doc(empresaId);
+  const [certSnap,docSnap,contSnap,finSnap]=await Promise.all([
+    ref.collection('certificados').get(),
+    ref.collection('documentos').get(),
+    ref.collection('contratos').get(),
+    ref.collection('financeiro').get(),
+  ]);
+  const tag=(snap,tipo)=>snap.docs.map(d=>({id:d.id,empresaId,_tipo:tipo,...d.data()}));
+  return {
+    certificados:tag(certSnap,'certificados'),
+    documentos:tag(docSnap,'documentos'),
+    contratos:tag(contSnap,'contratos'),
+    financeiro:tag(finSnap,'financeiro'),
+  };
+}
+async function buscarTudo(empresaIdFiltro){
+  const alvo=empresaIdFiltro?[empresaIdFiltro]:empresas.map(e=>e.id);
+  const resultados=await Promise.all(alvo.map(id=>buscarTudoEmpresa(id)));
+  const agregado={certificados:[],documentos:[],contratos:[],financeiro:[]};
+  resultados.forEach(r=>{agregado.certificados.push(...r.certificados);agregado.documentos.push(...r.documentos);agregado.contratos.push(...r.contratos);agregado.financeiro.push(...r.financeiro);});
+  return agregado;
+}
+function nomeEmpresa(id){const e=empresas.find(x=>x.id===id);return e?e.nome:'';}
+
+// ── DASHBOARD ──
+async function renderDashboardAdmin(c){
+  c.innerHTML=`<div class="ph"><div class="ph-title">Dashboard</div>
+    <select class="finp" style="max-width:260px" onchange="dashboardFiltro=this.value;renderDashboardAdmin(document.getElementById('content'))">
+      <option value="">Todas as empresas</option>
+      ${empresas.map(e=>`<option value="${e.id}" ${e.id===dashboardFiltro?'selected':''}>${e.nome}</option>`).join('')}
+    </select></div><div id="dash-body">Carregando...</div>`;
+  const dados=await buscarTudo(dashboardFiltro);
+  montarCorpoDashboard(dados,!dashboardFiltro);
+}
+async function renderDashboardCliente(){
+  const c=document.getElementById('content');
+  c.innerHTML=`<div class="ph"><div class="ph-title">Painel</div></div><div id="dash-body">Carregando...</div>`;
+  const dados=await buscarTudoEmpresa(empresaAtivaId);
+  montarCorpoDashboard(dados,false);
+}
+function montarCorpoDashboard(dados,mostrarEmpresa){
+  const cert=dados.certificados,doc_=dados.documentos,cont=dados.contratos,fin=dados.financeiro;
+  const contarSt=(arr,tipo,alvo)=>arr.filter(it=>calcularStatus(tipo,it)===alvo).length;
+  const finVencido=fin.filter(it=>calcularStatus('financeiro',it)==='Vencido').reduce((a,it)=>a+parseFloat(it.valor||0),0);
+  const kpis=[
+    {lbl:'Certificados vencendo (30d)',val:contarSt(cert,'certificados','Vencendo'),cor:'#ffb74d'},
+    {lbl:'Certificados vencidos',val:contarSt(cert,'certificados','Vencido'),cor:'#ef9a9a'},
+    {lbl:'Documentos vencidos',val:contarSt(doc_,'documentos','Vencido'),cor:'#ef9a9a'},
+    {lbl:'Contratos vencendo (30d)',val:contarSt(cont,'contratos','Vencendo'),cor:'#ffb74d'},
+  ];
+  let html='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:22px">';
+  kpis.forEach(k=>{html+=`<div class="card" style="text-align:center"><div style="font-family:'Bebas Neue',cursive;font-size:1.8rem;color:${k.cor}">${k.val}</div><div style="font-size:.66rem;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-top:3px">${k.lbl}</div></div>`;});
+  html+=`<div class="card" style="text-align:center"><div style="font-family:'Bebas Neue',cursive;font-size:1.5rem;color:#ef9a9a">${fmtBRL(finVencido)}</div><div style="font-size:.66rem;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-top:3px">Financeiro vencido</div></div>`;
+  html+='</div>';
+
+  const itensRisco=[
+    ...cert.map(it=>({...it,_tipo:'certificados',_nome:it.nome,_desc:it.nr,_data:it.validade})),
+    ...doc_.map(it=>({...it,_tipo:'documentos',_nome:it.tipo,_desc:'Documento SST',_data:it.validade})),
+    ...cont.map(it=>({...it,_tipo:'contratos',_nome:it.tipo,_desc:'Contrato',_data:it.fim})),
+  ].map(it=>({...it,_status:calcularStatus(it._tipo,it),_dias:diasAte(it._data)}))
+   .filter(it=>it._tipo==='documentos'?it._status==='Vencido':it._tipo==='contratos'?it._status==='Vencendo':(it._status==='Vencendo'||it._status==='Vencido'))
+   .sort((a,b)=>(a._data||'9999').localeCompare(b._data||'9999'));
+
+  html+='<div class="ph-title" style="font-size:1.1rem;margin-bottom:10px">⚠️ Vencendo / Vencido</div>';
+  if(!itensRisco.length){html+='<div class="empty-state">Nada vencendo nos próximos 30 dias. 🎉</div>';}
+  else{
+    html+=itensRisco.map(it=>{
+      const diasTxt=it._dias===null?'':(it._dias<0?`vencido há ${Math.abs(it._dias)}d`:`em ${it._dias}d`);
+      return `<div class="card"><div class="card-row">
+        <div class="card-main"><div class="card-title">${it._nome}</div><div class="card-sub">${it._desc}${mostrarEmpresa?' · '+nomeEmpresa(it.empresaId):''} · ${diasTxt}</div></div>
+        <span class="badge ${STATUS_BADGE(it._status)}">${it._status}</span>
+      </div></div>`;
+    }).join('');
+  }
+  document.getElementById('dash-body').innerHTML=html;
+}
+
+// ── RELATÓRIOS / BI ──
+async function renderRelatoriosAdmin(c){
+  c.innerHTML=`<div class="ph"><div class="ph-title">Relatórios</div></div>
+  <div class="empresa-select-row">
+    <select class="finp" style="max-width:220px" onchange="relTipo=this.value;renderRelatoriosAdmin(document.getElementById('content'))">
+      ${Object.keys(TITULOS).map(t=>`<option value="${t}" ${t===relTipo?'selected':''}>${TITULOS[t]}</option>`).join('')}
+    </select>
+    <select class="finp" style="max-width:260px" onchange="relFiltro=this.value;renderRelatoriosAdmin(document.getElementById('content'))">
+      <option value="">Todas as empresas</option>
+      ${empresas.map(e=>`<option value="${e.id}" ${e.id===relFiltro?'selected':''}>${e.nome}</option>`).join('')}
+    </select>
+    <button class="btn btn-gold" onclick="exportarRelatorio()">⬇️ Exportar CSV</button>
+  </div>
+  <div id="rel-body">Carregando...</div>`;
+  const dados=await buscarTudo(relFiltro);
+  const itens=dados[relTipo];
+  if(relTipo==='certificados')itens.sort((a,b)=>(a.nome||'').localeCompare(b.nome||'')||(a.validade||'9999').localeCompare(b.validade||'9999'));
+  window._relItensAtual=itens;
+  const campos=CAMPOS[relTipo];
+  const body=document.getElementById('rel-body');
+  if(!itens.length){body.innerHTML='<div class="empty-state">Nenhum dado encontrado.</div>';return;}
+  body.innerHTML=`<div style="overflow-x:auto;border:1px solid var(--p4);border-radius:var(--r12)"><table style="width:100%;border-collapse:collapse;font-size:.8rem">
+    <thead><tr style="background:rgba(212,160,23,.08)">
+      <th style="padding:9px 12px;text-align:left;color:var(--ouro);font-size:.62rem;letter-spacing:1px;text-transform:uppercase">Empresa</th>
+      ${campos.map(f=>`<th style="padding:9px 12px;text-align:left;color:var(--ouro);font-size:.62rem;letter-spacing:1px;text-transform:uppercase">${f.lbl}</th>`).join('')}
+      <th style="padding:9px 12px;text-align:left;color:var(--ouro);font-size:.62rem;letter-spacing:1px;text-transform:uppercase">Status</th>
+    </tr></thead><tbody>
+    ${itens.map(it=>{
+      const st=calcularStatus(relTipo,it);
+      return `<tr style="border-bottom:1px solid var(--p4)">
+        <td style="padding:8px 12px">${nomeEmpresa(it.empresaId)}</td>
+        ${campos.map(f=>`<td style="padding:8px 12px">${f.t==='date'?fmtDate(it[f.k]):f.t==='number'?fmtBRL(it[f.k]):(it[f.k]||'—')}</td>`).join('')}
+        <td style="padding:8px 12px"><span class="badge ${STATUS_BADGE(st)}">${st}</span></td>
+      </tr>`;
+    }).join('')}
+    </tbody></table></div>`;
+}
+function exportarRelatorio(){
+  const itens=window._relItensAtual||[];
+  if(!itens.length){toast('⚠️ Nada para exportar',true);return;}
+  const campos=CAMPOS[relTipo];
+  let csv='Empresa;'+campos.map(f=>f.lbl).join(';')+';Status\n';
+  itens.forEach(it=>{
+    const st=calcularStatus(relTipo,it);
+    const linha=[nomeEmpresa(it.empresaId),...campos.map(f=>f.t==='date'?fmtDate(it[f.k]):(it[f.k]||'')),st];
+    csv+=linha.join(';')+'\n';
+  });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}));
+  a.download=`safeseg-${relTipo}-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// ── RELATÓRIOS DO CLIENTE (mesma ideia, travado na própria empresa) ──
+let relTipoCliente='certificados';
+async function renderRelatoriosCliente(){
+  const c=document.getElementById('content');
+  c.innerHTML=`<div class="ph"><div class="ph-title">Relatórios</div></div>
+  <div class="empresa-select-row">
+    <select class="finp" style="max-width:220px" onchange="relTipoCliente=this.value;renderRelatoriosCliente()">
+      ${Object.keys(TITULOS).map(t=>`<option value="${t}" ${t===relTipoCliente?'selected':''}>${TITULOS[t]}</option>`).join('')}
+    </select>
+    <button class="btn btn-gold" onclick="exportarRelatorioCliente()">⬇️ Exportar CSV</button>
+  </div>
+  <div id="rel-body">Carregando...</div>`;
+  const dados=await buscarTudoEmpresa(empresaAtivaId);
+  const itens=dados[relTipoCliente];
+  if(relTipoCliente==='certificados')itens.sort((a,b)=>(a.nome||'').localeCompare(b.nome||'')||(a.validade||'9999').localeCompare(b.validade||'9999'));
+  window._relClienteItens=itens;
+  const campos=CAMPOS[relTipoCliente];
+  const body=document.getElementById('rel-body');
+  if(!itens.length){body.innerHTML='<div class="empty-state">Nenhum dado encontrado.</div>';return;}
+  body.innerHTML=`<div style="overflow-x:auto;border:1px solid var(--p4);border-radius:var(--r12)"><table style="width:100%;border-collapse:collapse;font-size:.8rem">
+    <thead><tr style="background:rgba(212,160,23,.08)">
+      ${campos.map(f=>`<th style="padding:9px 12px;text-align:left;color:var(--ouro);font-size:.62rem;letter-spacing:1px;text-transform:uppercase">${f.lbl}</th>`).join('')}
+      <th style="padding:9px 12px;text-align:left;color:var(--ouro);font-size:.62rem;letter-spacing:1px;text-transform:uppercase">Status</th>
+    </tr></thead><tbody>
+    ${itens.map(it=>{
+      const st=calcularStatus(relTipoCliente,it);
+      return `<tr style="border-bottom:1px solid var(--p4)">
+        ${campos.map(f=>`<td style="padding:8px 12px">${f.t==='date'?fmtDate(it[f.k]):f.t==='number'?fmtBRL(it[f.k]):(it[f.k]||'—')}</td>`).join('')}
+        <td style="padding:8px 12px"><span class="badge ${STATUS_BADGE(st)}">${st}</span></td>
+      </tr>`;
+    }).join('')}
+    </tbody></table></div>`;
+}
+function exportarRelatorioCliente(){
+  const itens=window._relClienteItens||[];
+  if(!itens.length){toast('⚠️ Nada para exportar',true);return;}
+  const campos=CAMPOS[relTipoCliente];
+  let csv=campos.map(f=>f.lbl).join(';')+';Status\n';
+  itens.forEach(it=>{
+    const st=calcularStatus(relTipoCliente,it);
+    const linha=[...campos.map(f=>f.t==='date'?fmtDate(it[f.k]):(it[f.k]||'')),st];
+    csv+=linha.join(';')+'\n';
+  });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}));
+  a.download=`${relTipoCliente}-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+async function renderColecaoAdmin(c,tipo){
+  c.innerHTML=empresaSelectHtml()+`<div class="ph"><div class="ph-title">${TITULOS[tipo]}</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-ghost" onclick="abrirColarMassa('${tipo}')">📋 Colar em massa</button>${tipo==='certificados'?`<button class="btn btn-ghost" onclick="abrirModelos()">🗂️ Modelos</button><button class="btn btn-ghost" onclick="abrirTurmaCert()">🎓 Gerar Turma</button><button class="btn btn-ghost" onclick="imprimirQrCodesEmpresa()">🖨️ QR Codes</button>`:''}<button class="btn btn-gold" onclick="abrirModalItem('${tipo}')">+ Novo</button></div></div><div id="col-list">Carregando...</div>`;
+  if(tipo==='certificados')carregarModelosDisponiveis();
+  const snap=await db.collection('empresas').doc(empresaAtivaId).collection(tipo).get();
+  const itens=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>{
+    const dataKey={certificados:'validade',documentos:'validade',contratos:'fim',financeiro:'vencimento'}[tipo];
+    return (a[dataKey]||'9999').localeCompare(b[dataKey]||'9999');
+  });
+  const list=document.getElementById('col-list');
+  if(!itens.length){list.innerHTML='<div class="empty-state">Nada cadastrado ainda.</div>';return;}
+
+  if(tipo==='certificados'){renderCertificadosAgrupados(list,itens,true);return;}
+
+  const camposF=CAMPOS[tipo];
+  list.innerHTML=itens.map(it=>{
+    const principal=it[camposF[0].k]||'';
+    const sub=camposF.slice(1).filter(f=>f.k!=='status').map(f=>{
+      if(!it[f.k])return null;
+      return f.t==='date'?fmtDate(it[f.k]):(f.t==='number'?fmtBRL(it[f.k]):it[f.k]);
+    }).filter(Boolean).slice(0,3).join(' · ');
+    const st=calcularStatus(tipo,it);
+    return `<div class="card"><div class="card-row">
+      <div class="card-main"><div class="card-title">${principal}</div><div class="card-sub">${sub}</div></div>
+      <span class="badge ${STATUS_BADGE(st)}">${st}</span>
+      <button class="icon-btn" onclick='abrirModalItem("${tipo}",${JSON.stringify(it).replace(/'/g,"&apos;")})'>✏️</button>
+    </div></div>`;
+  }).join('');
+}
+
+// ── Certificados agrupados por colaborador (evita repetir a pessoa várias vezes) ──
+function agruparPorNome(itens){
+  const grupos={};
+  itens.forEach(it=>{
+    const chave=(it.nome||'—').trim()||'—';
+    if(!grupos[chave])grupos[chave]=[];
+    grupos[chave].push(it);
+  });
+  return Object.entries(grupos).map(([nome,certs])=>({nome,certs})).sort((a,b)=>a.nome.localeCompare(b.nome));
+}
+function piorStatusCert(certs){
+  if(certs.some(c=>calcularStatus('certificados',c)==='Vencido'))return'Vencido';
+  if(certs.some(c=>calcularStatus('certificados',c)==='Vencendo'))return'Vencendo';
+  return'Válido';
+}
+function renderCertificadosAgrupados(list,itens,editavel){
+  const grupos=agruparPorNome(itens);
+  list.innerHTML=grupos.map((g,i)=>{
+    const st=piorStatusCert(g.certs);
+    const linhas=g.certs.slice().sort((a,b)=>(a.validade||'9999').localeCompare(b.validade||'9999')).map(c=>{
+      const cst=calcularStatus('certificados',c);
+      const detalhe=[c.nr,c.carga,c.data?'realizado '+fmtDate(c.data):'',c.validade?'val. '+fmtDate(c.validade):''].filter(Boolean).join(' · ');
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--p4)">
+        <div style="flex:1;font-size:.8rem;color:var(--t2)">${detalhe}</div>
+        <span class="badge ${STATUS_BADGE(cst)}">${cst}</span>
+        <button class="icon-btn" title="Gerar PDF" onclick='gerarCertificadoPDF(${JSON.stringify(c).replace(/'/g,"&apos;")})'>🖨️</button>
+        ${editavel?`<button class="icon-btn" onclick='abrirModalItem("certificados",${JSON.stringify(c).replace(/'/g,"&apos;")})'>✏️</button>`:''}
+      </div>`;
+    }).join('');
+    return `<div class="card">
+      <div class="card-row" style="cursor:pointer" onclick="toggleGrupo(${i})">
+        <div class="card-main"><div class="card-title">${g.nome}</div><div class="card-sub">${g.certs.length} certificado(s)</div></div>
+        <span class="badge ${STATUS_BADGE(st)}">${st}</span>
+        <span class="icon-btn" id="seta-${i}" style="pointer-events:none">▾</span>
+      </div>
+      <div id="grupo-${i}" style="display:none">${linhas}</div>
+    </div>`;
+  }).join('');
+}
+function toggleGrupo(i){
+  const el=document.getElementById('grupo-'+i),seta=document.getElementById('seta-'+i);
+  const aberto=el.style.display!=='none';
+  el.style.display=aberto?'none':'block';
+  if(seta)seta.textContent=aberto?'▾':'▴';
+}
+let itemAtualTipo=null, itemAtualId=null;
+function abrirModalItem(tipo,item){
+  itemAtualTipo=tipo;itemAtualId=item?item.id:null;
+  document.getElementById('mi-title').textContent=(item?'Editar — ':'Novo — ')+TITULOS[tipo];
+  const wrap=document.getElementById('mi-fields');
+  const cursosDisponiveis=cursosUnicosComId();
+  wrap.innerHTML=CAMPOS[tipo].map(f=>{
+    if(tipo==='certificados'&&f.k==='nr'&&cursosDisponiveis.length){
+      return `<div class="fg"><label class="flbl">${f.lbl}</label><select class="finp" id="mi-${f.k}">
+        <option value="">Selecione o curso...</option>
+        ${cursosDisponiveis.map(c=>`<option value="${c}" ${item&&item[f.k]===c?'selected':''}>${c}</option>`).join('')}
+      </select></div>`;
+    }
+    if(f.t==='select')return `<div class="fg"><label class="flbl">${f.lbl}</label><select class="finp" id="mi-${f.k}">${f.opts.map(o=>`<option ${item&&item[f.k]===o?'selected':''}>${o}</option>`).join('')}</select></div>`;
+    return `<div class="fg"><label class="flbl">${f.lbl}</label><input class="finp" type="${f.t}" id="mi-${f.k}" value="${item&&item[f.k]!==undefined?item[f.k]:''}"></div>`;
+  }).join('');
+  document.getElementById('mi-del').classList.toggle('hidden',!item);
+  document.getElementById('modal-item').classList.add('open');
+}
+async function salvarItem(){
+  const dados={};
+  CAMPOS[itemAtualTipo].forEach(f=>{const v=document.getElementById('mi-'+f.k).value;dados[f.k]=f.t==='number'?parseFloat(v)||0:v;});
+  try{
+    const ref=db.collection('empresas').doc(empresaAtivaId).collection(itemAtualTipo);
+    if(itemAtualId){
+      if(itemAtualTipo==='certificados')dados.pdfUrl=firebase.firestore.FieldValue.delete(); // dado mudou, invalida o PDF salvo
+      await ref.doc(itemAtualId).update(dados);
+    }
+    else await ref.add(dados);
+    fecharModal('modal-item');renderConteudoAdmin();toast('✅ Salvo!');
+  }catch(e){toast('⚠️ '+e.message,true);}
+}
+async function excluirItem(){
+  if(!itemAtualId||!confirm('Excluir este item?'))return;
+  try{
+    await db.collection('empresas').doc(empresaAtivaId).collection(itemAtualTipo).doc(itemAtualId).delete();
+    fecharModal('modal-item');renderConteudoAdmin();toast('🗑 Excluído.');
+  }catch(e){toast('⚠️ '+e.message,true);}
+}
+
+// ── MODELOS DE CERTIFICADO POR NR (cola o link do Slides, atualiza a planilha sozinho) ──
+async function carregarModelosDisponiveis(){
+  if(!APPS_SCRIPT_CERT_URL||APPS_SCRIPT_CERT_URL==='COLE_AQUI')return;
+  try{
+    const resp=await fetch(APPS_SCRIPT_CERT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({acao:'listarModelos'})});
+    const data=await resp.json();
+    if(data.sucesso)modelosDisponiveis=data.modelos;
+  }catch(e){}
+}
+function cursosUnicosComId(){
+  const nomes=new Set();
+  modelosDisponiveis.forEach(m=>{if(m.fileId)nomes.add(m.curso);});
+  return Array.from(nomes).sort((a,b)=>a.localeCompare(b));
+}
+async function abrirModelos(){
+  document.getElementById('mod-nr').value='';document.getElementById('mod-link').value='';document.getElementById('mod-instrutor').value='';
+  document.getElementById('modal-modelos').classList.add('open');
+  await carregarModelosCert();
+}
+async function carregarModelosCert(){
+  const list=document.getElementById('modelos-list');
+  if(!APPS_SCRIPT_CERT_URL||APPS_SCRIPT_CERT_URL==='COLE_AQUI'){list.innerHTML='<div class="empty-state" style="padding:14px">Configure a URL do Apps Script primeiro (topo do arquivo).</div>';return;}
+  list.innerHTML='Carregando...';
+  await carregarModelosDisponiveis();
+  if(!modelosDisponiveis.length){list.innerHTML='<div class="empty-state" style="padding:14px">Nenhum modelo cadastrado ainda.</div>';return;}
+  list.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:.78rem">
+    <thead><tr><th style="text-align:left;padding:6px;color:var(--ouro);font-size:.6rem;letter-spacing:1px;text-transform:uppercase">Curso</th><th style="text-align:left;padding:6px;color:var(--ouro);font-size:.6rem;letter-spacing:1px;text-transform:uppercase">Instrutor</th><th style="text-align:left;padding:6px;color:var(--ouro);font-size:.6rem;letter-spacing:1px;text-transform:uppercase">ID do modelo</th><th></th><th></th></tr></thead>
+    <tbody>${modelosDisponiveis.map((m,i)=>`<tr style="border-top:1px solid var(--p4)">
+      <td style="padding:6px;color:var(--t2)">${m.curso}</td>
+      <td style="padding:6px"><input class="finp" style="padding:6px 8px;font-size:.76rem" id="modinst-${i}" value="${(m.instrutor||'').replace(/"/g,'&quot;')}" placeholder="genérico"></td>
+      <td style="padding:6px"><input class="finp" style="padding:6px 8px;font-size:.76rem" id="modid-${i}" value="${m.fileId||''}" placeholder="cole o ID ou link"></td>
+      <td style="padding:6px"><button class="icon-btn" title="Salvar" onclick="salvarLinhaModelo(${i})">💾</button></td>
+      <td style="padding:6px"><button class="icon-btn" title="Excluir modelo" onclick="excluirLinhaModelo(${i})">🗑</button></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+async function salvarLinhaModelo(i){
+  const m=modelosDisponiveis[i];
+  const novoInstrutor=document.getElementById('modinst-'+i).value.trim();
+  const link=document.getElementById('modid-'+i).value.trim();
+  toast('⏳ Salvando...');
+  try{
+    const resp=await fetch(APPS_SCRIPT_CERT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({
+      acao:'atualizarModelo', cursoOriginal:m.curso, instrutorOriginal:m.instrutor||'', cursoNovo:m.curso, instrutorNovo:novoInstrutor, linkModelo:link
+    })});
+    const data=await resp.json();
+    if(!data.sucesso){toast('⚠️ '+(data.erro||'Erro ao salvar'),true);return;}
+    toast('✅ Salvo!');
+    carregarModelosCert();
+  }catch(e){toast('⚠️ '+e.message,true);}
+}
+async function excluirLinhaModelo(i){
+  const m=modelosDisponiveis[i];
+  if(!confirm(`Excluir o modelo de "${m.curso}"${m.instrutor?' ('+m.instrutor+')':''}? Isso só remove o mapeamento — o arquivo do Slides continua no Drive.`))return;
+  toast('⏳ Excluindo...');
+  try{
+    const resp=await fetch(APPS_SCRIPT_CERT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({
+      acao:'excluirModelo', curso:m.curso, instrutor:m.instrutor||''
+    })});
+    const data=await resp.json();
+    if(!data.sucesso){toast('⚠️ '+(data.erro||'Erro ao excluir'),true);return;}
+    toast('🗑 Modelo removido.');
+    carregarModelosCert();
+  }catch(e){toast('⚠️ '+e.message,true);}
+}
+async function salvarModeloCert(){
+  const nr=document.getElementById('mod-nr').value.trim();
+  const link=document.getElementById('mod-link').value.trim();
+  const instrutor=document.getElementById('mod-instrutor').value;
+  if(!nr||!link){toast('⚠️ Preencha a NR e o link do modelo.',true);return;}
+  if(!APPS_SCRIPT_CERT_URL||APPS_SCRIPT_CERT_URL==='COLE_AQUI'){toast('⚠️ Configure a URL do Apps Script primeiro.',true);return;}
+  toast('⏳ Salvando modelo...');
+  try{
+    const resp=await fetch(APPS_SCRIPT_CERT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({acao:'salvarModelo',curso:nr,instrutor,linkModelo:link})});
+    const data=await resp.json();
+    if(!data.sucesso){toast('⚠️ '+(data.erro||'Erro ao salvar'),true);return;}
+    toast('✅ Modelo salvo para "'+nr+'"'+(instrutor?' ('+instrutor+')':'')+'!');
+    document.getElementById('mod-nr').value='';document.getElementById('mod-link').value='';document.getElementById('mod-instrutor').value='';
+    carregarModelosCert();
+  }catch(e){toast('⚠️ '+e.message,true);}
+}
+
+// ── GERAR TURMA (certificados em lote, para vários funcionários de empresas diferentes) ──
+let tcParticipantes=[];
+async function abrirTurmaCert(){
+  document.getElementById('tc-carga').value='';document.getElementById('tc-inicio').value='';document.getElementById('tc-fim').value='';document.getElementById('tc-art').value='';document.getElementById('tc-colar').value='';document.getElementById('tc-instrutor').value='';document.getElementById('tc-cidade').value='';
+  document.getElementById('tc-progresso').textContent='';
+  tcParticipantes=[];
+  renderTcTabela();
+  document.getElementById('modal-turma-cert').classList.add('open');
+  await carregarModelosDisponiveis();
+  const sel=document.getElementById('tc-curso');
+  sel.innerHTML='<option value="">Selecione...</option>'+cursosUnicosComId().map(c=>`<option value="${c}">${c}</option>`).join('');
+}
+function tcAddLinha(){tcParticipantes.push({nome:'',cpf:'',empresaId:'',status:'pendente'});renderTcTabela();}
+function tcImportarLista(){
+  const linhas=document.getElementById('tc-colar').value.split('\n').map(l=>l.trim()).filter(Boolean);
+  linhas.forEach(l=>{
+    const partes=l.split(';').map(p=>p.trim());
+    const nome=partes[0]||'', cpf=partes[1]||'', empresaTxt=partes[2]||'';
+    const emp=empresas.find(e=>(e.nome||'').toLowerCase()===empresaTxt.toLowerCase());
+    tcParticipantes.push({nome,cpf,empresaId:emp?emp.id:'',status:'pendente'});
+  });
+  document.getElementById('tc-colar').value='';
+  renderTcTabela();
+}
+function renderTcTabela(){
+  const cont=document.getElementById('tc-tabela');
+  if(!tcParticipantes.length){cont.innerHTML='<div class="empty-state" style="padding:16px">Nenhum participante ainda.</div>';return;}
+  cont.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:.78rem">
+    <thead><tr><th style="text-align:left;padding:5px">Nome</th><th style="text-align:left;padding:5px">CPF</th><th style="text-align:left;padding:5px">Empresa</th><th></th><th></th></tr></thead>
+    <tbody>${tcParticipantes.map((p,i)=>`<tr>
+      <td style="padding:3px"><input class="finp" style="padding:6px 8px;font-size:.78rem" value="${p.nome}" oninput="tcParticipantes[${i}].nome=this.value"></td>
+      <td style="padding:3px"><input class="finp" style="padding:6px 8px;font-size:.78rem" value="${p.cpf}" oninput="tcParticipantes[${i}].cpf=this.value"></td>
+      <td style="padding:3px"><select class="finp" style="padding:6px 8px;font-size:.78rem" onchange="tcParticipantes[${i}].empresaId=this.value">
+        <option value="">Selecione...</option>
+        ${empresas.map(e=>`<option value="${e.id}" ${e.id===p.empresaId?'selected':''}>${e.nome}</option>`).join('')}
+      </select></td>
+      <td style="padding:3px;text-align:center;width:24px">${p.status==='ok'?'✅':p.status==='erro'?'❌':''}</td>
+      <td style="padding:3px;width:30px"><button class="icon-btn" onclick="tcParticipantes.splice(${i},1);renderTcTabela()">🗑</button></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+async function tcGerarTodos(){
+  const curso=document.getElementById('tc-curso').value;
+  const instrutor=document.getElementById('tc-instrutor').value;
+  const carga=document.getElementById('tc-carga').value;
+  const cidade=document.getElementById('tc-cidade').value;
+  const dataInicio=document.getElementById('tc-inicio').value;
+  const dataFim=document.getElementById('tc-fim').value;
+  const art=document.getElementById('tc-art').value;
+  if(!curso){toast('⚠️ Selecione o curso.',true);return;}
+  if(!dataFim){toast('⚠️ Informe a data de conclusão.',true);return;}
+  const validos=tcParticipantes.filter(p=>p.nome&&p.empresaId);
+  if(!validos.length){toast('⚠️ Adicione ao menos um participante com nome e empresa selecionada.',true);return;}
+  const progresso=document.getElementById('tc-progresso');
+  let ok=0,falhas=0;
+  for(let i=0;i<tcParticipantes.length;i++){
+    const p=tcParticipantes[i];
+    if(!p.nome||!p.empresaId)continue;
+    progresso.textContent=`Gerando ${i+1} de ${tcParticipantes.length}: ${p.nome}...`;
+    try{
+      const docRef=await db.collection('empresas').doc(p.empresaId).collection('certificados').add({
+        nome:p.nome,cpf:p.cpf||'',nr:curso,instrutor:instrutor||'',art:art||'',carga:carga||'',cidade:cidade||'',dataInicio:dataInicio||'',data:dataFim,validade:''
+      });
+      const payload={acao:'gerarCertificado',nome:p.nome,cpf:p.cpf||'',curso,instrutor:instrutor||'',art:art||'',carga:carga||'',cidade:cidade||'',empresa:(empresas.find(e=>e.id===p.empresaId)||{}).nome||'',dataInicioISO:dataInicio||dataFim,dataFimISO:dataFim};
+      const resp=await fetch(APPS_SCRIPT_CERT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+      const data=await resp.json();
+      if(!data.sucesso)throw new Error(data.erro||'erro desconhecido');
+      await docRef.update({pdfUrl:data.url,numero:data.numero});
+      p.status='ok';ok++;
+    }catch(e){p.status='erro';p.erro=e.message;falhas++;}
+    renderTcTabela();
+  }
+  progresso.textContent=`Concluído: ${ok} gerado(s)${falhas?`, ${falhas} com erro`:''}.`;
+  toast(falhas?`⚠️ ${ok} ok, ${falhas} com erro`:`✅ ${ok} certificados gerados!`,!!falhas);
+  if(abaAtiva==='certificados')renderConteudoAdmin();
+}
+
+// ── IMPRIMIR TODOS OS QR CODES DE UMA EMPRESA (não depende do Drive — gera na hora) ──
+async function imprimirQrCodesEmpresa(){
+  if(!empresaAtivaId){toast('⚠️ Selecione uma empresa primeiro.',true);return;}
+  const snap=await db.collection('empresas').doc(empresaAtivaId).collection('certificados').get();
+  const vistos={};
+  snap.docs.forEach(d=>{
+    const it=d.data();
+    if(it.nome&&it.cpf&&!vistos[it.cpf])vistos[it.cpf]=it.nome;
+  });
+  const pessoas=Object.entries(vistos).map(([cpf,nome])=>({cpf,nome}));
+  if(!pessoas.length){toast('⚠️ Nenhum certificado com CPF cadastrado nessa empresa.',true);return;}
+  const empresaNome=nomeEmpresa(empresaAtivaId);
+  const w=window.open('','_blank');
+  if(!w){toast('⚠️ Permita pop-ups para gerar a folha de QR Codes.',true);return;}
+  const itensHtml=pessoas.map(p=>{
+    const cpfLimpo=p.cpf.replace(/\D/g,'');
+    const url='https://safesegtreinamentos.github.io/validador/?cpf='+cpfLimpo;
+    const qrImg='https://api.qrserver.com/v1/create-qr-code/?size=220x220&data='+encodeURIComponent(url);
+    return `<div class="qc"><img src="${qrImg}"><div class="nm">${p.nome}</div></div>`;
+  }).join('');
+  w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>QR Codes — ${empresaNome}</title>
+  <style>
+    body{font-family:sans-serif;padding:24px;color:#222}
+    h1{font-size:16px;margin-bottom:18px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px}
+    .qc{text-align:center;border:1px solid #ccc;border-radius:8px;padding:10px;page-break-inside:avoid}
+    .qc img{width:100%;max-width:160px}
+    .nm{margin-top:6px;font-size:12px;font-weight:600}
+    .no-print{text-align:center;margin-bottom:14px;color:#555}
+    @media print{.no-print{display:none}}
+  </style></head><body>
+  <div class="no-print">Pronto — use <strong>Ctrl+P</strong> para imprimir.</div>
+  <h1>QR Codes de validação — ${empresaNome}</h1>
+  <div class="grid">${itensHtml}</div>
+  </body></html>`);
+  w.document.close();
+}
+
+// ── GERAR CERTIFICADO EM PDF ──
+// Se APPS_SCRIPT_CERT_URL estiver configurada, usa o modelo oficial (Google Slides) via Apps Script.
+// Caso contrário, cai no modelo padrão gerado aqui mesmo (fallback).
+async function gerarCertificadoPDF(item){
+  if(item.pdfUrl){window.open(item.pdfUrl,'_blank');return;}
+  if(APPS_SCRIPT_CERT_URL && APPS_SCRIPT_CERT_URL!=='COLE_AQUI'){
+    await gerarCertificadoViaAppsScript(item);
+  } else {
+    gerarCertificadoModeloPadrao(item);
+  }
+}
+async function gerarCertificadoViaAppsScript(item){
+  toast('⏳ Gerando certificado no seu modelo...');
+  try{
+    const payload={
+      acao:'gerarCertificado',
+      nome:item.nome||'', cpf:item.cpf||'', curso:item.nr||'', instrutor:item.instrutor||'', art:item.art||'', carga:item.carga||'',
+      cidade:item.cidade||'', empresa:(perfil.role==='admin'?nomeEmpresa(empresaAtivaId):minhaEmpresaNome),
+      dataInicioISO:item.dataInicio||item.data||'', dataFimISO:item.data||''
+    };
+    const resp=await fetch(APPS_SCRIPT_CERT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+    const data=await resp.json();
+    if(!data.sucesso){toast('⚠️ '+(data.erro||'Erro ao gerar certificado'),true);return;}
+    // salva o link e o número oficial (vindo da planilha) no próprio certificado
+    if(item.id&&empresaAtivaId){
+      await db.collection('empresas').doc(empresaAtivaId).collection('certificados').doc(item.id).update({pdfUrl:data.url,numero:data.numero});
+    }
+    toast('✅ Certificado nº '+data.numero+' gerado!');
+    window.open(data.url,'_blank');
+    if(perfil.role==='admin')renderConteudoAdmin();
+    else montarTabsCliente();
+  }catch(e){toast('⚠️ Não consegui falar com o Apps Script: '+e.message,true);}
+}
+function gerarCertificadoModeloPadrao(item){
+  const empresaNome=perfil&&perfil.role==='admin'?nomeEmpresa(empresaAtivaId):minhaEmpresaNome;
+  const num=item.numero||('SS-'+new Date().getFullYear()+'-'+(item.id||Date.now().toString(36)).toString().slice(-6).toUpperCase());
+  const w=window.open('','_blank');
+  if(!w){toast('⚠️ Permita pop-ups para gerar o certificado.',true);return;}
+  w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Certificado — ${item.nome||''}</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+@page{size:A4 landscape;margin:0;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Barlow',sans-serif;color:#2b2410;background:#fff;}
+.cert{width:297mm;height:210mm;padding:16mm;position:relative;background:#fdfcf7;border:10px solid #D4A017;}
+.cert::before{content:'';position:absolute;inset:14px;border:1.5px solid #A07810;pointer-events:none;}
+.brand{text-align:center;margin-top:8mm}
+.brand-name{font-family:'Bebas Neue',cursive;font-size:34px;letter-spacing:9px;color:#8A6608}
+.brand-tag{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:#7A6A4A;margin-top:2px}
+.titulo{text-align:center;font-family:'Bebas Neue',cursive;font-size:27px;letter-spacing:4px;margin-top:14mm;color:#3a2a1a}
+.corpo{text-align:center;font-size:15px;line-height:2;margin:10mm auto 0;max-width:220mm;color:#3a2a1a}
+.nome{font-family:'Bebas Neue',cursive;font-size:30px;letter-spacing:1px;color:#8A6608;display:block;margin:3mm 0}
+.rodape{position:absolute;bottom:18mm;left:20mm;right:20mm;display:flex;justify-content:space-between;font-size:11px;color:#5a4a2a}
+.assinatura{text-align:center}
+.linha{width:62mm;border-top:1px solid #7A6A4A;margin:0 auto 4px}
+.numero{position:absolute;top:10mm;right:20mm;font-size:10px;color:#7A6A4A;letter-spacing:1px}
+@media print{.no-print{display:none}}
+.no-print{text-align:center;padding:14px;font-family:'Barlow',sans-serif;color:#555}
+</style></head>
+<body>
+<div class="no-print">Modelo padrão (configure a URL do Apps Script pra usar seu modelo oficial). Use <strong>Ctrl+P</strong> e escolha "Salvar como PDF".</div>
+<div class="cert">
+  <div class="numero">Nº ${num}</div>
+  <div class="brand"><div class="brand-name">SAFESEG</div><div class="brand-tag">Segurança do Trabalho</div></div>
+  <div class="titulo">CERTIFICADO</div>
+  <div class="corpo">
+    Certificamos que <span class="nome">${item.nome||''}</span>${item.cpf?` (CPF ${item.cpf})`:''},
+    da empresa <strong>${empresaNome||''}</strong>, concluiu com aproveitamento o treinamento de
+    <strong>${item.nr||''}</strong>${item.carga?`, com carga horária de ${item.carga}`:''},
+    realizado em ${fmtDate(item.data)}${item.validade?`, com validade até ${fmtDate(item.validade)}`:''}.
+  </div>
+  <div class="rodape">
+    <div class="assinatura"><div class="linha"></div>Deverson Rodrigo F. Pomerenk<br>CREA-PR 182021/D · MTE 0027116/PR</div>
+    <div class="assinatura"><div class="linha"></div>SafeSeg Segurança do Trabalho<br>CNPJ 52.112.925/0001-28</div>
+  </div>
+</div>
+</body></html>`);
+  w.document.close();
+}
+
+// ── COLAR EM MASSA ──
+let colarTipoAtual=null;
+function parseDataBR(s){
+  if(!s)return'';
+  s=s.trim();
+  let m=s.match(/^(\d{2})[\/\-](\d{2})[\/\-](\d{4})$/);
+  if(m)return`${m[3]}-${m[2]}-${m[1]}`;
+  m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(m)return s;
+  return'';
+}
+function parseNumBR(s){
+  if(!s)return 0;
+  s=s.toString().replace(/[R$\s]/g,'').replace(/\./g,'').replace(',','.');
+  const n=parseFloat(s);
+  return isNaN(n)?0:n;
+}
+function matchOpcao(valor,opts){
+  if(!valor)return opts[0];
+  const norm=v=>v.toString().trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const achado=opts.find(o=>norm(o)===norm(valor));
+  return achado||valor.trim();
+}
+function abrirColarMassa(tipo){
+  colarTipoAtual=tipo;
+  document.getElementById('cm-title').textContent='Colar em massa — '+TITULOS[tipo];
+  document.getElementById('cm-instrucoes').innerHTML='Ordem das colunas: <strong>'+CAMPOS[tipo].map(f=>f.lbl).join(' | ')+'</strong>';
+  document.getElementById('cm-texto').value='';
+  document.getElementById('cm-preview').textContent='';
+  document.getElementById('modal-colar').classList.add('open');
+  setTimeout(()=>document.getElementById('cm-texto').focus(),100);
+}
+function splitLinha(linha){
+  if(linha.includes('\t'))return linha.split('\t');
+  if(linha.includes(';'))return linha.split(';');
+  return linha.split(',');
+}
+async function importarColagem(){
+  const tipo=colarTipoAtual;
+  const campos=CAMPOS[tipo];
+  let linhas=document.getElementById('cm-texto').value.split('\n').map(l=>l.trim()).filter(Boolean);
+  if(!linhas.length){toast('⚠️ Cole os dados primeiro.',true);return;}
+  // detecta e remove cabeçalho: se a primeira linha não bate com o formato esperado nas colunas de data/número
+  const primeiraCols=splitLinha(linhas[0]);
+  const pareceCabecalho=campos.some((f,i)=>{
+    const v=(primeiraCols[i]||'').trim();
+    if(!v)return false;
+    if(f.t==='date')return !parseDataBR(v);
+    if(f.t==='number')return isNaN(parseFloat(v.replace(',','.')));
+    return false;
+  });
+  if(pareceCabecalho)linhas=linhas.slice(1);
+  if(!linhas.length){toast('⚠️ Nenhuma linha de dados encontrada.',true);return;}
+
+  const itens=linhas.map(linha=>{
+    const cols=splitLinha(linha);
+    const obj={};
+    campos.forEach((f,i)=>{
+      const bruto=(cols[i]||'').trim();
+      if(f.t==='date')obj[f.k]=parseDataBR(bruto);
+      else if(f.t==='number')obj[f.k]=parseNumBR(bruto);
+      else if(f.t==='select')obj[f.k]=matchOpcao(bruto,f.opts);
+      else obj[f.k]=bruto;
+    });
+    return obj;
+  });
+
+  document.getElementById('cm-preview').textContent=`${itens.length} item(ns) prontos para importar.`;
+  try{
+    const col=db.collection('empresas').doc(empresaAtivaId).collection(tipo);
+    let batch=db.batch(),contador=0,totalOk=0;
+    for(const it of itens){
+      batch.set(col.doc(),it);
+      contador++;totalOk++;
+      if(contador===450){await batch.commit();batch=db.batch();contador=0;}
+    }
+    if(contador>0)await batch.commit();
+    fecharModal('modal-colar');renderConteudoAdmin();
+    toast(`✅ ${totalOk} item(ns) importado(s)!`);
+  }catch(e){toast('⚠️ '+e.message,true);}
+}
+
+// ── CHECKLIST (admin cria pergunta, revisa resposta) ──
+async function renderChecklistAdmin(c){
+  c.innerHTML=empresaSelectHtml()+`<div class="ph"><div class="ph-title">Checklist</div><button class="btn btn-gold" onclick="novaPergunta()">+ Nova Pergunta</button></div><div id="chk-list">Carregando...</div>`;
+  const snap=await db.collection('empresas').doc(empresaAtivaId).collection('checklist').get();
+  const itens=snap.docs.map(d=>({id:d.id,...d.data()}));
+  const list=document.getElementById('chk-list');
+  if(!itens.length){list.innerHTML='<div class="empty-state">Nenhuma pergunta cadastrada ainda.</div>';return;}
+  list.innerHTML=itens.map(it=>`<div class="checklist-item">
+    <div class="chk-pergunta">${it.pergunta}</div>
+    <div style="font-size:.82rem;color:${it.resposta?'var(--t1)':'var(--t3)'};font-style:${it.resposta?'normal':'italic'};margin-bottom:8px">${it.resposta||'Ainda sem resposta do cliente.'}</div>
+    <div class="chk-foot">
+      <span class="badge ${it.status==='revisado'?'b-ok':it.status==='respondido'?'b-warn':'b-neutro'}">${{pendente:'Pendente',respondido:'Respondido',revisado:'Revisado'}[it.status]||'Pendente'}</span>
+      <div style="display:flex;gap:6px">
+        ${it.status==='respondido'?`<button class="btn btn-ghost" style="padding:6px 12px;font-size:.72rem" onclick="marcarRevisado('${it.id}')">✓ Marcar revisado</button>`:''}
+        <button class="icon-btn" onclick="excluirPergunta('${it.id}')">🗑</button>
+      </div>
+    </div>
+  </div>`).join('');
+}
+async function novaPergunta(){
+  const pergunta=prompt('Pergunta / pendência para o cliente responder:');
+  if(!pergunta)return;
+  try{
+    await db.collection('empresas').doc(empresaAtivaId).collection('checklist').add({pergunta,resposta:'',status:'pendente'});
+    renderChecklistAdmin(document.getElementById('content'));toast('✅ Pergunta criada!');
+  }catch(e){toast('⚠️ '+e.message,true);}
+}
+async function marcarRevisado(id){
+  await db.collection('empresas').doc(empresaAtivaId).collection('checklist').doc(id).update({status:'revisado'});
+  renderChecklistAdmin(document.getElementById('content'));toast('✅ Marcado como revisado.');
+}
+async function excluirPergunta(id){
+  if(!confirm('Excluir esta pergunta?'))return;
+  await db.collection('empresas').doc(empresaAtivaId).collection('checklist').doc(id).delete();
+  renderChecklistAdmin(document.getElementById('content'));toast('🗑 Excluído.');
+}
+
+// ══════════════════════════════════════════
+// CLIENTE
+// ══════════════════════════════════════════
+function montarTabsCliente(){
+  const tabs=[['dashboard','📊 Painel'],['certificados','🏅 Certificados'],['documentos','📁 Documentos'],['contratos','📃 Contratos'],['financeiro','💰 Financeiro'],['relatorios','📥 Relatórios'],['checklist','📋 Checklist']];
+  document.getElementById('tabs').innerHTML=tabs.map(([id,lbl])=>`<button class="tab${id===abaAtiva?' active':''}" onclick="abaAtiva='${id}';montarTabsCliente()">${lbl}</button>`).join('');
+  if(abaAtiva==='dashboard')renderDashboardCliente();
+  else if(abaAtiva==='checklist')renderChecklistCliente();
+  else if(abaAtiva==='relatorios')renderRelatoriosCliente();
+  else renderColecaoCliente(abaAtiva);
+}
+async function renderColecaoCliente(tipo){
+  const c=document.getElementById('content');
+  c.innerHTML=`<div class="ph"><div class="ph-title">${TITULOS[tipo]}</div></div><div id="col-list">Carregando...</div>`;
+  const snap=await db.collection('empresas').doc(empresaAtivaId).collection(tipo).get();
+  const itens=snap.docs.map(d=>({id:d.id,...d.data()}));
+  const list=document.getElementById('col-list');
+  if(!itens.length){list.innerHTML='<div class="empty-state">Nada por aqui ainda.</div>';return;}
+
+  if(tipo==='certificados'){renderCertificadosAgrupados(list,itens,false);return;}
+
+  const camposF=CAMPOS[tipo];
+  list.innerHTML=itens.map(it=>{
+    const principal=it[camposF[0].k]||'';
+    const sub=camposF.slice(1).filter(f=>f.k!=='status').map(f=>{
+      if(!it[f.k])return null;
+      return f.t==='date'?fmtDate(it[f.k]):(f.t==='number'?fmtBRL(it[f.k]):it[f.k]);
+    }).filter(Boolean).slice(0,3).join(' · ');
+    const st=calcularStatus(tipo,it);
+    return `<div class="card"><div class="card-row"><div class="card-main"><div class="card-title">${principal}</div><div class="card-sub">${sub}</div></div><span class="badge ${STATUS_BADGE(st)}">${st}</span></div></div>`;
+  }).join('');
+}
+async function renderChecklistCliente(){
+  const c=document.getElementById('content');
+  c.innerHTML=`<div class="ph"><div class="ph-title">Checklist</div></div><div id="chk-list">Carregando...</div>`;
+  const snap=await db.collection('empresas').doc(empresaAtivaId).collection('checklist').get();
+  const itens=snap.docs.map(d=>({id:d.id,...d.data()}));
+  const list=document.getElementById('chk-list');
+  if(!itens.length){list.innerHTML='<div class="empty-state">Nenhuma pendência no momento.</div>';return;}
+  list.innerHTML=itens.map(it=>`<div class="checklist-item">
+    <div class="chk-pergunta">${it.pergunta}</div>
+    <textarea class="chk-textarea" id="resp-${it.id}" placeholder="Digite sua resposta...">${it.resposta||''}</textarea>
+    <div class="chk-foot">
+      <span class="badge ${it.status==='revisado'?'b-ok':it.status==='respondido'?'b-warn':'b-neutro'}">${{pendente:'Pendente',respondido:'Respondido',revisado:'Revisado'}[it.status]||'Pendente'}</span>
+      <button class="btn btn-gold" style="padding:7px 16px;font-size:.76rem" onclick="responderChecklist('${it.id}')">Salvar resposta</button>
+    </div>
+  </div>`).join('');
+}
+async function responderChecklist(id){
+  const resposta=document.getElementById('resp-'+id).value.trim();
+  if(!resposta){toast('⚠️ Escreva uma resposta.',true);return;}
+  try{
+    await db.collection('empresas').doc(empresaAtivaId).collection('checklist').doc(id).update({resposta,status:'respondido',respondidoEm:new Date().toISOString()});
+    toast('✅ Resposta enviada!');renderChecklistCliente();
+  }catch(e){toast('⚠️ '+e.message,true);}
+}
+
+document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');}));
+</script>
+</body>
+</html>
