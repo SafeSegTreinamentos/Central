@@ -810,7 +810,6 @@ function buildFrente(turma, dia, diaIndex, totalDias){
       <thead><tr><th>Nº</th><th>Nome</th><th>CPF</th><th>Assinatura</th></tr></thead>
       <tbody>${rows.join('')}</tbody>
     </table>
-    <div class="folha-footer"><span>SafeSeg Treinamentos — Lista de Frequência</span><span>Turma ${turma.codigo}${totalDias>1 ? ` · Folha ${diaIndex+1}/${totalDias}` : ''} (frente)</span></div>
   </div>`;
 }
 function buildVerso(turma, diaIndex, totalDias){
@@ -827,7 +826,6 @@ function buildVerso(turma, diaIndex, totalDias){
     <div class="verso-instrutor" style="justify-content:center;">
       <div class="sig-line">Assinatura do Instrutor<br>${turma.instrutor}</div>
     </div>
-    <div class="folha-footer"><span>SafeSeg Treinamentos — Conteúdo Programático</span><span>Turma ${turma.codigo}${totalDias>1 ? ` · Folha ${diaIndex+1}/${totalDias}` : ''} (verso)</span></div>
   </div>`;
 }
 function renderPrintDoc(turma){
