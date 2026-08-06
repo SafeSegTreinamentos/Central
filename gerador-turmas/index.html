@@ -103,8 +103,8 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
 .verso-box{border:1px solid #111;margin-top:10px;}
 .verso-box .vb-title{background:#111;color:var(--doc-accent);font-weight:800;font-size:11px;letter-spacing:1px;padding:5px 8px;}
 .verso-box .vb-body{padding:8px 10px;font-size:10.5px;line-height:1.6;white-space:pre-wrap;}
-.verso-obs{border:1px solid #111;margin-top:10px;min-height:70px;}
-.verso-instrutor{margin-top:26px;display:flex;justify-content:space-between;font-size:10px;}
+.verso-obs{border:1px solid #111;margin-top:10px;min-height:200px;}
+.verso-instrutor{margin-top:100px;display:flex;justify-content:center;font-size:10px;}
 .sig-line{border-top:1px solid #111;width:45%;text-align:center;padding-top:4px;}
 .folha-footer{position:absolute;bottom:8mm;left:14mm;right:14mm;font-size:8px;color:#666;display:flex;justify-content:space-between;border-top:1px solid #ccc;padding-top:3px;}
 
@@ -773,7 +773,7 @@ function logoHtml(){
   if(logo){
     return `<div class="doc-logo"><img src="${logo}" alt="Logo"></div>`;
   }
-  return `<div class="doc-logo"><div class="st">S T</div><div class="name">SafeSeg</div></div>`;
+  return ''; // sem logo customizada: mostra só o nome/tag da marca abaixo, sem selo circular
 }
 function buildFrente(turma, dia, diaIndex, totalDias){
   const rows = [];
@@ -824,9 +824,8 @@ function buildVerso(turma, diaIndex, totalDias){
     </div>
     <div class="doc-title" style="margin-top:12px;">OBSERVAÇÕES</div>
     <div class="verso-obs" style="padding:8px 10px;font-size:10.5px;white-space:pre-wrap;">${turma.obs||''}</div>
-    <div class="verso-instrutor">
+    <div class="verso-instrutor" style="justify-content:center;">
       <div class="sig-line">Assinatura do Instrutor<br>${turma.instrutor}</div>
-      <div class="sig-line">Assinatura do Responsável / Empresa</div>
     </div>
     <div class="folha-footer"><span>SafeSeg Treinamentos — Conteúdo Programático</span><span>Turma ${turma.codigo}${totalDias>1 ? ` · Folha ${diaIndex+1}/${totalDias}` : ''} (verso)</span></div>
   </div>`;
