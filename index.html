@@ -81,14 +81,12 @@ body{font-family:'Barlow',sans-serif;background:var(--p0);color:var(--t1);min-he
 .b-beta{background:rgba(255,183,77,.14);color:#ffb74d;border:1px solid rgba(255,183,77,.22);}
 .b-local{background:var(--p4);color:var(--t3);border:1px solid var(--p5);}
 .b-plan{background:rgba(239,83,80,.1);color:#ef9a9a;border:1px solid rgba(239,83,80,.18);}
-.b-lock{background:rgba(212,160,23,.1);color:var(--oc);border:1px solid rgba(212,160,23,.2);}
 .card-acts{display:flex;gap:6px;align-items:center;}
 .icon-btn{width:28px;height:28px;border-radius:7px;border:1px solid var(--p4);background:var(--p3);color:var(--t3);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;transition:all .15s;flex-shrink:0;}
 .icon-btn:hover{border-color:rgba(212,160,23,.3);color:var(--oc);}
 .open-btn{padding:8px 16px;background:var(--gg);border:none;border-radius:var(--r8);color:var(--p0);font-family:'Barlow',sans-serif;font-size:.74rem;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:5px;}
 .open-btn:hover{opacity:.85;}
 .open-btn.disabled{background:var(--p4);color:var(--t3);cursor:not-allowed;pointer-events:none;}
-.open-btn.locked{background:var(--p4);color:var(--oc);border:1px solid rgba(212,160,23,.25);cursor:pointer;}
 .card-hidden{opacity:.4;}
 
 .add-card{border:1px dashed var(--p5);background:transparent;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;cursor:pointer;min-height:150px;color:var(--t3);transition:all .18s;}
@@ -153,7 +151,6 @@ select.finp{cursor:pointer;}
   <button class="fpill active" data-f="todos" onclick="setFiltro(this,'todos')">Todos</button>
   <button class="fpill" data-f="favoritos" onclick="setFiltro(this,'favoritos')">⭐ Favoritos</button>
   <button class="fpill" data-f="ativo" onclick="setFiltro(this,'ativo')">🟢 Ativos</button>
-  <button class="btn btn-ghost" onclick="abrirModalSenha(senhaHash?'change':'setup')">🔑 Senha</button>
   <button class="btn btn-ghost" onclick="abrirGerenciar()">⚙️ Gerenciar</button>
   <button class="btn btn-gold" onclick="abrirModalSistema()">+ Novo Sistema</button>
 </div>
@@ -192,7 +189,6 @@ select.finp{cursor:pointer;}
       </div>
     </div>
     <div class="fg"><label class="flbl">Ícone (emoji)</label><input class="finp" id="ms-icon" placeholder="📋" maxlength="4"></div>
-    <div class="chk-row"><input type="checkbox" id="ms-protegido"><label for="ms-protegido">🔒 Pedir senha para abrir este sistema</label></div>
     <input type="hidden" id="ms-id">
     <div class="modal-footer">
       <button class="btn btn-danger" id="ms-del" style="display:none" onclick="excluirSistema()">🗑 Excluir</button>
@@ -214,24 +210,6 @@ select.finp{cursor:pointer;}
   </div>
 </div>
 
-<!-- MODAL SENHA (definir / trocar / desbloquear) -->
-<div class="modal-overlay" id="modal-senha">
-  <div class="modal">
-    <div class="modal-title" id="sn-title">🔑 Definir Senha</div>
-    <div style="font-size:.76rem;color:var(--t3);margin-bottom:14px;line-height:1.5" id="sn-desc">Essa senha protege os sistemas marcados como "🔒 Pedir senha". Ela fica só neste navegador.</div>
-    <div class="fg" id="sn-atual-wrap" style="display:none"><label class="flbl">Senha atual</label><input class="finp" type="password" id="sn-atual" autocomplete="off"></div>
-    <div class="fg" id="sn-nova-wrap"><label class="flbl" id="sn-nova-lbl">Nova senha</label><input class="finp" type="password" id="sn-nova" autocomplete="off"></div>
-    <div class="fg" id="sn-conf-wrap"><label class="flbl">Confirmar senha</label><input class="finp" type="password" id="sn-conf" autocomplete="off"></div>
-    <div class="modal-footer">
-      <button class="btn btn-danger" id="sn-remover" style="display:none" onclick="removerSenha()">🗑 Remover senha</button>
-      <div class="modal-footer-right" style="margin-left:auto">
-        <button class="btn btn-ghost" onclick="fecharModal('modal-senha')">Cancelar</button>
-        <button class="btn btn-gold" id="sn-confirmar" onclick="confirmarSenha()">Confirmar</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <div class="toast" id="toast"></div>
 
 <script>
@@ -239,13 +217,13 @@ select.finp{cursor:pointer;}
 // CONFIGURAÇÃO PADRÃO — edite as URLs abaixo ou use "+ Novo Sistema" / "⚙️ Gerenciar" na tela
 // ══════════════════════════════════════════
 const DEFAULT_MODULOS = [
-  {id:'sistema-comercial',nome:'Sistema Comercial',desc:'Dashboard completo: portfólio, propostas, pipeline, scripts de vendas, empresas, turmas, agenda, certificados, documentos, contratos, financeiro e relatórios.',icon:'⚡',cat:'comercial',status:'ativo',url:'https://safesegtreinamentos.github.io/sistema-comercial/'},
-  {id:'crm',nome:'CRM SafeSeg',desc:'Kanban de leads, Copiloto de IA para prospecção, lead scoring e sync com Google Sheets.',icon:'🔄',cat:'comercial',status:'local',url:'',protegido:true},
+  {id:'sistema-comercial',nome:'Sistema Comercial',desc:'Dashboard completo: portfólio, propostas, pipeline, scripts de vendas, empresas, turmas, agenda, certificados, documentos, contratos, financeiro e relatórios. Ainda local — migração pro Portal planejada.',icon:'⚡',cat:'comercial',status:'ativo',url:'https://safesegtreinamentos.github.io/sistema-comercial/'},
+  {id:'crm',nome:'CRM SafeSeg',desc:'Kanban de leads, Copiloto de IA para prospecção, lead scoring e sync com Google Sheets. Ainda local — migração pro Portal planejada.',icon:'🔄',cat:'comercial',status:'local',url:''},
   {id:'portal',nome:'Portal SafeSeg',desc:'Sistema de gestão com login real — empresas, certificados, documentos, contratos, financeiro e checklist. Cliente vê só a própria empresa.',icon:'🛡️',cat:'gestao',status:'ativo',url:'https://safesegtreinamentos.github.io/Central/portal/'},
   {id:'gerador-turmas',nome:'Gerador de Turmas',desc:'Cria turmas de treinamento e gera listas de presença em PDF automaticamente.',icon:'🎓',cat:'operacional',status:'ativo',url:'https://safesegtreinamentos.github.io/safeseg-gerador-turmas.html'},
   {id:'dossie-tecnico',nome:'Dossiê Técnico',desc:'Checklist organizado por turma em 9 blocos: identificação, pedagógica, instrutor, alunos, avaliação, prática, certificação, encerramento e organização final.',icon:'📁',cat:'operacional',status:'ativo',url:''},
-  {id:'safeseg-guard',nome:'SafeSeg Guard',desc:'Controle de validade de treinamentos por colaborador, com alerta consolidado por e-mail e travamento de status vencido.',icon:'🛡️',cat:'gestao',status:'planejado',url:'',protegido:true},
-  {id:'epi',nome:'Gestão de EPI',desc:'Controle de estoque de EPIs, solicitação dos funcionários, alerta de estoque mínimo e ficha NR-06.',icon:'🧤',cat:'gestao',status:'planejado',url:'',protegido:true},
+  {id:'safeseg-guard',nome:'SafeSeg Guard',desc:'Controle de validade de treinamentos por colaborador — hoje já coberto pelo Portal (Dashboard + status Pendente).',icon:'🛡️',cat:'gestao',status:'ativo',url:'https://safesegtreinamentos.github.io/Central/portal/'},
+  {id:'epi',nome:'Gestão de EPI',desc:'Controle de estoque de EPIs, solicitação dos funcionários, alerta de estoque mínimo e ficha NR-06.',icon:'🧤',cat:'gestao',status:'planejado',url:''},
   {id:'cipa',nome:'Eleição CIPA',desc:'Plataforma digital de eleição da CIPA conforme NR-05, com totem biométrico, urna eletrônica e relatórios de apuração.',icon:'🗳️',cat:'gestao',status:'beta',url:''},
   {id:'certguard',nome:'Validador de Certificados',desc:'Consulta pública por CPF (ou QR code do certificado) mostrando todos os treinamentos da pessoa.',icon:'✅',cat:'documentos',status:'ativo',url:'https://safesegtreinamentos.github.io/Central/validador/'},
   {id:'book-provas',nome:'Book de Provas',desc:'Repositório offline com provas de todas as NRs, pronto para aplicação em campo.',icon:'📝',cat:'documentos',status:'ativo',url:''},
@@ -264,19 +242,13 @@ const CATS = {
 const STATUS_LBL={ativo:{cls:'b-ativo',lbl:'Ativo'},beta:{cls:'b-beta',lbl:'Beta'},local:{cls:'b-local',lbl:'Local'},planejado:{cls:'b-plan',lbl:'Planejado'}};
 
 const SK='safeseg_hub_v1';
-let overrides={}, custom=[], filtro='todos', senhaHash=null, pendingUrl=null;
-const unlockedSession=()=>sessionStorage.getItem('safeseg_hub_unlocked')==='1';
-
-async function sha256(txt){
-  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(txt));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
+let overrides={}, custom=[], filtro='todos';
 
 function carregar(){
-  try{const r=localStorage.getItem(SK);if(r){const d=JSON.parse(r);overrides=d.overrides||{};custom=d.custom||[];senhaHash=d.senhaHash||null;}}catch(e){}
+  try{const r=localStorage.getItem(SK);if(r){const d=JSON.parse(r);overrides=d.overrides||{};custom=d.custom||[];}}catch(e){}
 }
 function salvar(){
-  try{localStorage.setItem(SK,JSON.stringify({overrides,custom,senhaHash}));}catch(e){toast('⚠️ Erro ao salvar',true);}
+  try{localStorage.setItem(SK,JSON.stringify({overrides,custom}));}catch(e){toast('⚠️ Erro ao salvar',true);}
 }
 function toast(msg,err){const t=document.getElementById('toast');t.style.background=err?'#c62828':'linear-gradient(135deg,#A07810,#F5C842)';t.style.color=err?'#fff':'#0A0A0A';t.textContent=msg;t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(()=>{t.style.opacity='0';},2200);}
 
@@ -318,11 +290,7 @@ function render(){
 function cardHtml(m,cor){
   const S=STATUS_LBL[m.status]||STATUS_LBL.local;
   const temUrl=m.url&&m.url.trim().length>3;
-  const trancado=m.protegido&&senhaHash&&!unlockedSession();
-  let openBtn;
-  if(!temUrl)openBtn=`<button class="open-btn disabled" title="Sem link cadastrado ainda">Sem link</button>`;
-  else if(trancado)openBtn=`<button class="open-btn locked" onclick="tentarAbrir('${m.id}')">🔒 Abrir</button>`;
-  else openBtn=`<a class="open-btn" href="${m.url}" target="_blank" rel="noopener">Abrir ↗</a>`;
+  const openBtn=temUrl?`<a class="open-btn" href="${m.url}" target="_blank" rel="noopener">Abrir ↗</a>`:`<button class="open-btn disabled" title="Sem link cadastrado ainda">Sem link</button>`;
   return `<div class="card">
     <div class="card-accent" style="background:${cor}"></div>
     <div class="card-top">
@@ -332,18 +300,13 @@ function cardHtml(m,cor){
     <div><div class="card-name">${m.nome}</div></div>
     <div class="card-desc">${m.desc||''}</div>
     <div class="card-bot">
-      <span class="badge ${trancado?'b-lock':S.cls}">${trancado?'🔒 Restrito':S.lbl}</span>
+      <span class="badge ${S.cls}">${S.lbl}</span>
       <div class="card-acts">
         <button class="icon-btn" onclick="editarSistema('${m.id}')" title="Editar">✏️</button>
         ${openBtn}
       </div>
     </div>
   </div>`;
-}
-function tentarAbrir(id){
-  const m=todosModulos().find(x=>x.id===id);if(!m)return;
-  pendingUrl=m.url;
-  abrirModalSenha('unlock');
 }
 
 function toggleFav(id){
@@ -359,7 +322,6 @@ function abrirModalSistema(){
   document.getElementById('ms-id').value='';
   document.getElementById('ms-nome').value='';document.getElementById('ms-desc').value='';document.getElementById('ms-url').value='';document.getElementById('ms-icon').value='📌';
   document.getElementById('ms-cat').value='comercial';document.getElementById('ms-status').value='ativo';
-  document.getElementById('ms-protegido').checked=false;
   document.getElementById('ms-del').style.display='none';
   document.getElementById('modal-sistema').classList.add('open');
   setTimeout(()=>document.getElementById('ms-nome').focus(),100);
@@ -374,7 +336,6 @@ function editarSistema(id){
   document.getElementById('ms-icon').value=m.icon||'📌';
   document.getElementById('ms-cat').value=m.cat||'comercial';
   document.getElementById('ms-status').value=m.status||'ativo';
-  document.getElementById('ms-protegido').checked=!!m.protegido;
   document.getElementById('ms-del').style.display=custom.find(c=>c.id===id)?'inline-flex':'none';
   document.getElementById('modal-sistema').classList.add('open');
 }
@@ -382,7 +343,7 @@ function salvarSistema(){
   const id=document.getElementById('ms-id').value;
   const nome=document.getElementById('ms-nome').value.trim();
   if(!nome){toast('⚠️ Informe o nome!',true);return;}
-  const dados={nome,desc:document.getElementById('ms-desc').value.trim(),url:document.getElementById('ms-url').value.trim(),icon:document.getElementById('ms-icon').value.trim()||'📌',cat:document.getElementById('ms-cat').value,status:document.getElementById('ms-status').value,protegido:document.getElementById('ms-protegido').checked};
+  const dados={nome,desc:document.getElementById('ms-desc').value.trim(),url:document.getElementById('ms-url').value.trim(),icon:document.getElementById('ms-icon').value.trim()||'📌',cat:document.getElementById('ms-cat').value,status:document.getElementById('ms-status').value};
   if(id){
     const isCustom=custom.find(c=>c.id===id);
     if(isCustom)Object.assign(isCustom,dados);
@@ -419,58 +380,6 @@ function toggleOculto(id,oculto){
   if(isCustom)isCustom.oculto=oculto;
   else{overrides[id]=overrides[id]||{};overrides[id].oculto=oculto;}
   salvar();
-}
-
-// ── SENHA ──
-let modoSenha='setup';
-function abrirModalSenha(modo){
-  modoSenha=modo;
-  document.getElementById('sn-atual').value='';document.getElementById('sn-nova').value='';document.getElementById('sn-conf').value='';
-  const t=document.getElementById('sn-title'),d=document.getElementById('sn-desc');
-  const atualWrap=document.getElementById('sn-atual-wrap'),novaWrap=document.getElementById('sn-nova-wrap'),confWrap=document.getElementById('sn-conf-wrap');
-  const rem=document.getElementById('sn-remover'),conf=document.getElementById('sn-confirmar'),novaLbl=document.getElementById('sn-nova-lbl');
-  if(modo==='setup'){
-    t.textContent='🔑 Definir Senha';d.textContent='Essa senha protege os sistemas marcados como "🔒 Pedir senha". Ela fica salva só neste navegador.';
-    atualWrap.style.display='none';novaWrap.style.display='block';confWrap.style.display='block';rem.style.display='none';conf.textContent='Salvar senha';
-  } else if(modo==='change'){
-    t.textContent='🔑 Trocar Senha';d.textContent='Informe a senha atual e a nova senha.';
-    atualWrap.style.display='block';novaWrap.style.display='block';confWrap.style.display='block';rem.style.display='inline-flex';conf.textContent='Salvar nova senha';
-  } else {
-    t.textContent='🔒 Área Restrita';d.textContent='Este sistema pede senha para abrir.';
-    atualWrap.style.display='none';novaWrap.style.display='block';confWrap.style.display='none';novaLbl.textContent='Senha';rem.style.display='none';conf.textContent='Entrar';
-  }
-  if(modo!=='unlock')novaLbl.textContent='Nova senha';
-  document.getElementById('modal-senha').classList.add('open');
-  setTimeout(()=>{const f=modo==='change'?'sn-atual':'sn-nova';document.getElementById(f).focus();},100);
-}
-async function confirmarSenha(){
-  if(modoSenha==='setup'){
-    const nova=document.getElementById('sn-nova').value,conf=document.getElementById('sn-conf').value;
-    if(!nova||nova.length<4){toast('⚠️ Use pelo menos 4 caracteres',true);return;}
-    if(nova!==conf){toast('⚠️ As senhas não coincidem',true);return;}
-    senhaHash=await sha256(nova);salvar();fecharModal('modal-senha');toast('✅ Senha definida!');render();
-  } else if(modoSenha==='change'){
-    const atual=document.getElementById('sn-atual').value,nova=document.getElementById('sn-nova').value,conf=document.getElementById('sn-conf').value;
-    const atualHash=await sha256(atual);
-    if(atualHash!==senhaHash){toast('⚠️ Senha atual incorreta',true);return;}
-    if(!nova||nova.length<4){toast('⚠️ Use pelo menos 4 caracteres',true);return;}
-    if(nova!==conf){toast('⚠️ As senhas não coincidem',true);return;}
-    senhaHash=await sha256(nova);salvar();fecharModal('modal-senha');toast('✅ Senha atualizada!');render();
-  } else {
-    const tentativa=document.getElementById('sn-nova').value;
-    const h=await sha256(tentativa);
-    if(h!==senhaHash){toast('⚠️ Senha incorreta',true);return;}
-    sessionStorage.setItem('safeseg_hub_unlocked','1');
-    fecharModal('modal-senha');
-    if(pendingUrl)window.open(pendingUrl,'_blank');
-    pendingUrl=null;
-    render();
-    toast('🔓 Desbloqueado até você fechar a aba');
-  }
-}
-function removerSenha(){
-  if(!confirm('Remover a senha? Todos os sistemas restritos ficarão livres para abrir.'))return;
-  senhaHash=null;salvar();fecharModal('modal-senha');render();toast('🗑 Senha removida.');
 }
 
 // ── INIT ──
