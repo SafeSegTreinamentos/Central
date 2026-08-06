@@ -262,6 +262,26 @@ select.finp{cursor:pointer;}
   </div>
 </div>
 
+<!-- ══ MODAL DETALHE DO AGENDAMENTO (participantes) ══ -->
+<div class="modal-overlay" id="modal-agenda-detalhe">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-title" id="agd-titulo">Agendamento</div>
+    <div id="agd-info" style="font-size:.82rem;color:var(--t3);margin-bottom:14px"></div>
+    <div style="font-size:.62rem;color:var(--t3);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Participantes</div>
+    <div id="agd-participantes" style="margin-bottom:12px"></div>
+    <div class="frow">
+      <div class="fg"><label class="flbl">Nome</label><input class="finp" id="agd-part-nome"></div>
+      <div class="fg"><label class="flbl">CPF</label><input class="finp" id="agd-part-cpf"></div>
+    </div>
+    <div class="fg" id="agd-part-empresa-wrap" style="display:none"><label class="flbl">Empresa do participante</label><select class="finp" id="agd-part-empresa"></select></div>
+    <button class="btn btn-ghost" style="width:100%" onclick="adicionarParticipanteAgenda()">+ Adicionar participante</button>
+    <div class="modal-footer">
+      <button class="btn btn-danger hidden" id="agd-excluir-btn" onclick="excluirAgendamentoAtual()">🗑 Excluir agendamento</button>
+      <button class="btn btn-gold" style="margin-left:auto" onclick="fecharModal('modal-agenda-detalhe')">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1120,21 +1140,83 @@ async function salvarAgendamento(){
     renderizarGradeAgenda(true);
   }catch(e){toast('⚠️ '+e.message,true);}
 }
+let agdAtualId=null, agdAtualTipo=null, agdAtualEmpresaId=null;
 async function abrirDetalheAgenda(id){
   try{
     const doc=await db.collection('agenda').doc(id).get();
     if(!doc.exists){toast('⚠️ Agendamento não encontrado.',true);return;}
     const ev=doc.data();
+    agdAtualId=id;agdAtualTipo=ev.tipo;agdAtualEmpresaId=ev.empresaId||'';
     const empresaTxt=ev.tipo==='aberto'?'Aberto para todas as empresas':nomeEmpresa(ev.empresaId);
-    if(perfil.role==='admin'){
-      if(confirm(`${ev.curso}\n${fmtDate(ev.data)}\n${empresaTxt}\n\nExcluir este agendamento?`)){
-        await db.collection('agenda').doc(id).delete();
-        toast('🗑 Agendamento excluído.');
-        renderizarGradeAgenda(true);
-      }
+    document.getElementById('agd-titulo').textContent=ev.curso;
+    document.getElementById('agd-info').textContent=`${fmtDate(ev.data)} · ${empresaTxt}`;
+    document.getElementById('agd-part-nome').value='';document.getElementById('agd-part-cpf').value='';
+    document.getElementById('agd-excluir-btn').classList.toggle('hidden',perfil.role!=='admin');
+
+    const wrapEmp=document.getElementById('agd-part-empresa-wrap');
+    if(perfil.role==='admin'&&ev.tipo==='aberto'){
+      wrapEmp.style.display='block';
+      document.getElementById('agd-part-empresa').innerHTML='<option value="">Selecione...</option>'+empresas.map(e=>`<option value="${e.id}">${e.nome}</option>`).join('');
     } else {
-      alert(`${ev.curso}\n${fmtDate(ev.data)}\n${empresaTxt}`);
+      wrapEmp.style.display='none';
     }
+
+    await renderParticipantesAgenda();
+    document.getElementById('modal-agenda-detalhe').classList.add('open');
+  }catch(e){toast('⚠️ '+e.message,true);}
+}
+async function renderParticipantesAgenda(){
+  const cont=document.getElementById('agd-participantes');
+  cont.innerHTML='Carregando...';
+  try{
+    const snap=perfil.role==='admin'
+      ? await db.collection('agenda').doc(agdAtualId).collection('participantes').get()
+      : await db.collection('agenda').doc(agdAtualId).collection('participantes').where('empresaId','==',empresaAtivaId).get();
+    const lista=snap.docs.map(d=>({id:d.id,...d.data()}));
+    if(!lista.length){cont.innerHTML='<div class="empty-state" style="padding:10px">Nenhum participante ainda.</div>';return;}
+    cont.innerHTML=lista.map(p=>`<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--p4)">
+      <div style="flex:1"><div style="font-size:.82rem;color:var(--t1)">${p.nome}</div>${p.empresaId&&perfil.role==='admin'?`<div style="font-size:.68rem;color:var(--t3)">${nomeEmpresa(p.empresaId)}</div>`:''}</div>
+      <button class="icon-btn" onclick="removerParticipanteAgenda('${p.id}')">🗑</button>
+    </div>`).join('');
+  }catch(e){cont.innerHTML='<div class="empty-state" style="padding:10px">⚠️ '+e.message+'</div>';}
+}
+async function adicionarParticipanteAgenda(){
+  const nome=document.getElementById('agd-part-nome').value.trim();
+  const cpf=document.getElementById('agd-part-cpf').value.trim();
+  if(!nome){toast('⚠️ Informe o nome.',true);return;}
+  let empresaId;
+  if(perfil.role==='admin'){
+    empresaId=agdAtualTipo==='aberto'?document.getElementById('agd-part-empresa').value:agdAtualEmpresaId;
+    if(agdAtualTipo==='aberto'&&!empresaId){toast('⚠️ Selecione a empresa do participante.',true);return;}
+  } else {
+    empresaId=empresaAtivaId;
+  }
+  try{
+    await db.collection('agenda').doc(agdAtualId).collection('participantes').add({nome,cpf,empresaId});
+    document.getElementById('agd-part-nome').value='';document.getElementById('agd-part-cpf').value='';
+    toast('✅ Participante adicionado!');
+    renderParticipantesAgenda();
+  }catch(e){toast('⚠️ '+e.message,true);}
+}
+async function removerParticipanteAgenda(partId){
+  if(!confirm('Remover este participante?'))return;
+  try{
+    await db.collection('agenda').doc(agdAtualId).collection('participantes').doc(partId).delete();
+    toast('🗑 Removido.');
+    renderParticipantesAgenda();
+  }catch(e){toast('⚠️ '+e.message,true);}
+}
+async function excluirAgendamentoAtual(){
+  if(!confirm('Excluir este agendamento inteiro (e todos os participantes)?'))return;
+  try{
+    const partsSnap=await db.collection('agenda').doc(agdAtualId).collection('participantes').get();
+    const batch=db.batch();
+    partsSnap.docs.forEach(d=>batch.delete(d.ref));
+    batch.delete(db.collection('agenda').doc(agdAtualId));
+    await batch.commit();
+    fecharModal('modal-agenda-detalhe');
+    toast('🗑 Agendamento excluído.');
+    renderizarGradeAgenda(true);
   }catch(e){toast('⚠️ '+e.message,true);}
 }
 
