@@ -58,9 +58,23 @@ export function esperarAuth() {
   });
 }
 
+// ============================================================
+// obterMeuPerfil() — busca o documento usuarios/{uid} do usuário logado
+// (role: 'admin' ou 'cliente', empresaId se for cliente). Espera a
+// autenticação confirmar antes de tentar ler.
+// ============================================================
+export async function obterMeuPerfil() {
+  const user = await esperarAuth();
+  if (!user) return null;
+  const snap = await getDoc(doc(db, 'usuarios', user.uid));
+  if (!snap.exists()) return null;
+  return { uid: user.uid, ...snap.data() };
+}
+
 // Reexporta os helpers do Firestore/Auth pra não precisar importar
 // a URL gigante do CDN de novo em cada página que usar este arquivo.
 export {
   collection, collectionGroup, getDocs, doc, getDoc, addDoc, setDoc, updateDoc,
   query, where, orderBy, limit, onAuthStateChanged
 };
+// obterMeuPerfil e esperarAuth já exportados acima com 'export function'/'export async function'

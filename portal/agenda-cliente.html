@@ -95,11 +95,13 @@
     <header class="topbar">
       <div>
         <h1>Agenda de Turmas</h1>
-        <div class="sub">BRF S.A. · 2 turmas nos próximos 30 dias</div>
+        <div class="sub" id="topbarSub">Carregando...</div>
       </div>
     </header>
 
     <div class="content">
+
+      <div id="connStatus" class="text-muted" style="font-size:12px;">Conectando...</div>
 
       <div class="info-note">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
@@ -110,60 +112,12 @@
 
         <div class="card">
           <div class="cal-head">
-            <div class="cal-nav"><button>‹</button></div>
-            <div class="cal-title">Agosto 2026</div>
-            <div class="cal-nav"><button>›</button></div>
+            <div class="cal-nav"><button onclick="mudarMes(-1)">‹</button></div>
+            <div class="cal-title" id="calTitle">—</div>
+            <div class="cal-nav"><button onclick="mudarMes(1)">›</button></div>
           </div>
-          <div class="cal-grid">
+          <div class="cal-grid" id="calGrid">
             <div class="cal-dow">D</div><div class="cal-dow">S</div><div class="cal-dow">T</div><div class="cal-dow">Q</div><div class="cal-dow">Q</div><div class="cal-dow">S</div><div class="cal-dow">S</div>
-
-            <div class="cal-day muted"><span class="num">26</span></div>
-            <div class="cal-day muted"><span class="num">27</span></div>
-            <div class="cal-day muted"><span class="num">28</span></div>
-            <div class="cal-day muted"><span class="num">29</span></div>
-            <div class="cal-day muted"><span class="num">30</span></div>
-            <div class="cal-day muted"><span class="num">31</span></div>
-            <div class="cal-day"><span class="num">1</span></div>
-
-            <div class="cal-day"><span class="num">2</span></div>
-            <div class="cal-day"><span class="num">3</span></div>
-            <div class="cal-day"><span class="num">4</span></div>
-            <div class="cal-day"><span class="num">5</span></div>
-            <div class="cal-day"><span class="num">6</span></div>
-            <div class="cal-day has-event"><span class="num">7</span><span class="cal-event cal-event--privado">BRF · NR-06</span></div>
-            <div class="cal-day"><span class="num">8</span></div>
-
-            <div class="cal-day"><span class="num">9</span></div>
-            <div class="cal-day"><span class="num">10</span></div>
-            <div class="cal-day"><span class="num">11</span></div>
-            <div class="cal-day"><span class="num">12</span></div>
-            <div class="cal-day"><span class="num">13</span></div>
-            <div class="cal-day"><span class="num">14</span></div>
-            <div class="cal-day"><span class="num">15</span></div>
-
-            <div class="cal-day"><span class="num">16</span></div>
-            <div class="cal-day"><span class="num">17</span></div>
-            <div class="cal-day"><span class="num">18</span></div>
-            <div class="cal-day has-event"><span class="num">19</span><span class="cal-event cal-event--aberto">NR-10 Aberto</span></div>
-            <div class="cal-day"><span class="num">20</span></div>
-            <div class="cal-day"><span class="num">21</span></div>
-            <div class="cal-day"><span class="num">22</span></div>
-
-            <div class="cal-day today"><span class="num">23</span></div>
-            <div class="cal-day"><span class="num">24</span></div>
-            <div class="cal-day"><span class="num">25</span></div>
-            <div class="cal-day"><span class="num">26</span></div>
-            <div class="cal-day"><span class="num">27</span></div>
-            <div class="cal-day"><span class="num">28</span></div>
-            <div class="cal-day"><span class="num">29</span></div>
-
-            <div class="cal-day"><span class="num">30</span></div>
-            <div class="cal-day"><span class="num">31</span></div>
-            <div class="cal-day muted"><span class="num">1</span></div>
-            <div class="cal-day muted"><span class="num">2</span></div>
-            <div class="cal-day muted"><span class="num">3</span></div>
-            <div class="cal-day muted"><span class="num">4</span></div>
-            <div class="cal-day muted"><span class="num">5</span></div>
           </div>
 
           <div class="legend">
@@ -174,23 +128,8 @@
 
         <div class="card">
           <div class="section-title">Suas próximas turmas</div>
-          <div class="turma-list">
-            <div class="turma-item">
-              <div class="turma-item__top">
-                <span class="turma-curso">NR-06 · EPI</span>
-                <span class="tipo-tag tipo-tag--privado">Privado</span>
-              </div>
-              <div class="turma-data">07/08/2026 · 08:00 · Sede BRF</div>
-              <div class="turma-empresa">9 participantes</div>
-            </div>
-            <div class="turma-item">
-              <div class="turma-item__top">
-                <span class="turma-curso">NR-10 · Elétrica Básica</span>
-                <span class="tipo-tag tipo-tag--aberto">Aberto</span>
-              </div>
-              <div class="turma-data">19/08/2026 · 08:00 · CT SafeSeg</div>
-              <div class="turma-empresa">Vagas abertas — qualquer colaborador pode participar</div>
-            </div>
+          <div class="turma-list" id="turmaListReal">
+            <div class="text-muted" style="font-size:13px;">Carregando...</div>
           </div>
         </div>
 
@@ -198,6 +137,137 @@
     </div>
   </div>
 </div>
+
+<script type="module">
+  import { db, collection, getDocs, obterMeuPerfil } from '../assets/js/firebase-init.js';
+
+  const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  let viewDate = new Date();
+  let minhasTurmasCache = [];
+  let empresaIdCache = null;
+
+  function formatDateBR(iso) {
+    if (!iso) return '';
+    const [y,m,d] = iso.split('-');
+    return `${d}/${m}/${y}`;
+  }
+
+  function renderCalendar() {
+    const ano = viewDate.getFullYear();
+    const mes = viewDate.getMonth();
+    document.getElementById('calTitle').textContent = `${MESES[mes]} ${ano}`;
+
+    const eventosPorDia = {};
+    minhasTurmasCache.forEach(t => {
+      if (!t.data) return;
+      if (!eventosPorDia[t.data]) eventosPorDia[t.data] = [];
+      eventosPorDia[t.data].push(t);
+    });
+
+    const primeiroDiaSemana = new Date(ano, mes, 1).getDay();
+    const diasNoMes = new Date(ano, mes + 1, 0).getDate();
+    const diasNoMesAnterior = new Date(ano, mes, 0).getDate();
+    const hojeISO = new Date().toISOString().slice(0,10);
+
+    let cells = [];
+    for (let i = primeiroDiaSemana - 1; i >= 0; i--) cells.push({ num: diasNoMesAnterior - i, muted: true });
+    for (let d = 1; d <= diasNoMes; d++) {
+      const iso = `${ano}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      cells.push({ num: d, iso, isToday: iso === hojeISO });
+    }
+    while (cells.length % 7 !== 0) cells.push({ num: cells.length - (primeiroDiaSemana + diasNoMes) + 1, muted: true });
+
+    const html = cells.map(c => {
+      if (!c.iso) return `<div class="cal-day muted"><span class="num">${c.num}</span></div>`;
+      const eventos = eventosPorDia[c.iso] || [];
+      let classes = 'cal-day';
+      if (c.isToday) classes += ' today';
+      let eventHtml = '';
+      if (eventos.length > 0) {
+        classes += ' has-event';
+        const t = eventos[0];
+        const aberta = t.tipo === 'aberto';
+        eventHtml = `<span class="cal-event cal-event--${aberta ? 'aberto' : 'privado'}">${t.curso || 'Turma'}</span>`;
+      }
+      return `<div class="${classes}"><span class="num">${c.num}</span>${eventHtml}</div>`;
+    }).join('');
+
+    document.getElementById('calGrid').innerHTML =
+      `<div class="cal-dow">D</div><div class="cal-dow">S</div><div class="cal-dow">T</div><div class="cal-dow">Q</div><div class="cal-dow">Q</div><div class="cal-dow">S</div><div class="cal-dow">S</div>` + html;
+  }
+
+  window.mudarMes = function(delta) {
+    viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + delta, 1);
+    renderCalendar();
+  };
+
+  function renderLista() {
+    const hojeISO = new Date().toISOString().slice(0,10);
+    const futuras = minhasTurmasCache.filter(t => t.data >= hojeISO).sort((a,b) => a.data.localeCompare(b.data));
+    const box = document.getElementById('turmaListReal');
+
+    if (futuras.length === 0) {
+      box.innerHTML = '<div class="text-muted" style="font-size:13px;">Nenhuma turma agendada no momento.</div>';
+      return;
+    }
+
+    box.innerHTML = futuras.map(t => {
+      const aberta = t.tipo === 'aberto';
+      return `
+        <div class="turma-item">
+          <div class="turma-item__top">
+            <span class="turma-curso">${t.curso || 'Treinamento'}</span>
+            <span class="tipo-tag tipo-tag--${aberta ? 'aberto' : 'privado'}">${aberta ? 'Aberto' : 'Privado'}</span>
+          </div>
+          <div class="turma-data">${formatDateBR(t.data)}</div>
+          <div class="turma-empresa">${aberta ? 'Vagas abertas — qualquer colaborador pode participar' : 'Turma da sua empresa'}</div>
+        </div>`;
+    }).join('');
+  }
+
+  async function carregarAgenda() {
+    const status = document.getElementById('connStatus');
+
+    const perfil = await obterMeuPerfil();
+    if (!perfil) {
+      status.textContent = '🔒 Você precisa estar logado pra ver a agenda.';
+      status.style.color = 'var(--status-warn)';
+      return;
+    }
+    if (perfil.role !== 'cliente' || !perfil.empresaId) {
+      status.textContent = '⚠️ Este login não está configurado como acesso de cliente.';
+      status.style.color = 'var(--status-warn)';
+      return;
+    }
+    empresaIdCache = perfil.empresaId;
+
+    try {
+      const agendaSnap = await getDocs(collection(db, 'agenda'));
+      minhasTurmasCache = [];
+      agendaSnap.forEach(d => {
+        const a = d.data();
+        if (a.tipo === 'aberto' || a.empresaId === perfil.empresaId) minhasTurmasCache.push(a);
+      });
+
+      const hojeISO = new Date().toISOString().slice(0,10);
+      const em30 = new Date(Date.now() + 30*86400000).toISOString().slice(0,10);
+      const proximas30 = minhasTurmasCache.filter(t => t.data >= hojeISO && t.data <= em30);
+      document.getElementById('topbarSub').textContent = `${proximas30.length} turma(s) nos próximos 30 dias`;
+
+      renderCalendar();
+      renderLista();
+
+      status.textContent = `✅ ${minhasTurmasCache.length} turma(s) carregada(s).`;
+      status.style.color = 'var(--status-ok)';
+    } catch (err) {
+      console.error('Erro ao carregar agenda:', err);
+      status.textContent = `⚠️ Erro ao carregar: ${err.message}`;
+      status.style.color = 'var(--status-danger)';
+    }
+  }
+
+  carregarAgenda();
+</script>
 
 </body>
 </html>
