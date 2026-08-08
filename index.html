@@ -97,7 +97,7 @@ h1,h2,h3{font-family:'Bebas Neue',Arial,sans-serif;letter-spacing:.5px;margin:0;
   // IMPORTANTE: tudo dentro de try/catch — se algo falhar (rede, permissão,
   // etc.), mostra um erro visível em vez de deixar a tela preta pra sempre.
   try {
-    const { obterMeuPerfil } = await import('assets/js/firebase-init.js');
+    const { obterMeuPerfil } = await import('./assets/js/firebase-init.js');
     const perfil = await obterMeuPerfil();
 
     if (perfil && perfil.role === 'cliente') {
