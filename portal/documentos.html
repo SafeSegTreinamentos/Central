@@ -134,73 +134,119 @@
         </div>
       </div>
 
-      <div class="collab-list">
+      <div id="connStatus" class="text-muted" style="font-size:12px; margin-bottom:-8px;">Conectando...</div>
 
-        <div class="collab-card open">
-          <div class="collab-head" onclick="this.parentElement.classList.toggle('open')">
-            <div class="collab-avatar">MT</div>
-            <div class="collab-info">
-              <div class="collab-name">Metalúrgica Trentin</div>
-              <div class="collab-empresa">5 documentos cadastrados</div>
-            </div>
-            <div class="collab-summary">
-              <span class="selo selo--warn">1 atenção</span>
-              <span class="selo selo--ok">4 válidos</span>
-            </div>
-            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-          </div>
-          <div class="collab-body">
-            <div class="doc-row"><span class="doc-cat doc-cat--pgr">PGR</span><span class="doc-nome">Programa de Gerenciamento de Riscos 2025–2027</span><span class="doc-data">14/03/2027</span><span class="selo selo--ok">Válido</span></div>
-            <div class="doc-row"><span class="doc-cat doc-cat--ltcat">LTCAT</span><span class="doc-nome">Laudo Técnico das Condições do Ambiente</span><span class="doc-data">09/09/2026</span><span class="selo selo--warn">Atenção</span></div>
-            <div class="doc-row"><span class="doc-cat doc-cat--pcmso">PCMSO</span><span class="doc-nome">Prog. Controle Médico de Saúde Ocup.</span><span class="doc-data">22/01/2027</span><span class="selo selo--ok">Válido</span></div>
-            <div class="doc-row"><span class="doc-cat doc-cat--laudo">Laudo</span><span class="doc-nome">Laudo Ergonômico</span><span class="doc-data">30/06/2027</span><span class="selo selo--ok">Válido</span></div>
-            <div class="doc-row"><span class="doc-cat doc-cat--contrato">Contrato</span><span class="doc-nome">Contrato de prestação de serviço</span><span class="doc-data">01/12/2026</span><span class="selo selo--ok">Válido</span></div>
-          </div>
-        </div>
-
-        <div class="collab-card">
-          <div class="collab-head" onclick="this.parentElement.classList.toggle('open')">
-            <div class="collab-avatar">CB</div>
-            <div class="collab-info">
-              <div class="collab-name">Construtora Bettega</div>
-              <div class="collab-empresa">3 documentos cadastrados</div>
-            </div>
-            <div class="collab-summary">
-              <span class="selo selo--danger">1 vencido</span>
-              <span class="selo selo--ok">2 válidos</span>
-            </div>
-            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-          </div>
-          <div class="collab-body">
-            <div class="doc-row"><span class="doc-cat doc-cat--pgr">PGR</span><span class="doc-nome">Programa de Gerenciamento de Riscos 2024–2026</span><span class="doc-data">15/07/2026</span><span class="selo selo--danger">Vencido</span></div>
-            <div class="doc-row"><span class="doc-cat doc-cat--pcmso">PCMSO</span><span class="doc-nome">Prog. Controle Médico de Saúde Ocup.</span><span class="doc-data">11/02/2027</span><span class="selo selo--ok">Válido</span></div>
-            <div class="doc-row"><span class="doc-cat doc-cat--contrato">Contrato</span><span class="doc-nome">Contrato de prestação de serviço</span><span class="doc-data">20/05/2027</span><span class="selo selo--ok">Válido</span></div>
-          </div>
-        </div>
-
-        <div class="collab-card">
-          <div class="collab-head" onclick="this.parentElement.classList.toggle('open')">
-            <div class="collab-avatar">AS</div>
-            <div class="collab-info">
-              <div class="collab-name">Agroserra Ind.</div>
-              <div class="collab-empresa">2 documentos cadastrados</div>
-            </div>
-            <div class="collab-summary">
-              <span class="selo selo--ok">2 válidos</span>
-            </div>
-            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-          </div>
-          <div class="collab-body">
-            <div class="doc-row"><span class="doc-cat doc-cat--ltcat">LTCAT</span><span class="doc-nome">Laudo Técnico das Condições do Ambiente</span><span class="doc-data">18/10/2026</span><span class="selo selo--ok">Válido</span></div>
-            <div class="doc-row"><span class="doc-cat doc-cat--contrato">Contrato</span><span class="doc-nome">Contrato de prestação de serviço</span><span class="doc-data">03/08/2027</span><span class="selo selo--ok">Válido</span></div>
-          </div>
-        </div>
-
-      </div>
+      <div class="collab-list" id="docList"></div>
 
     </div>
   </div>
 </div>
+
+<script type="module">
+  import { db, collection, getDocs, esperarAuth } from '../assets/js/firebase-init.js';
+
+  // Documentos vivem em: empresas/{id}/documentos (subcoleção criada do zero,
+  // mesmo padrão de certificados — coleção não existia antes).
+  function pick(obj, ...keys) {
+    for (const k of keys) if (obj[k] !== undefined && obj[k] !== null && obj[k] !== '') return obj[k];
+    return null;
+  }
+  function iniciais(nome) {
+    return (nome || '?').split(' ').filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('');
+  }
+  function statusPorData(dataStr) {
+    if (!dataStr) return { cls: 'pending', label: 'Pendente' };
+    const venc = new Date(dataStr.split('/').reverse().join('-'));
+    const dias = (venc - new Date()) / 86400000;
+    if (dias < 0) return { cls: 'danger', label: 'Vencido' };
+    if (dias <= 60) return { cls: 'warn', label: 'Atenção' };
+    return { cls: 'ok', label: 'Válido' };
+  }
+  function catClass(cat) {
+    const c = (cat || '').toLowerCase();
+    if (c.includes('pgr')) return 'pgr';
+    if (c.includes('ltcat')) return 'ltcat';
+    if (c.includes('pcmso')) return 'pcmso';
+    if (c.includes('contrato')) return 'contrato';
+    return 'laudo';
+  }
+
+  async function carregarDocumentos() {
+    const status = document.getElementById('connStatus');
+    const box = document.getElementById('docList');
+
+    const user = await esperarAuth();
+    if (!user) {
+      status.textContent = '🔒 Você precisa estar logado pra ver os documentos.';
+      status.style.color = 'var(--status-warn)';
+      return;
+    }
+
+    try {
+      const empresasSnap = await getDocs(collection(db, 'empresas'));
+      if (empresasSnap.empty) {
+        status.textContent = 'Nenhuma empresa cadastrada ainda.';
+        return;
+      }
+
+      const empresasComDocs = await Promise.all(empresasSnap.docs.map(async empDoc => {
+        const emp = empDoc.data();
+        const docSnap = await getDocs(collection(db, 'empresas', empDoc.id, 'documentos'));
+        const documentos = [];
+        docSnap.forEach(d => {
+          const dt = d.data();
+          documentos.push({
+            categoria: pick(dt, 'categoria', 'tipo', 'cat') || 'Laudo',
+            nome: pick(dt, 'nome', 'titulo', 'descricao') || '(sem nome)',
+            data: pick(dt, 'validade', 'dataVencimento', 'vencimento')
+          });
+        });
+        return { nome: emp.nome || '(sem nome)', documentos };
+      }));
+
+      const comDoc = empresasComDocs.filter(e => e.documentos.length > 0);
+      if (comDoc.length === 0) {
+        status.textContent = 'Conectado — nenhum documento cadastrado ainda.';
+        return;
+      }
+
+      box.innerHTML = comDoc.map((emp, i) => {
+        const counts = { danger: 0, warn: 0, ok: 0, pending: 0 };
+        emp.documentos.forEach(d => counts[statusPorData(d.data).cls]++);
+        const resumoHtml = Object.entries(counts).filter(([,n]) => n > 0)
+          .map(([cls, n]) => `<span class="selo selo--${cls}">${n} ${cls==='ok'?'válido(s)':cls==='danger'?'vencido(s)':cls==='warn'?'atenção':'pendente(s)'}</span>`).join('');
+
+        const rowsHtml = emp.documentos.map(d => {
+          const st = statusPorData(d.data);
+          return `<div class="doc-row"><span class="doc-cat doc-cat--${catClass(d.categoria)}">${d.categoria}</span><span class="doc-nome">${d.nome}</span><span class="doc-data">${d.data || '—'}</span><span class="selo selo--${st.cls}">${st.label}</span></div>`;
+        }).join('');
+
+        return `
+          <div class="collab-card ${i === 0 ? 'open' : ''}">
+            <div class="collab-head" onclick="this.parentElement.classList.toggle('open')">
+              <div class="collab-avatar">${iniciais(emp.nome)}</div>
+              <div class="collab-info">
+                <div class="collab-name">${emp.nome}</div>
+                <div class="collab-empresa">${emp.documentos.length} documento(s) cadastrado(s)</div>
+              </div>
+              <div class="collab-summary">${resumoHtml}</div>
+              <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </div>
+            <div class="collab-body">${rowsHtml}</div>
+          </div>`;
+      }).join('');
+
+      status.textContent = `${comDoc.length} empresa(s) com documento cadastrado.`;
+      status.style.color = 'var(--status-ok)';
+    } catch (err) {
+      console.error('Erro ao carregar documentos:', err);
+      status.textContent = `⚠️ Erro ao carregar: ${err.message}`;
+      status.style.color = 'var(--status-danger)';
+    }
+  }
+
+  carregarDocumentos();
+</script>
 
 </body>
 </html>

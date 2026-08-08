@@ -168,27 +168,36 @@
 
   </div>
 
-<script>
-  // ---------- Dado de exemplo (viria do Firestore, coleção pública restrita) ----------
-  const BASE_EXEMPLO = {
-    '12345678901': {
-      nome: 'Adriano F. Silva',
-      empresa: 'Metalúrgica Trentin',
-      certificados: [
-        { nr: 'NR-35', nome: 'Trabalho em Altura', data: '12/08/2026', status: 'danger', statusLabel: 'Vencido' },
-        { nr: 'NR-06', nome: 'EPI', data: '03/01/2027', status: 'ok', statusLabel: 'Válido' },
-        { nr: 'NR-12', nome: 'Máquinas e Equip.', data: '19/02/2027', status: 'ok', statusLabel: 'Válido' },
-      ]
-    },
-    '98765432109': {
-      nome: 'Camila R. Duarte',
-      empresa: 'Construtora Bettega',
-      certificados: [
-        { nr: 'NR-10', nome: 'Elétrica', data: '18/08/2026', status: 'warn', statusLabel: 'Atenção' },
-        { nr: 'NR-06', nome: 'EPI', data: '11/11/2026', status: 'ok', statusLabel: 'Válido' },
-      ]
-    }
-  };
+<script type="module">
+  // ⚠️ IMPORTANTE — leia antes de mexer aqui:
+  // Essa tela é PÚBLICA (sem login). O Firestore não permite busca segura
+  // "por CPF apenas" sem expor a coleção inteira de certificados pra qualquer
+  // pessoa na internet (as Regras não conseguem distinguir "busca filtrada"
+  // de "listagem completa sem filtro"). Por isso o Validador NÃO se conecta
+  // direto ao Firestore.
+  //
+  // O caminho seguro e já previsto no projeto original é conectar isso a um
+  // endpoint do Apps Script (o mesmo mecanismo que o Gerador de Turmas já usa
+  // pra sincronizar) — o Apps Script roda do lado do servidor do Google e
+  // pode validar o CPF sem expor o banco de dados.
+  //
+  // Pra ligar isso: troque a URL abaixo pela URL do seu Apps Script (termina
+  // em /exec), publicando uma função que recebe o CPF e devolve só o
+  // necessário (nome, empresa, lista de certificados) — nunca o banco todo.
+  const VALIDADOR_APPS_SCRIPT_URL = ''; // <-- cole aqui a URL do Apps Script quando tiver
+
+  function pick(obj, ...keys) {
+    for (const k of keys) if (obj[k] !== undefined && obj[k] !== null && obj[k] !== '') return obj[k];
+    return null;
+  }
+  function statusPorData(dataStr) {
+    if (!dataStr) return { status: 'pending', statusLabel: 'Pendente' };
+    const venc = new Date(dataStr.split('/').reverse().join('-'));
+    const dias = (venc - new Date()) / 86400000;
+    if (dias < 0) return { status: 'danger', statusLabel: 'Vencido' };
+    if (dias <= 60) return { status: 'warn', statusLabel: 'Atenção' };
+    return { status: 'ok', statusLabel: 'Válido' };
+  }
 
   // ---------- Máscara de CPF no campo de busca (o usuário digita o CPF completo dele mesmo) ----------
   document.getElementById('cpfInput').addEventListener('input', (e) => {
@@ -261,8 +270,8 @@
     buscarCPF();
   }
 
-  // ---------- Busca ----------
-  function buscarCPF() {
+  // ---------- Busca (real, via Firestore) ----------
+  async function buscarCPF() {
     if (checarBloqueio()) return;
 
     const digits = document.getElementById('cpfInput').value.replace(/\D/g, '');
@@ -274,32 +283,53 @@
     }
 
     registrarTentativa();
-
-    const registro = BASE_EXEMPLO[digits];
     document.getElementById('resultCard').classList.remove('show');
     document.getElementById('notFoundCard').classList.remove('show');
 
-    if (!registro) {
-      document.getElementById('notFoundCard').classList.add('show');
+    const note = document.getElementById('attemptsNote');
+    note.textContent = 'Buscando...';
+    note.className = 'attempts-note';
+
+    if (!VALIDADOR_APPS_SCRIPT_URL) {
+      note.textContent = '⚠️ Validador ainda não conectado — falta configurar o endpoint do Apps Script (veja comentário no início do script).';
+      note.className = 'attempts-note locked';
       return;
     }
 
-    document.getElementById('resultAvatar').textContent = registro.nome.split(' ').map(p=>p[0]).slice(0,2).join('');
-    document.getElementById('resultName').textContent = registro.nome;
-    document.getElementById('resultCpf').textContent = maskCPF(digits) + ' · ' + registro.empresa;
+    try {
+      const res = await fetch(`${VALIDADOR_APPS_SCRIPT_URL}?action=validarCpf&cpf=${digits}`);
+      const data = await res.json();
 
-    const list = document.getElementById('certList');
-    list.innerHTML = registro.certificados.map(c => `
-      <div class="cert-item hazard-edge--${c.status}">
-        <div class="cert-item__info">
-          <div class="cert-item__nr">${c.nr} — ${c.nome}</div>
-          <div class="cert-item__data">Válido até ${c.data}</div>
-        </div>
-        <span class="selo selo--${c.status}">${c.statusLabel}</span>
-      </div>
-    `).join('');
+      if (!data || !data.encontrado) {
+        document.getElementById('notFoundCard').classList.add('show');
+        note.textContent = '';
+        return;
+      }
 
-    document.getElementById('resultCard').classList.add('show');
+      document.getElementById('resultAvatar').textContent = (data.nome || '?').split(' ').map(p=>p[0]).slice(0,2).join('');
+      document.getElementById('resultName').textContent = data.nome || '(sem nome)';
+      document.getElementById('resultCpf').textContent = maskCPF(digits) + (data.empresa ? ' · ' + data.empresa : '');
+
+      const list = document.getElementById('certList');
+      list.innerHTML = (data.certificados || []).map(c => {
+        const st = statusPorData(c.validade);
+        return `
+          <div class="cert-item hazard-edge--${st.status}">
+            <div class="cert-item__info">
+              <div class="cert-item__nr">${c.nr || '—'}</div>
+              <div class="cert-item__data">Válido até ${c.validade || '—'}</div>
+            </div>
+            <span class="selo selo--${st.status}">${st.statusLabel}</span>
+          </div>`;
+      }).join('');
+
+      document.getElementById('resultCard').classList.add('show');
+      note.textContent = '';
+    } catch (err) {
+      console.error('Erro ao validar CPF:', err);
+      note.textContent = `⚠️ Não foi possível consultar agora (${err.message}). Tente novamente em instantes.`;
+      note.className = 'attempts-note locked';
+    }
   }
 </script>
 

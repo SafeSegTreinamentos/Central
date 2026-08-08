@@ -12,6 +12,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/fireba
 import {
   getFirestore,
   collection,
+  collectionGroup,
   getDocs,
   doc,
   getDoc,
@@ -57,6 +58,6 @@ export function esperarAuth() {
 // Reexporta os helpers do Firestore/Auth pra não precisar importar
 // a URL gigante do CDN de novo em cada página que usar este arquivo.
 export {
-  collection, getDocs, doc, getDoc, query, where, orderBy, limit,
+  collection, collectionGroup, getDocs, doc, getDoc, query, where, orderBy, limit,
   onAuthStateChanged
 };
