@@ -157,6 +157,13 @@ button { font-family: var(--font-body); cursor: pointer; }
 }
 .btn--ghost:hover { background: var(--paper-100); }
 
+.btn--danger {
+  background: transparent;
+  border-color: var(--status-danger);
+  color: var(--status-danger);
+}
+.btn--danger:hover { background: var(--status-danger-bg); }
+
 /* ============================================================
    SELO — badge de status (elemento de assinatura visual)
    Formato de selo/carimbo, não pílula genérica — remete aos
