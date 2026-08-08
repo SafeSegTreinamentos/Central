@@ -3,118 +3,305 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SafeSeg — Validação de Certificados</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<title>Validador de Certificados — SafeSeg</title>
+<link rel="stylesheet" href="../assets/css/safeseg-design-system.css">
 <style>
-:root{
-  --ouro:#D4A017;--oc:#F5C842;--oe:#A07810;
-  --p0:#070707;--p1:#0d0d0d;--p2:#111;--p4:#1c1c1c;
-  --t1:#F0E6C8;--t2:#c8b98a;--t3:#7A6A4A;
-  --gg:linear-gradient(135deg,#8A6608 0%,#F5C842 45%,#FFE066 58%,#C49010 100%);
-  --gt:linear-gradient(135deg,#B8820A,#FFE066,#C49010);
-}
-*{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Barlow',sans-serif;background:var(--p0);color:var(--t1);min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:26px 16px;}
-.card{background:var(--p2);border:1px solid rgba(212,160,23,.18);border-radius:16px;padding:28px 24px;width:100%;max-width:440px;}
-.logo{width:48px;height:48px;background:var(--gg);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 10px;}
-.brand{font-family:'Bebas Neue',cursive;font-size:1.7rem;letter-spacing:4px;text-align:center;background:var(--gt);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-.tag{font-size:.66rem;color:var(--t3);text-align:center;letter-spacing:2px;text-transform:uppercase;margin-bottom:22px;}
-.fg{margin-bottom:12px;}
-input{width:100%;padding:11px 13px;background:var(--p0);border:1px solid var(--p4);border-radius:8px;color:var(--t1);font-family:'Barlow',sans-serif;font-size:.9rem;outline:none;}
-input:focus{border-color:var(--ouro);}
-button{width:100%;padding:11px;background:var(--gg);border:none;border-radius:8px;color:var(--p0);font-family:'Barlow',sans-serif;font-size:.86rem;font-weight:700;cursor:pointer;}
-button:hover{opacity:.88;}
-.msg{text-align:center;font-size:.84rem;color:var(--t3);padding:20px 0;}
-.nome{font-family:'Bebas Neue',cursive;font-size:1.5rem;letter-spacing:1px;color:var(--oc);text-align:center;margin:14px 0 16px;}
-.item{background:var(--p0);border:1px solid var(--p4);border-radius:10px;padding:13px 15px;margin-bottom:9px;}
-.item-curso{font-weight:700;font-size:.86rem;color:var(--t1);margin-bottom:4px;}
-.item-sub{font-size:.72rem;color:var(--t3);}
-.item-link{display:inline-block;margin-top:8px;font-size:.72rem;color:var(--oc);text-decoration:underline;}
-.item-status{display:flex;align-items:center;gap:7px;margin-top:8px;font-size:.74rem;font-weight:700;color:var(--t2);}
-.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
-.badge-ok{display:inline-flex;align-items:center;gap:6px;justify-content:center;width:100%;padding:8px;background:rgba(37,211,102,.12);border:1px solid rgba(37,211,102,.25);border-radius:8px;color:#25D366;font-size:.78rem;font-weight:700;margin-bottom:14px;}
-.erro{text-align:center;color:#ef9a9a;font-size:.84rem;padding:16px 0;}
+  html, body { height: 100%; }
+  body {
+    background: linear-gradient(180deg, var(--graphite-900) 0%, var(--graphite-900) 220px, var(--paper-50) 220px);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .top-brand {
+    padding: var(--space-6) var(--space-4) var(--space-5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    text-align: center;
+  }
+  .top-brand img { height: 46px; }
+  .top-brand h1 {
+    color: #fff;
+    font-size: var(--text-xl);
+    letter-spacing: 0.04em;
+  }
+  .top-brand p { color: var(--gold-100); font-size: var(--text-sm); }
+
+  .validador-wrap {
+    width: 100%;
+    max-width: 520px;
+    padding: 0 var(--space-4) var(--space-8);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+  }
+
+  .search-card {
+    background: #fff;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-elevated);
+    padding: var(--space-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+  .search-tabs { display: flex; gap: 4px; background: var(--paper-100); padding: 4px; border-radius: var(--radius-sm); }
+  .search-tab { flex: 1; padding: 9px; border-radius: 6px; font-size: var(--text-sm); font-weight: 600; color: var(--graphite-600); background: transparent; border: none; }
+  .search-tab.active { background: #fff; color: var(--graphite-900); box-shadow: var(--shadow-card); }
+
+  .cpf-input-row { display: flex; gap: var(--space-2); }
+  .cpf-input-row input {
+    flex: 1; border: 1.5px solid var(--paper-200); border-radius: var(--radius-sm);
+    padding: 12px 14px; font-family: var(--font-data); font-size: var(--text-base);
+  }
+  .cpf-input-row input:focus { outline: none; border-color: var(--gold-400); }
+
+  .qr-box {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-5);
+    border: 2px dashed var(--paper-200);
+    border-radius: var(--radius-md);
+    color: var(--graphite-600);
+    text-align: center;
+  }
+  .qr-box.active { display: flex; }
+  .qr-box svg { width: 40px; height: 40px; color: var(--gold-600); }
+
+  .attempts-note { font-size: 11px; color: var(--graphite-600); text-align: center; }
+  .attempts-note.warn { color: var(--status-warn); font-weight: 600; }
+  .attempts-note.locked { color: var(--status-danger); font-weight: 700; }
+
+  /* Resultado */
+  .result-card { background: #fff; border-radius: var(--radius-lg); box-shadow: var(--shadow-elevated); padding: var(--space-5); display: none; flex-direction: column; gap: var(--space-4); }
+  .result-card.show { display: flex; }
+  .result-head { display: flex; align-items: center; gap: var(--space-3); padding-bottom: var(--space-3); border-bottom: 1px solid var(--paper-200); }
+  .result-avatar {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: var(--graphite-900); color: var(--gold-300);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-size: 18px; flex-shrink: 0;
+  }
+  .result-name { font-weight: 700; font-size: var(--text-lg); }
+  .result-cpf { font-family: var(--font-data); font-size: var(--text-sm); color: var(--graphite-600); }
+
+  .cert-list { display: flex; flex-direction: column; gap: var(--space-2); }
+  .cert-item {
+    display: flex; align-items: center; gap: var(--space-3);
+    padding: var(--space-3); border-radius: var(--radius-sm); border: 1px solid var(--paper-200);
+  }
+  .cert-item__info { flex: 1; min-width: 0; }
+  .cert-item__nr { font-weight: 700; font-size: var(--text-sm); }
+  .cert-item__data { font-size: 12px; color: var(--graphite-600); }
+
+  .not-found-card { background: #fff; border-radius: var(--radius-lg); box-shadow: var(--shadow-elevated); padding: var(--space-6); display: none; flex-direction: column; align-items: center; gap: var(--space-3); text-align: center; }
+  .not-found-card.show { display: flex; }
+  .not-found-card svg { width: 40px; height: 40px; color: var(--status-pending); }
+
+  .footer-note { text-align: center; font-size: 11px; color: var(--graphite-600); padding-bottom: var(--space-6); }
+
+  @media (max-width: 420px) {
+    .top-brand { padding: var(--space-5) var(--space-3) var(--space-4); }
+  }
 </style>
 </head>
 <body>
-<div class="card">
-  <div class="logo">🛡️</div>
-  <div class="brand">SAFESEG</div>
-  <div class="tag">Validação de Certificados</div>
 
-  <div id="busca">
-    <div class="fg"><input type="text" id="cpf-input" placeholder="Digite o CPF (só números)" inputmode="numeric"></div>
-    <button onclick="buscar()">Consultar</button>
+  <div class="top-brand">
+    <img src="../assets/img/logo-dark.png" alt="SafeSeg">
+    <h1>Validador de Certificados</h1>
+    <p>Consulta pública de treinamentos emitidos pela SafeSeg</p>
   </div>
 
-  <div id="resultado"></div>
-</div>
+  <div class="validador-wrap">
+
+    <div class="search-card">
+      <div class="search-tabs">
+        <button class="search-tab active" id="tabCpf" onclick="setTab('cpf')">Buscar por CPF</button>
+        <button class="search-tab" id="tabQr" onclick="setTab('qr')">Ler QR Code</button>
+      </div>
+
+      <div id="cpfSearchBox">
+        <div class="cpf-input-row">
+          <input type="text" id="cpfInput" placeholder="000.000.000-00" maxlength="14" inputmode="numeric">
+          <button class="btn btn--primary" onclick="buscarCPF()">Buscar</button>
+        </div>
+      </div>
+
+      <div class="qr-box" id="qrBox">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM19 14v3M14 19h3M19 19h2"/></svg>
+        <div>Aponte a câmera para o QR code impresso no certificado.</div>
+        <button class="btn btn--secondary" onclick="simularLeituraQR()">Simular leitura (teste)</button>
+      </div>
+
+      <div class="attempts-note" id="attemptsNote"></div>
+    </div>
+
+    <div class="result-card" id="resultCard">
+      <div class="result-head">
+        <div class="result-avatar" id="resultAvatar"></div>
+        <div>
+          <div class="result-name" id="resultName"></div>
+          <div class="result-cpf" id="resultCpf"></div>
+        </div>
+      </div>
+      <div class="cert-list" id="certList"></div>
+    </div>
+
+    <div class="not-found-card" id="notFoundCard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5l5 5M14.5 9.5l-5 5"/></svg>
+      <div>
+        <strong>Nenhum registro encontrado</strong>
+        <p style="font-size:13px; color:var(--graphite-600); margin-top:4px;">Confira o CPF digitado ou entre em contato com a SafeSeg.</p>
+      </div>
+    </div>
+
+    <div class="footer-note">
+      SafeSeg Segurança do Trabalho · CNPJ 52.112.925/0001-28<br>
+      Os dados exibidos são parciais por segurança do titular.
+    </div>
+
+  </div>
 
 <script>
-// ⚠️ Cole aqui a URL /exec do Apps Script do gerador de certificados
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz55Li88oyroPtFH1iTOV2nR58-xbuUAMkGcyb6GRzM3S6KQNARj7Sxvi1mZShhPg-WRg/exec";
+  // ---------- Dado de exemplo (viria do Firestore, coleção pública restrita) ----------
+  const BASE_EXEMPLO = {
+    '12345678901': {
+      nome: 'Adriano F. Silva',
+      empresa: 'Metalúrgica Trentin',
+      certificados: [
+        { nr: 'NR-35', nome: 'Trabalho em Altura', data: '12/08/2026', status: 'danger', statusLabel: 'Vencido' },
+        { nr: 'NR-06', nome: 'EPI', data: '03/01/2027', status: 'ok', statusLabel: 'Válido' },
+        { nr: 'NR-12', nome: 'Máquinas e Equip.', data: '19/02/2027', status: 'ok', statusLabel: 'Válido' },
+      ]
+    },
+    '98765432109': {
+      nome: 'Camila R. Duarte',
+      empresa: 'Construtora Bettega',
+      certificados: [
+        { nr: 'NR-10', nome: 'Elétrica', data: '18/08/2026', status: 'warn', statusLabel: 'Atenção' },
+        { nr: 'NR-06', nome: 'EPI', data: '11/11/2026', status: 'ok', statusLabel: 'Válido' },
+      ]
+    }
+  };
 
-function fmtCpf(c){
-  c=(c||'').replace(/\D/g,'');
-  if(c.length!==11)return c;
-  return c.slice(0,3)+'.'+c.slice(3,6)+'.'+c.slice(6,9)+'-'+c.slice(9);
-}
+  // ---------- Máscara de CPF no campo de busca (o usuário digita o CPF completo dele mesmo) ----------
+  document.getElementById('cpfInput').addEventListener('input', (e) => {
+    let v = e.target.value.replace(/\D/g, '').slice(0, 11);
+    if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+    else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+    else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+    e.target.value = v;
+  });
+  document.getElementById('cpfInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') buscarCPF();
+  });
 
-async function buscar(){
-  const cpf=document.getElementById('cpf-input').value.trim();
-  if(!cpf){return;}
-  await consultar(cpf);
-}
-
-function statusValidade(validadeStr){
-  if(!validadeStr)return null;
-  const p=validadeStr.split('/');
-  if(p.length!==3)return null;
-  const dt=new Date(parseInt(p[2],10),parseInt(p[1],10)-1,parseInt(p[0],10));
-  const dias=Math.floor((dt-new Date())/86400000);
-  if(dias<0)return{cor:'#ef5350',label:'Vencido'};
-  if(dias<30)return{cor:'#FF6F00',label:'Atenção'};
-  return{cor:'#25D366',label:'Válido'};
-}
-
-async function consultar(cpf){
-  const res=document.getElementById('resultado');
-  res.innerHTML='<div class="msg">Consultando...</div>';
-  if(!APPS_SCRIPT_URL||APPS_SCRIPT_URL==='COLE_AQUI'){
-    res.innerHTML='<div class="erro">Página ainda não configurada. Cole a URL do Apps Script no arquivo.</div>';
-    return;
+  // ---------- Máscara de CPF no RESULTADO (nunca mostra completo) ----------
+  function maskCPF(cpfDigits) {
+    // 123.456.789-01 -> 123.***.***-01
+    return `${cpfDigits.slice(0,3)}.***.***-${cpfDigits.slice(9,11)}`;
   }
-  try{
-    const resp=await fetch(APPS_SCRIPT_URL+'?cpf='+encodeURIComponent(cpf));
-    const data=await resp.json();
-    if(!data.sucesso){res.innerHTML='<div class="erro">⚠️ '+(data.erro||'Erro ao consultar')+'</div>';return;}
-    if(!data.encontrado){res.innerHTML='<div class="erro">Nenhum certificado encontrado para o CPF '+fmtCpf(cpf)+'.</div>';return;}
-    let html='<div class="badge-ok">✅ Certificados encontrados</div>';
-    html+='<div class="nome">'+data.nome+'</div>';
-    data.treinamentos.forEach(t=>{
-      const st=statusValidade(t.validade);
-      html+=`<div class="item">
-        <div class="item-curso">${t.curso}</div>
-        <div class="item-sub">Concluído em ${t.dataFim}${t.instrutor?' · '+t.instrutor:''} · Nº ${t.cont}</div>
-        ${st?`<div class="item-status"><span class="dot" style="background:${st.cor}"></span>${st.label}${t.validade?' · válido até '+t.validade:''}</div>`:''}
-      </div>`;
-    });
-    res.innerHTML=html;
-  }catch(e){
-    res.innerHTML='<div class="erro">⚠️ Não foi possível consultar agora. Tente novamente.</div>';
-  }
-}
 
-// Se a URL já veio com ?cpf=... (do QR code do certificado), busca direto
-(function(){
-  const params=new URLSearchParams(window.location.search);
-  const cpf=params.get('cpf');
-  if(cpf){
-    document.getElementById('cpf-input').value=cpf;
-    document.getElementById('busca').style.display='none';
-    consultar(cpf);
+  // ---------- Rate limiting (simulação client-side; a proteção real precisa ser no servidor) ----------
+  const MAX_TENTATIVAS = 5;
+  const BLOQUEIO_MS = 60 * 1000; // 1 minuto de teste (produção real: usar janela maior, ex. 15min)
+  function getTentativas() {
+    const raw = sessionStorage.getItem('validador_tentativas');
+    return raw ? JSON.parse(raw) : { count: 0, blockedUntil: 0 };
   }
-})();
+  function setTentativas(obj) { sessionStorage.setItem('validador_tentativas', JSON.stringify(obj)); }
+
+  function checarBloqueio() {
+    const t = getTentativas();
+    const agora = Date.now();
+    const note = document.getElementById('attemptsNote');
+    if (t.blockedUntil > agora) {
+      const restante = Math.ceil((t.blockedUntil - agora) / 1000);
+      note.textContent = `Muitas tentativas. Aguarde ${restante}s para tentar de novo.`;
+      note.className = 'attempts-note locked';
+      return true;
+    }
+    if (t.count >= MAX_TENTATIVAS - 2 && t.count < MAX_TENTATIVAS) {
+      note.textContent = `Atenção: ${MAX_TENTATIVAS - t.count} tentativa(s) restante(s) antes de um bloqueio temporário.`;
+      note.className = 'attempts-note warn';
+    } else {
+      note.textContent = '';
+      note.className = 'attempts-note';
+    }
+    return false;
+  }
+
+  function registrarTentativa() {
+    const t = getTentativas();
+    t.count += 1;
+    if (t.count >= MAX_TENTATIVAS) {
+      t.blockedUntil = Date.now() + BLOQUEIO_MS;
+      t.count = 0;
+    }
+    setTentativas(t);
+  }
+
+  // ---------- Tabs ----------
+  function setTab(tab) {
+    document.getElementById('tabCpf').classList.toggle('active', tab === 'cpf');
+    document.getElementById('tabQr').classList.toggle('active', tab === 'qr');
+    document.getElementById('cpfSearchBox').style.display = tab === 'cpf' ? 'block' : 'none';
+    document.getElementById('qrBox').classList.toggle('active', tab === 'qr');
+  }
+
+  function simularLeituraQR() {
+    document.getElementById('cpfInput').value = '123.456.789-01';
+    setTab('cpf');
+    buscarCPF();
+  }
+
+  // ---------- Busca ----------
+  function buscarCPF() {
+    if (checarBloqueio()) return;
+
+    const digits = document.getElementById('cpfInput').value.replace(/\D/g, '');
+    if (digits.length !== 11) {
+      const note = document.getElementById('attemptsNote');
+      note.textContent = 'Digite um CPF válido (11 dígitos).';
+      note.className = 'attempts-note warn';
+      return;
+    }
+
+    registrarTentativa();
+
+    const registro = BASE_EXEMPLO[digits];
+    document.getElementById('resultCard').classList.remove('show');
+    document.getElementById('notFoundCard').classList.remove('show');
+
+    if (!registro) {
+      document.getElementById('notFoundCard').classList.add('show');
+      return;
+    }
+
+    document.getElementById('resultAvatar').textContent = registro.nome.split(' ').map(p=>p[0]).slice(0,2).join('');
+    document.getElementById('resultName').textContent = registro.nome;
+    document.getElementById('resultCpf').textContent = maskCPF(digits) + ' · ' + registro.empresa;
+
+    const list = document.getElementById('certList');
+    list.innerHTML = registro.certificados.map(c => `
+      <div class="cert-item hazard-edge--${c.status}">
+        <div class="cert-item__info">
+          <div class="cert-item__nr">${c.nr} — ${c.nome}</div>
+          <div class="cert-item__data">Válido até ${c.data}</div>
+        </div>
+        <span class="selo selo--${c.status}">${c.statusLabel}</span>
+      </div>
+    `).join('');
+
+    document.getElementById('resultCard').classList.add('show');
+  }
 </script>
+
 </body>
 </html>
