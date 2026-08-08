@@ -116,6 +116,10 @@
     </div>
 
     
+        <a class="nav-item" href="../index.html" style="background:var(--graphite-900); color:var(--gold-300); margin-bottom:4px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+      Central (Hub)
+    </a>
     <a class="nav-item active" href="dashboard.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
       Dashboard
@@ -211,49 +215,11 @@
         </div>
       </section>
 
-      <!-- GRÁFICO + RANKING -->
-      <section class="two-col">
-        <div class="card">
-          <div class="section-title">Emissões por mês <span class="text-muted" style="font-family:var(--font-body); font-size:12px; font-weight:500;">exemplo — ainda não conectado</span></div>
-          <div class="bar-chart">
-            <div class="bar-col"><span class="bar-value">142</span><div class="bar" style="height:62%"></div><span class="bar-label">Mar</span></div>
-            <div class="bar-col"><span class="bar-value">98</span><div class="bar" style="height:43%"></div><span class="bar-label">Abr</span></div>
-            <div class="bar-col"><span class="bar-value">176</span><div class="bar" style="height:76%"></div><span class="bar-label">Mai</span></div>
-            <div class="bar-col"><span class="bar-value">203</span><div class="bar" style="height:88%"></div><span class="bar-label">Jun</span></div>
-            <div class="bar-col"><span class="bar-value">231</span><div class="bar" style="height:100%"></div><span class="bar-label">Jul</span></div>
-            <div class="bar-col"><span class="bar-value">164</span><div class="bar" style="height:71%"></div><span class="bar-label">Ago*</span></div>
-          </div>
-          <div class="text-muted" style="font-size:11px; margin-top:4px;">*mês em andamento</div>
-        </div>
-
-        <div class="card">
-          <div class="section-title">Empresas com maior % vencido <span class="text-muted" style="font-family:var(--font-body); font-size:12px; font-weight:500;">exemplo — ainda não conectado</span></div>
-          <div class="rank-list">
-            <div class="rank-row">
-              <div class="avatar-pill">MT</div>
-              <div class="name">Metalúrgica Trentin</div>
-              <div class="rank-bar-track"><div class="rank-bar-fill" style="width:34%; background:var(--status-danger)"></div></div>
-              <div class="pct">34%</div>
-            </div>
-            <div class="rank-row">
-              <div class="avatar-pill">CB</div>
-              <div class="name">Construtora Bettega</div>
-              <div class="rank-bar-track"><div class="rank-bar-fill" style="width:21%; background:var(--status-warn)"></div></div>
-              <div class="pct">21%</div>
-            </div>
-            <div class="rank-row">
-              <div class="avatar-pill">AS</div>
-              <div class="name">Agroserra Ind.</div>
-              <div class="rank-bar-track"><div class="rank-bar-fill" style="width:17%; background:var(--status-warn)"></div></div>
-              <div class="pct">17%</div>
-            </div>
-            <div class="rank-row">
-              <div class="avatar-pill">TR</div>
-              <div class="name">Transnorte Log.</div>
-              <div class="rank-bar-track"><div class="rank-bar-fill" style="width:9%; background:var(--status-ok)"></div></div>
-              <div class="pct">9%</div>
-            </div>
-          </div>
+      <!-- RANKING DE EMPRESAS (dado real) -->
+      <section class="card">
+        <div class="section-title">Empresas com maior % vencido</div>
+        <div class="rank-list" id="rankEmpresas">
+          <div class="text-muted" style="font-size:13px;">Carregando...</div>
         </div>
       </section>
 
@@ -336,9 +302,12 @@
       const todosCertificados = []; // { colaborador, empresa, nr, data, status }
       const colaboradoresComPendencia = new Set();
       const totalColaboradores = new Set();
+      const statsPorEmpresa = {}; // nome -> { total, vencidos }
 
       await Promise.all(empresasSnap.docs.map(async empDoc => {
         const emp = empDoc.data();
+        const nomeEmp = emp.nome || '(sem nome)';
+        statsPorEmpresa[nomeEmp] = statsPorEmpresa[nomeEmp] || { total: 0, vencidos: 0 };
         const certSnap = await getDocs(collection(db, 'empresas', empDoc.id, 'certificados'));
         certSnap.forEach(certDoc => {
           const c = certDoc.data();
@@ -347,8 +316,10 @@
           const st = statusPorData(data);
           totalColaboradores.add(colaborador);
           if (st.cls === 'danger' || st.cls === 'warn' || st.cls === 'pending') colaboradoresComPendencia.add(colaborador);
+          statsPorEmpresa[nomeEmp].total++;
+          if (st.cls === 'danger') statsPorEmpresa[nomeEmp].vencidos++;
           todosCertificados.push({
-            colaborador, empresa: emp.nome || '—',
+            colaborador, empresa: nomeEmp,
             nr: pick(c, 'nr', 'norma', 'curso', 'treinamento') || '—',
             data, status: st
           });
@@ -367,6 +338,30 @@
 
       document.getElementById('kpiPendencia').textContent = colaboradoresComPendencia.size;
       document.getElementById('kpiPendenciaMeta').textContent = `de ${totalColaboradores.size} colaborador(es)`;
+
+      // Ranking de empresas por % vencido
+      const rankBox = document.getElementById('rankEmpresas');
+      const ranking = Object.entries(statsPorEmpresa)
+        .filter(([, s]) => s.total > 0)
+        .map(([nome, s]) => ({ nome, pct: Math.round((s.vencidos / s.total) * 100) }))
+        .sort((a, b) => b.pct - a.pct)
+        .slice(0, 6);
+
+      if (ranking.length === 0) {
+        rankBox.innerHTML = '<div class="text-muted" style="font-size:13px;">Nenhuma empresa com certificado cadastrado ainda.</div>';
+      } else {
+        rankBox.innerHTML = ranking.map(r => {
+          const cor = r.pct >= 30 ? 'var(--status-danger)' : r.pct >= 10 ? 'var(--status-warn)' : 'var(--status-ok)';
+          const iniciais = r.nome.split(' ').filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('');
+          return `
+            <div class="rank-row">
+              <div class="avatar-pill">${iniciais}</div>
+              <div class="name">${r.nome}</div>
+              <div class="rank-bar-track"><div class="rank-bar-fill" style="width:${r.pct}%; background:${cor}"></div></div>
+              <div class="pct">${r.pct}%</div>
+            </div>`;
+        }).join('');
+      }
 
       // Próximos vencimentos: ordena por data mais próxima, pega os 6 primeiros que já venceram ou vão vencer
       const proximosVencimentos = todosCertificados

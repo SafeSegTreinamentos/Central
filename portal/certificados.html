@@ -107,6 +107,10 @@
       <img src="../assets/img/logo-dark.png" alt="SafeSeg" style="background:var(--graphite-900); border-radius:8px; padding:4px; max-width:150px; display:block;">
     </div>
     
+    <a class="nav-item" href="../index.html" style="background:var(--graphite-900); color:var(--gold-300); margin-bottom:4px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+      Central (Hub)
+    </a>
     <a class="nav-item" href="dashboard.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
       Dashboard
@@ -316,11 +320,11 @@
   }
 
   carregarCertificados();
+</script>
 
-  // ========================================================
-  // MODELOS POR CURSO — salvo no navegador (localStorage), com
-  // adicionar / editar / excluir de verdade
-  // ========================================================
+<!-- Script separado: Modelos NÃO depende do Firestore, então funciona
+     mesmo se a conexão com o banco tiver algum problema -->
+<script>
   const LS_MODELOS = 'safeseg_modelos_v1';
   function loadModelos() { try { return JSON.parse(localStorage.getItem(LS_MODELOS) || '[]'); } catch (e) { return []; } }
   function saveModelos(list) { localStorage.setItem(LS_MODELOS, JSON.stringify(list)); }
@@ -348,25 +352,25 @@
     `).join('');
   }
 
-  window.adicionarModelo = function() {
+  function adicionarModelo() {
     const modelos = loadModelos();
     modelos.push({ curso: '', instrutor: 'Deverson', modeloId: '', validade: 1 });
     saveModelos(modelos);
     renderModelos();
-  };
-  window.atualizarModelo = function(i, campo, valor) {
+  }
+  function atualizarModelo(i, campo, valor) {
     const modelos = loadModelos();
     if (!modelos[i]) return;
     modelos[i][campo] = valor;
     saveModelos(modelos);
-  };
-  window.excluirModelo = function(i) {
+  }
+  function excluirModelo(i) {
     if (!confirm('Excluir este modelo?')) return;
     const modelos = loadModelos();
     modelos.splice(i, 1);
     saveModelos(modelos);
     renderModelos();
-  };
+  }
 
   renderModelos();
 </script>
