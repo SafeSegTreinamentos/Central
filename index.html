@@ -3,387 +3,256 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SafeSeg — Painel Central</title>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0d0d0d">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="SafeSeg">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet">
+<title>SafeSeg | QG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --ouro:#D4A017;--oc:#F5C842;--oe:#A07810;--ob:#FFE066;
-  --p0:#070707;--p1:#0d0d0d;--p2:#111;--p3:#161616;--p4:#1c1c1c;--p5:#242424;--p6:#2e2e2e;
-  --t1:#F0E6C8;--t2:#c8b98a;--t3:#7A6A4A;--t4:#3a2a1a;
-  --gg:linear-gradient(135deg,#8A6608 0%,#F5C842 45%,#FFE066 58%,#C49010 100%);
-  --gt:linear-gradient(135deg,#B8820A,#FFE066,#C49010);
-  --r8:8px;--r12:12px;--r16:16px;
-  --sh:0 4px 24px rgba(0,0,0,.35);--sh2:0 8px 40px rgba(0,0,0,.5);
-  --c-com:#25D366;--c-op:#2196F3;--c-doc:#9C27B0;--c-gest:#FF6F00;--c-inst:#4dd0e1;
+  --amber:#F59E0B;
+  --amber-dark:#B45309;
+  --graphite:#14171B;
+  --graphite2:#1D2126;
+  --graphite3:#262B32;
+  --line:#33393f;
+  --text:#E9E9E7;
+  --muted:#9AA0A6;
+  --ok:#22C55E;
 }
-*{box-sizing:border-box;margin:0;padding:0;}
-html{scroll-behavior:smooth;}
-body{font-family:'Barlow',sans-serif;background:var(--p0);color:var(--t1);min-height:100vh;}
-::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:var(--p0);}::-webkit-scrollbar-thumb{background:var(--oe);border-radius:4px;}
+*{box-sizing:border-box;}
+body{margin:0;font-family:'Inter',Arial,sans-serif;background:var(--graphite);color:var(--text);}
+h1,h2,h3{font-family:'Bebas Neue',Arial,sans-serif;letter-spacing:.5px;margin:0;}
+.hazard{height:6px;background:repeating-linear-gradient(45deg,var(--amber) 0 14px,#111 14px 28px);}
+
+.wrap{max-width:1100px;margin:0 auto;padding:0 20px 80px;}
 
 /* HEADER */
-.hdr{background:linear-gradient(135deg,var(--p1) 0%,#140e00 100%);border-bottom:1px solid rgba(212,160,23,.18);padding:34px 5vw 26px;position:relative;overflow:hidden;}
-.hdr::before{content:'🛡️';position:absolute;right:4vw;top:50%;transform:translateY(-50%);font-size:120px;opacity:.05;pointer-events:none;}
-.hdr-top{display:flex;align-items:center;gap:14px;margin-bottom:18px;}
-.hdr-logo{width:52px;height:52px;background:var(--gg);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;animation:glow 3s ease-in-out infinite;}
-@keyframes glow{0%,100%{box-shadow:0 0 14px rgba(212,160,23,.3);}50%{box-shadow:0 0 30px rgba(245,200,66,.6);}}
-.hdr-brand-name{font-family:'Bebas Neue',cursive;font-size:2.1rem;letter-spacing:5px;background:var(--gt);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;}
-.hdr-tag{font-size:.62rem;color:var(--t3);letter-spacing:3px;text-transform:uppercase;margin-top:3px;}
-.hdr-title{font-family:'Bebas Neue',cursive;font-size:2.4rem;letter-spacing:2px;line-height:1.05;margin-bottom:6px;}
-.hdr-sub{font-size:.86rem;color:var(--t3);max-width:560px;line-height:1.6;}
-.stats-strip{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap;}
-.stat-chip{background:rgba(212,160,23,.06);border:1px solid rgba(212,160,23,.16);border-radius:var(--r8);padding:10px 18px;display:flex;align-items:baseline;gap:8px;}
-.stat-chip b{font-family:'Bebas Neue',cursive;font-size:1.5rem;color:var(--oc);}
-.stat-chip span{font-size:.66rem;color:var(--t3);text-transform:uppercase;letter-spacing:1px;}
+.header{display:flex;flex-direction:column;align-items:center;text-align:center;padding:28px 20px 24px;gap:8px;}
+.header img{height:56px;margin-bottom:6px;}
+.header h1{font-size:28px;letter-spacing:2px;color:#fff;}
+.header .sub{color:var(--muted);font-size:13px;}
 
-/* CONTROLS */
-.controls{padding:22px 5vw 0;display:flex;gap:10px;flex-wrap:wrap;align-items:center;position:sticky;top:0;background:var(--p0);z-index:100;padding-top:16px;padding-bottom:14px;border-bottom:1px solid var(--p4);}
-.srch-wrap{position:relative;flex:1;min-width:220px;}
-.srch-wrap input{width:100%;padding:10px 14px 10px 38px;background:var(--p2);border:1px solid var(--p4);border-radius:var(--r8);color:var(--t1);font-family:'Barlow',sans-serif;font-size:.86rem;outline:none;transition:border .18s;}
-.srch-wrap input:focus{border-color:var(--ouro);}
-.srch-wrap input::placeholder{color:var(--t3);}
-.srch-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--t3);font-size:13px;}
-.fpill{padding:8px 16px;border-radius:var(--r8);border:1px solid var(--p4);background:var(--p2);color:var(--t3);font-family:'Barlow',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .18s;white-space:nowrap;}
-.fpill:hover{border-color:var(--ouro);color:var(--oc);}
-.fpill.active{background:var(--ouro);color:var(--p0);border-color:var(--ouro);font-weight:700;}
-.btn{padding:9px 18px;border-radius:var(--r8);border:none;font-family:'Barlow',sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;transition:all .18s;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;}
-.btn-gold{background:var(--gg);color:var(--p0);}.btn-gold:hover{opacity:.85;}
-.btn-ghost{background:transparent;color:var(--oc);border:1px solid rgba(212,160,23,.3);}.btn-ghost:hover{background:rgba(212,160,23,.1);}
+/* BUSCA + FAVORITOS */
+.search-row{display:flex;gap:10px;max-width:520px;margin:20px auto 0;}
+.search-row input{flex:1;background:var(--graphite2);border:1px solid var(--line);color:var(--text);padding:12px 16px;border-radius:8px;font-size:14px;}
+.search-row input:focus{outline:none;border-color:var(--amber);}
 
-/* CONTENT */
-.content{padding:26px 5vw 60px;}
-.cat-block{margin-bottom:34px;}
-.cat-hdr{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
-.cat-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
-.cat-name{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--t2);}
-.cat-line{flex:1;height:1px;background:var(--p4);}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}
+/* CATEGORIAS (TABS) */
+.cat-tabs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:24px 0 8px;}
+.cat-tab{background:var(--graphite2);border:1px solid var(--line);color:var(--muted);padding:9px 16px;border-radius:20px;cursor:pointer;font-weight:600;font-size:12.5px;}
+.cat-tab.active{background:var(--amber);color:#111;border-color:var(--amber);}
 
-.card{background:var(--p2);border:1px solid var(--p4);border-radius:var(--r16);padding:20px;position:relative;overflow:hidden;transition:all .2s;display:flex;flex-direction:column;gap:12px;}
-.card:hover{border-color:rgba(212,160,23,.32);transform:translateY(-3px);box-shadow:var(--sh2);}
-.card-accent{position:absolute;top:0;left:0;right:0;height:3px;}
-.card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
-.card-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
-.card-fav{background:none;border:none;color:var(--p5);cursor:pointer;font-size:16px;padding:2px;transition:color .15s;}
-.card-fav.on{color:var(--oc);}
-.card-fav:hover{color:var(--oc);}
-.card-name{font-family:'Barlow Condensed',sans-serif;font-size:1.08rem;font-weight:700;letter-spacing:.3px;color:var(--t1);line-height:1.25;}
-.card-desc{font-size:.76rem;color:var(--t3);line-height:1.55;flex:1;}
-.card-bot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:2px;}
-.badge{font-size:.6rem;padding:3px 10px;border-radius:20px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;white-space:nowrap;}
-.b-ativo{background:rgba(37,211,102,.14);color:#25D366;border:1px solid rgba(37,211,102,.22);}
-.b-beta{background:rgba(255,183,77,.14);color:#ffb74d;border:1px solid rgba(255,183,77,.22);}
-.b-local{background:var(--p4);color:var(--t3);border:1px solid var(--p5);}
-.b-plan{background:rgba(239,83,80,.1);color:#ef9a9a;border:1px solid rgba(239,83,80,.18);}
-.card-acts{display:flex;gap:6px;align-items:center;}
-.icon-btn{width:28px;height:28px;border-radius:7px;border:1px solid var(--p4);background:var(--p3);color:var(--t3);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;transition:all .15s;flex-shrink:0;}
-.icon-btn:hover{border-color:rgba(212,160,23,.3);color:var(--oc);}
-.open-btn{padding:8px 16px;background:var(--gg);border:none;border-radius:var(--r8);color:var(--p0);font-family:'Barlow',sans-serif;font-size:.74rem;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:5px;}
-.open-btn:hover{opacity:.85;}
-.open-btn.disabled{background:var(--p4);color:var(--t3);cursor:not-allowed;pointer-events:none;}
-.card-hidden{opacity:.4;}
+/* SEÇÃO */
+.cat-section{margin-top:28px;}
+.cat-section.hidden{display:none;}
+.cat-title{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:14px;padding-left:2px;}
 
-.add-card{border:1px dashed var(--p5);background:transparent;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;cursor:pointer;min-height:150px;color:var(--t3);transition:all .18s;}
-.add-card:hover{border-color:var(--ouro);color:var(--oc);background:rgba(212,160,23,.03);}
-.add-card-icon{font-size:26px;}
-.add-card-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.82rem;font-weight:700;letter-spacing:.5px;}
+/* GRID DE CARDS */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;}
+.sys-card{
+  background:var(--graphite2);border:1px solid var(--line);border-radius:12px;
+  padding:18px;text-decoration:none;color:var(--text);
+  display:flex;flex-direction:column;gap:10px;position:relative;
+  transition:border-color .15s ease, transform .15s ease;
+}
+.sys-card:hover{border-color:var(--amber);transform:translateY(-2px);}
+.sys-card.disabled{opacity:.55;cursor:default;}
+.sys-card.disabled:hover{transform:none;border-color:var(--line);}
+.sys-icon{
+  width:42px;height:42px;border-radius:10px;background:var(--graphite3);
+  display:flex;align-items:center;justify-content:center;color:var(--amber);
+}
+.sys-icon svg{width:22px;height:22px;}
+.sys-name{font-family:'Bebas Neue',Arial,sans-serif;font-size:18px;letter-spacing:.5px;color:#fff;}
+.sys-desc{font-size:12px;color:var(--muted);line-height:1.4;}
+.sys-badge{
+  position:absolute;top:14px;right:14px;font-size:9px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.04em;padding:3px 8px;border-radius:5px;
+}
+.sys-badge.ativo{background:rgba(34,197,94,.14);color:var(--ok);border:1px solid var(--ok);}
+.sys-badge.interno{background:var(--graphite3);color:var(--amber);border:1px solid var(--amber-dark);}
+.sys-badge.breve{background:var(--graphite3);color:var(--muted);border:1px solid var(--line);}
 
-.empty-state{text-align:center;padding:60px 20px;color:var(--t3);font-size:.86rem;}
+/* PAINEL EXECUTIVO MINI */
+.exec-panel{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;
+  background:var(--graphite2);border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:18px;
+}
+.exec-item{text-align:center;}
+.exec-item .val{font-family:'Bebas Neue',Arial,sans-serif;font-size:26px;color:var(--amber);line-height:1;}
+.exec-item .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:4px;}
 
-/* MODAL */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;align-items:center;justify-content:center;padding:20px;overflow-y:auto;}
-.modal-overlay.open{display:flex;}
-.modal{background:var(--p2);border:1px solid rgba(212,160,23,.2);border-radius:var(--r16);width:100%;max-width:460px;padding:24px;}
-.modal-title{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:700;color:var(--oc);margin-bottom:18px;display:flex;align-items:center;gap:8px;}
-.fg{margin-bottom:14px;}
-.flbl{display:block;font-size:.6rem;color:var(--t3);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:5px;}
-.finp{width:100%;padding:9px 12px;background:var(--p0);border:1px solid var(--p4);border-radius:var(--r8);color:var(--t1);font-family:'Barlow',sans-serif;font-size:.86rem;outline:none;transition:border .18s;}
-.finp:focus{border-color:var(--ouro);}
-.finp::placeholder{color:var(--p5);}
-select.finp{cursor:pointer;}
-.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.chk-row{display:flex;align-items:center;gap:8px;margin-bottom:14px;}
-.chk-row input{width:16px;height:16px;accent-color:var(--ouro);cursor:pointer;}
-.chk-row label{font-size:.8rem;color:var(--t2);cursor:pointer;}
-.modal-footer{display:flex;gap:10px;justify-content:space-between;margin-top:18px;}
-.modal-footer-right{display:flex;gap:10px;}
-.btn-danger{background:transparent;color:#ef9a9a;border:1px solid rgba(239,83,80,.25);}
-.btn-danger:hover{background:rgba(239,83,80,.08);}
-
-/* TOAST */
-.toast{position:fixed;bottom:20px;right:20px;padding:10px 20px;border-radius:var(--r8);font-family:'Barlow',sans-serif;font-size:.8rem;font-weight:700;z-index:9999;transition:opacity .3s;opacity:0;pointer-events:none;box-shadow:var(--sh2);background:linear-gradient(135deg,#A07810,#F5C842);color:#0A0A0A;}
-
-/* FOOTER */
-.ftr{border-top:1px solid var(--p4);padding:22px 5vw 30px;text-align:center;}
-.ftr-name{font-size:.8rem;font-weight:700;color:var(--oc);}
-.ftr-info{font-size:.68rem;color:var(--t3);margin-top:4px;line-height:1.6;}
-
-@media(max-width:640px){.hdr{padding:26px 5vw 20px;}.hdr-title{font-size:1.9rem;}.grid{grid-template-columns:1fr;}.controls{flex-direction:column;align-items:stretch;}.frow{grid-template-columns:1fr;}}
+.empty-msg{text-align:center;color:var(--muted);padding:30px;font-size:13px;}
 </style>
 </head>
 <body>
 
-<div class="hdr">
-  <div class="hdr-top">
-    <div class="hdr-logo">🛡️</div>
-    <div>
-      <div class="hdr-brand-name">SAFESEG</div>
-      <div class="hdr-tag">Segurança do Trabalho</div>
+<div class="hazard"></div>
+
+<div class="wrap">
+
+  <div class="header">
+    <img src="assets/img/logo-dark.png" alt="SafeSeg">
+    <h1>QG SAFESEG</h1>
+    <div class="sub">Central de gestão — tudo em um só lugar</div>
+  </div>
+
+  <!-- PAINEL EXECUTIVO MINI -->
+  <div class="exec-panel">
+    <div class="exec-item"><div class="val">2</div><div class="lbl">Turmas próx. 30d</div></div>
+    <div class="exec-item"><div class="val">6</div><div class="lbl">Pendências</div></div>
+    <div class="exec-item"><div class="val">14</div><div class="lbl">Empresas ativas</div></div>
+    <div class="exec-item"><div class="val">R$ 6k</div><div class="lbl">Receita no ano</div></div>
+  </div>
+
+  <div class="search-row">
+    <input type="text" id="buscaInput" placeholder="Buscar sistema..." oninput="filtrar()">
+  </div>
+
+  <div class="cat-tabs" id="catTabs">
+    <button class="cat-tab active" data-cat="todos">Todos</button>
+    <button class="cat-tab" data-cat="operacional">Operacional</button>
+    <button class="cat-tab" data-cat="sistemas">Sistemas</button>
+    <button class="cat-tab" data-cat="jogos">Jogos</button>
+    <button class="cat-tab" data-cat="institucional">Institucional</button>
+  </div>
+
+  <!-- OPERACIONAL (Portal) -->
+  <div class="cat-section" data-section="operacional">
+    <div class="cat-title">Operacional — Portal SafeSeg</div>
+    <div class="grid">
+      <a class="sys-card" href="portal/dashboard.html" data-name="dashboard">
+        <span class="sys-badge ativo">Ativo</span>
+        <div class="sys-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+        <div class="sys-name">Dashboard</div>
+        <div class="sys-desc">Visão geral do negócio, KPIs e próximas turmas</div>
+      </a>
+      <a class="sys-card" href="portal/certificados.html" data-name="certificados">
+        <span class="sys-badge ativo">Ativo</span>
+        <div class="sys-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 16c0-5 4-9 9-9s9 4 9 9"/><path d="M2 16h20"/><path d="M9 7V4"/></svg></div>
+        <div class="sys-name">Certificados</div>
+        <div class="sys-desc">Emissão e controle de validade por colaborador</div>
+      </a>
+      <a class="sys-card" href="portal/empresas.html" data-name="empresas">
+        <span class="sys-badge ativo">Ativo</span>
+        <div class="sys-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17"/><path d="M19 21V10a1 1 0 0 0-1-1h-3"/><path d="M8 7h2M8 11h2M8 15h2"/></svg></div>
+        <div class="sys-name">Empresas</div>
+        <div class="sys-desc">Cadastro de clientes e gestão de acesso</div>
+      </a>
+      <a class="sys-card" href="portal/documentos.html" data-name="documentos">
+        <span class="sys-badge ativo">Ativo</span>
+        <div class="sys-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/></svg></div>
+        <div class="sys-name">Documentos</div>
+        <div class="sys-desc">PGR, LTCAT, PCMSO, Laudos e Contratos</div>
+      </a>
+      <a class="sys-card" href="portal/agenda-turmas.html" data-name="agenda">
+        <span class="sys-badge ativo">Ativo</span>
+        <div class="sys-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="3" width="12" height="7" rx="2"/><path d="M9 10v4M15 10v4M6 14h12v7H6z"/></svg></div>
+        <div class="sys-name">Agenda de Turmas</div>
+        <div class="sys-desc">Calendário de treinamentos, privados e abertos</div>
+      </a>
+      <a class="sys-card" href="portal/dashboard-cliente.html" data-name="portal cliente">
+        <span class="sys-badge ativo">Ativo</span>
+        <div class="sys-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.2"/><path d="M4 20c0-4 3.5-6 8-6s8 2 8 6"/></svg></div>
+        <div class="sys-name">Portal do Cliente</div>
+        <div class="sys-desc">Acesso restrito que cada empresa-cliente usa</div>
+      </a>
     </div>
   </div>
-  <div class="hdr-title">Painel Central</div>
-  <div class="hdr-sub">Todos os sistemas da SafeSeg reunidos em um só lugar. Clique para abrir, use a estrela para fixar seus favoritos.</div>
-  <div class="stats-strip">
-    <div class="stat-chip"><b id="st-total">0</b><span>Sistemas</span></div>
-    <div class="stat-chip"><b id="st-ativo">0</b><span>Ativos</span></div>
-    <div class="stat-chip"><b id="st-fav">0</b><span>Favoritos</span></div>
-  </div>
-</div>
 
-<div class="controls">
-  <div class="srch-wrap"><span class="srch-icon">🔍</span><input type="text" id="busca" placeholder="Buscar sistema..." oninput="render()"></div>
-  <button class="fpill active" data-f="todos" onclick="setFiltro(this,'todos')">Todos</button>
-  <button class="fpill" data-f="favoritos" onclick="setFiltro(this,'favoritos')">⭐ Favoritos</button>
-  <button class="fpill" data-f="ativo" onclick="setFiltro(this,'ativo')">🟢 Ativos</button>
-  <button class="btn btn-ghost" onclick="abrirGerenciar()">⚙️ Gerenciar</button>
-  <button class="btn btn-gold" onclick="abrirModalSistema()">+ Novo Sistema</button>
-</div>
-
-<div class="content" id="content"></div>
-
-<div class="ftr">
-  <div class="ftr-name">Deverson Rodrigo F. Pomerenk — SafeSeg Segurança do Trabalho</div>
-  <div class="ftr-info">CNPJ 52.112.925/0001-28 · CREA-PR 182021/D · MTE 0027116/PR<br>Dois Vizinhos - PR · (46) 99920-3945</div>
-</div>
-
-<!-- MODAL SISTEMA (criar/editar) -->
-<div class="modal-overlay" id="modal-sistema">
-  <div class="modal">
-    <div class="modal-title" id="ms-title">🔗 Novo Sistema</div>
-    <div class="fg"><label class="flbl">Nome</label><input class="finp" id="ms-nome" placeholder="Ex: Gerador de Turmas"></div>
-    <div class="fg"><label class="flbl">Descrição curta</label><input class="finp" id="ms-desc" placeholder="O que esse sistema faz"></div>
-    <div class="fg"><label class="flbl">Link (URL completa)</label><input class="finp" id="ms-url" placeholder="https://safesegtreinamentos.github.io/..."></div>
-    <div class="frow">
-      <div class="fg"><label class="flbl">Categoria</label>
-        <select class="finp" id="ms-cat">
-          <option value="comercial">Comercial</option>
-          <option value="operacional">Operacional</option>
-          <option value="documentos">Documentos & Certificação</option>
-          <option value="gestao">Gestão Interna</option>
-          <option value="institucional">Institucional</option>
-        </select>
+  <!-- SISTEMAS (ferramentas internas) -->
+  <div class="cat-section" data-section="sistemas">
+    <div class="cat-title">Sistemas — ferramentas internas</div>
+    <div class="grid">
+      <a class="sys-card" href="portal/gerador-turmas.html" data-name="gerador de turmas">
+        <span class="sys-badge interno">Interno</span>
+        <div class="sys-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 21h10M9 18v3M15 18v3"/></svg></div>
+        <div class="sys-name">Gerador de Turmas</div>
+        <div class="sys-desc">Emissão em lote + lista de presença + Salvar/Gerar</div>
+      </a>
+      <a class="sys-card" href="portal/tecnica.html" data-name="central tecnica normas provas">
+        <span class="sys-badge interno">Interno</span>
+        <div class="sys-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9.5 2a2.5 2.5 0 0 0-2.5 2.5V6H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-2V4.5A2.5 2.5 0 0 0 14.5 2z"/><path d="M9 12h6M9 16h4"/></svg></div>
+        <div class="sys-name">Central Técnica</div>
+        <div class="sys-desc">Banco de perguntas, NRs e conhecimento técnico</div>
+      </a>
+      <div class="sys-card disabled">
+        <span class="sys-badge breve">Em breve</span>
+        <div class="sys-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="9"/></svg></div>
+        <div class="sys-name">CRM Comercial</div>
+        <div class="sys-desc">Pipeline de leads, mensagens e propostas</div>
       </div>
-      <div class="fg"><label class="flbl">Status</label>
-        <select class="finp" id="ms-status">
-          <option value="ativo">🟢 Ativo</option>
-          <option value="beta">🟡 Beta / Em teste</option>
-          <option value="local">⚪ Uso local</option>
-          <option value="planejado">🔴 Planejado</option>
-        </select>
+      <div class="sys-card disabled">
+        <span class="sys-badge breve">Em breve</span>
+        <div class="sys-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+        <div class="sys-name">Financeiro</div>
+        <div class="sys-desc">Contas a pagar/receber e fluxo de caixa</div>
       </div>
-    </div>
-    <div class="fg"><label class="flbl">Ícone (emoji)</label><input class="finp" id="ms-icon" placeholder="📋" maxlength="4"></div>
-    <input type="hidden" id="ms-id">
-    <div class="modal-footer">
-      <button class="btn btn-danger" id="ms-del" style="display:none" onclick="excluirSistema()">🗑 Excluir</button>
-      <div class="modal-footer-right" style="margin-left:auto">
-        <button class="btn btn-ghost" onclick="fecharModal('modal-sistema')">Cancelar</button>
-        <button class="btn btn-gold" onclick="salvarSistema()">Salvar</button>
+      <div class="sys-card disabled">
+        <span class="sys-badge breve">Em breve</span>
+        <div class="sys-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2h12a1 1 0 0 1 1 1v18l-7-4-7 4V3a1 1 0 0 1 1-1z"/></svg></div>
+        <div class="sys-name">Loja de EPI's</div>
+        <div class="sys-desc">Catálogo, carrinho e checkout</div>
       </div>
     </div>
   </div>
-</div>
 
-<!-- MODAL GERENCIAR (mostrar/ocultar tudo) -->
-<div class="modal-overlay" id="modal-gerenciar">
-  <div class="modal">
-    <div class="modal-title">⚙️ Gerenciar Sistemas</div>
-    <div style="font-size:.76rem;color:var(--t3);margin-bottom:14px;line-height:1.5">Oculte sistemas que ainda não estão prontos ou que você não usa no dia a dia. Eles continuam salvos, só saem da tela principal.</div>
-    <div id="gerenciar-list" style="max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
-    <div class="modal-footer"><button class="btn btn-gold" style="margin-left:auto" onclick="fecharModal('modal-gerenciar');render()">Concluído</button></div>
+  <!-- JOGOS -->
+  <div class="cat-section" data-section="jogos">
+    <div class="cat-title">Jogos educativos — usados em treinamento</div>
+    <div class="grid">
+      <div class="sys-card disabled">
+        <span class="sys-badge breve">Em breve</span>
+        <div class="sys-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="7" width="20" height="10" rx="5"/><path d="M7 12h4M9 10v4M15.5 11.5h.01M18 13h.01"/></svg></div>
+        <div class="sys-name">Quiz NR-35</div>
+        <div class="sys-desc">Perguntas rápidas sobre trabalho em altura</div>
+      </div>
+      <div class="sys-card disabled">
+        <span class="sys-badge breve">Em breve</span>
+        <div class="sys-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="7" width="20" height="10" rx="5"/><path d="M7 12h4M9 10v4M15.5 11.5h.01M18 13h.01"/></svg></div>
+        <div class="sys-name">Quiz EPI</div>
+        <div class="sys-desc">Reconhecimento de equipamentos de proteção</div>
+      </div>
+    </div>
+    <div class="empty-msg" style="margin-top:6px;">Cada jogo abre isolado, sem link de volta pro Hub — pensado pra uso direto em sala de aula.</div>
   </div>
-</div>
 
-<div class="toast" id="toast"></div>
+  <!-- INSTITUCIONAL -->
+  <div class="cat-section" data-section="institucional">
+    <div class="cat-title">Institucional / Público</div>
+    <div class="grid">
+      <a class="sys-card" href="validador/" data-name="validador publico">
+        <span class="sys-badge ativo">Ativo</span>
+        <div class="sys-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+        <div class="sys-name">Validador Público</div>
+        <div class="sys-desc">Consulta pública de certificados por CPF</div>
+      </a>
+    </div>
+  </div>
+
+</div>
 
 <script>
-// ══════════════════════════════════════════
-// CONFIGURAÇÃO PADRÃO — edite as URLs abaixo ou use "+ Novo Sistema" / "⚙️ Gerenciar" na tela
-// ══════════════════════════════════════════
-const DEFAULT_MODULOS = [
-  {id:'sistema-comercial',nome:'Sistema Comercial',desc:'Dashboard completo: portfólio, propostas, pipeline, scripts de vendas, empresas, turmas, agenda, certificados, documentos, contratos, financeiro e relatórios. Ainda local — migração pro Portal planejada.',icon:'⚡',cat:'comercial',status:'ativo',url:'https://safesegtreinamentos.github.io/sistema-comercial/'},
-  {id:'crm',nome:'CRM SafeSeg',desc:'Kanban de leads, Copiloto de IA para prospecção, lead scoring e sync com Google Sheets. Ainda local — migração pro Portal planejada.',icon:'🔄',cat:'comercial',status:'local',url:''},
-  {id:'portal',nome:'Portal SafeSeg',desc:'Sistema de gestão com login real — empresas, certificados, documentos, contratos, financeiro e checklist. Cliente vê só a própria empresa.',icon:'🛡️',cat:'gestao',status:'ativo',url:'https://safesegtreinamentos.github.io/Central/portal/'},
-  {id:'gerador-turmas',nome:'Gerador de Turmas',desc:'Cria turmas de treinamento e gera listas de presença em PDF automaticamente.',icon:'🎓',cat:'operacional',status:'ativo',url:'https://safesegtreinamentos.github.io/Central/gerador-turmas/'},
-  {id:'dossie-tecnico',nome:'Dossiê Técnico',desc:'Checklist organizado por turma em 9 blocos: identificação, pedagógica, instrutor, alunos, avaliação, prática, certificação, encerramento e organização final.',icon:'📁',cat:'operacional',status:'ativo',url:''},
-  {id:'safeseg-guard',nome:'SafeSeg Guard',desc:'Controle de validade de treinamentos por colaborador — hoje já coberto pelo Portal (Dashboard + status Pendente).',icon:'🛡️',cat:'gestao',status:'ativo',url:'https://safesegtreinamentos.github.io/Central/portal/'},
-  {id:'epi',nome:'Gestão de EPI',desc:'Controle de estoque de EPIs, solicitação dos funcionários, alerta de estoque mínimo e ficha NR-06.',icon:'🧤',cat:'gestao',status:'planejado',url:''},
-  {id:'cipa',nome:'Eleição CIPA',desc:'Plataforma digital de eleição da CIPA conforme NR-05, com totem biométrico, urna eletrônica e relatórios de apuração.',icon:'🗳️',cat:'gestao',status:'beta',url:''},
-  {id:'certguard',nome:'Validador de Certificados',desc:'Consulta pública por CPF (ou QR code do certificado) mostrando todos os treinamentos da pessoa.',icon:'✅',cat:'documentos',status:'ativo',url:'https://safesegtreinamentos.github.io/Central/validador/'},
-  {id:'book-provas',nome:'Book de Provas',desc:'Repositório offline com provas de todas as NRs, pronto para aplicação em campo.',icon:'📝',cat:'documentos',status:'ativo',url:''},
-  {id:'gerador-cracha',nome:'Gerador de Crachá',desc:'Cria crachás de operador no padrão CNH com foto e dados do treinamento.',icon:'🪪',cat:'documentos',status:'local',url:''},
-  {id:'site-institucional',nome:'Site SafeSeg',desc:'Catálogo público de cursos online e presenciais, com matrícula e captura de leads.',icon:'🌐',cat:'institucional',status:'planejado',url:''},
-  {id:'pesquisa',nome:'Pesquisa de Satisfação',desc:'Coleta a avaliação dos alunos após o treinamento e direciona para avaliação pública quando a nota é alta.',icon:'⭐',cat:'institucional',status:'beta',url:'https://safesegtreinamentos.github.io/pesquisa/'},
-];
-
-const CATS = {
-  comercial:{label:'Comercial',cor:'var(--c-com)'},
-  operacional:{label:'Operacional',cor:'var(--c-op)'},
-  documentos:{label:'Documentos & Certificação',cor:'var(--c-doc)'},
-  gestao:{label:'Gestão Interna',cor:'var(--c-gest)'},
-  institucional:{label:'Institucional',cor:'var(--c-inst)'},
-};
-const STATUS_LBL={ativo:{cls:'b-ativo',lbl:'Ativo'},beta:{cls:'b-beta',lbl:'Beta'},local:{cls:'b-local',lbl:'Local'},planejado:{cls:'b-plan',lbl:'Planejado'}};
-
-const SK='safeseg_hub_v1';
-let overrides={}, custom=[], filtro='todos';
-
-function carregar(){
-  try{const r=localStorage.getItem(SK);if(r){const d=JSON.parse(r);overrides=d.overrides||{};custom=d.custom||[];}}catch(e){}
-}
-function salvar(){
-  try{localStorage.setItem(SK,JSON.stringify({overrides,custom}));}catch(e){toast('⚠️ Erro ao salvar',true);}
-}
-function toast(msg,err){const t=document.getElementById('toast');t.style.background=err?'#c62828':'linear-gradient(135deg,#A07810,#F5C842)';t.style.color=err?'#fff':'#0A0A0A';t.textContent=msg;t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(()=>{t.style.opacity='0';},2200);}
-
-function todosModulos(){
-  const base=DEFAULT_MODULOS.map(m=>({...m,...(overrides[m.id]||{})}));
-  return [...base,...custom];
-}
-
-function setFiltro(btn,f){document.querySelectorAll('.controls .fpill').forEach(b=>b.classList.remove('active'));btn.classList.add('active');filtro=f;render();}
-
-function render(){
-  const busca=(document.getElementById('busca').value||'').toLowerCase();
-  let lista=todosModulos().filter(m=>!m.oculto);
-  if(filtro==='favoritos')lista=lista.filter(m=>m.fav);
-  if(filtro==='ativo')lista=lista.filter(m=>m.status==='ativo');
-  if(busca)lista=lista.filter(m=>(m.nome+m.desc).toLowerCase().includes(busca));
-
-  document.getElementById('st-total').textContent=todosModulos().filter(m=>!m.oculto).length;
-  document.getElementById('st-ativo').textContent=todosModulos().filter(m=>m.status==='ativo'&&!m.oculto).length;
-  document.getElementById('st-fav').textContent=todosModulos().filter(m=>m.fav&&!m.oculto).length;
-
-  const content=document.getElementById('content');
-  if(!lista.length){content.innerHTML='<div class="empty-state">Nenhum sistema encontrado. Tente outra busca ou clique em "+ Novo Sistema".</div>';return;}
-
-  let html='';
-  Object.keys(CATS).forEach(catId=>{
-    const doGrupo=lista.filter(m=>m.cat===catId);
-    if(!doGrupo.length)return;
-    const C=CATS[catId];
-    html+=`<div class="cat-block"><div class="cat-hdr"><div class="cat-dot" style="background:${C.cor}"></div><div class="cat-name">${C.label}</div><div class="cat-line"></div></div><div class="grid">`;
-    doGrupo.forEach(m=>{html+=cardHtml(m,C.cor);});
-    if(catId===Object.keys(CATS)[Object.keys(CATS).length-1]) {} // no-op
-    html+=`</div></div>`;
+document.querySelectorAll('.cat-tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    const cat = tab.dataset.cat;
+    document.querySelectorAll('.cat-section').forEach(sec=>{
+      sec.classList.toggle('hidden', cat!=='todos' && sec.dataset.section!==cat);
+    });
+    document.getElementById('buscaInput').value='';
+    filtrar();
   });
-  html+=`<div class="cat-block"><div class="grid"><div class="card add-card" onclick="abrirModalSistema()"><div class="add-card-icon">➕</div><div class="add-card-lbl">Adicionar sistema</div></div></div></div>`;
-  content.innerHTML=html;
-}
+});
 
-function cardHtml(m,cor){
-  const S=STATUS_LBL[m.status]||STATUS_LBL.local;
-  const temUrl=m.url&&m.url.trim().length>3;
-  const openBtn=temUrl?`<a class="open-btn" href="${m.url}" target="_blank" rel="noopener">Abrir ↗</a>`:`<button class="open-btn disabled" title="Sem link cadastrado ainda">Sem link</button>`;
-  return `<div class="card">
-    <div class="card-accent" style="background:${cor}"></div>
-    <div class="card-top">
-      <div class="card-icon" style="background:${cor}22">${m.icon||'📌'}</div>
-      <button class="card-fav ${m.fav?'on':''}" onclick="toggleFav('${m.id}')" title="Favoritar">${m.fav?'★':'☆'}</button>
-    </div>
-    <div><div class="card-name">${m.nome}</div></div>
-    <div class="card-desc">${m.desc||''}</div>
-    <div class="card-bot">
-      <span class="badge ${S.cls}">${S.lbl}</span>
-      <div class="card-acts">
-        <button class="icon-btn" onclick="editarSistema('${m.id}')" title="Editar">✏️</button>
-        ${openBtn}
-      </div>
-    </div>
-  </div>`;
+function filtrar(){
+  const q = document.getElementById('buscaInput').value.toLowerCase();
+  document.querySelectorAll('.sys-card').forEach(card=>{
+    const name = card.dataset.name || '';
+    card.style.display = (!q || name.includes(q)) ? '' : 'none';
+  });
 }
-
-function toggleFav(id){
-  const isCustom=custom.find(c=>c.id===id);
-  if(isCustom){isCustom.fav=!isCustom.fav;}
-  else{overrides[id]=overrides[id]||{};overrides[id].fav=!(overrides[id].fav);}
-  salvar();render();
-}
-
-// ── MODAL CRIAR/EDITAR ──
-function abrirModalSistema(){
-  document.getElementById('ms-title').textContent='🔗 Novo Sistema';
-  document.getElementById('ms-id').value='';
-  document.getElementById('ms-nome').value='';document.getElementById('ms-desc').value='';document.getElementById('ms-url').value='';document.getElementById('ms-icon').value='📌';
-  document.getElementById('ms-cat').value='comercial';document.getElementById('ms-status').value='ativo';
-  document.getElementById('ms-del').style.display='none';
-  document.getElementById('modal-sistema').classList.add('open');
-  setTimeout(()=>document.getElementById('ms-nome').focus(),100);
-}
-function editarSistema(id){
-  const m=todosModulos().find(x=>x.id===id);if(!m)return;
-  document.getElementById('ms-title').textContent='✏️ Editar Sistema';
-  document.getElementById('ms-id').value=id;
-  document.getElementById('ms-nome').value=m.nome||'';
-  document.getElementById('ms-desc').value=m.desc||'';
-  document.getElementById('ms-url').value=m.url||'';
-  document.getElementById('ms-icon').value=m.icon||'📌';
-  document.getElementById('ms-cat').value=m.cat||'comercial';
-  document.getElementById('ms-status').value=m.status||'ativo';
-  document.getElementById('ms-del').style.display=custom.find(c=>c.id===id)?'inline-flex':'none';
-  document.getElementById('modal-sistema').classList.add('open');
-}
-function salvarSistema(){
-  const id=document.getElementById('ms-id').value;
-  const nome=document.getElementById('ms-nome').value.trim();
-  if(!nome){toast('⚠️ Informe o nome!',true);return;}
-  const dados={nome,desc:document.getElementById('ms-desc').value.trim(),url:document.getElementById('ms-url').value.trim(),icon:document.getElementById('ms-icon').value.trim()||'📌',cat:document.getElementById('ms-cat').value,status:document.getElementById('ms-status').value};
-  if(id){
-    const isCustom=custom.find(c=>c.id===id);
-    if(isCustom)Object.assign(isCustom,dados);
-    else{overrides[id]=overrides[id]||{};Object.assign(overrides[id],dados);}
-  } else {
-    custom.push({id:'c-'+Date.now().toString(36),...dados,fav:false,oculto:false});
-  }
-  salvar();fecharModal('modal-sistema');render();toast('✅ Sistema salvo!');
-}
-function excluirSistema(){
-  const id=document.getElementById('ms-id').value;
-  if(!id||!confirm('Remover este sistema da lista?'))return;
-  custom=custom.filter(c=>c.id!==id);
-  salvar();fecharModal('modal-sistema');render();toast('🗑 Removido.');
-}
-function fecharModal(id){document.getElementById(id).classList.remove('open');}
-document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');}));
-
-// ── MODAL GERENCIAR (mostrar/ocultar) ──
-function abrirGerenciar(){
-  const lista=todosModulos();
-  const cont=document.getElementById('gerenciar-list');
-  cont.innerHTML=lista.map(m=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--p4);border-radius:8px">
-    <span style="font-size:16px">${m.icon||'📌'}</span>
-    <span style="flex:1;font-size:.82rem;color:var(--t1)">${m.nome}</span>
-    <label style="display:flex;align-items:center;gap:6px;font-size:.7rem;color:var(--t3);cursor:pointer">
-      <input type="checkbox" ${!m.oculto?'checked':''} onchange="toggleOculto('${m.id}',!this.checked)" style="accent-color:var(--ouro)"> visível
-    </label>
-  </div>`).join('');
-  document.getElementById('modal-gerenciar').classList.add('open');
-}
-function toggleOculto(id,oculto){
-  const isCustom=custom.find(c=>c.id===id);
-  if(isCustom)isCustom.oculto=oculto;
-  else{overrides[id]=overrides[id]||{};overrides[id].oculto=oculto;}
-  salvar();
-}
-
-// ── INIT ──
-carregar();render();
 </script>
+
 </body>
 </html>
