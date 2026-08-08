@@ -93,14 +93,29 @@ h1,h2,h3{font-family:'Bebas Neue',Arial,sans-serif;letter-spacing:.5px;margin:0;
 
 <script type="module">
   // Bloqueia o Hub até confirmar login real — só ter o link não basta mais.
-  // O conteúdo fica invisível (via CSS) até esse script confirmar a sessão,
-  // então não tem brecha de "flash" do conteúdo antes do login aparecer.
-  import { obterMeuPerfil } from 'assets/js/firebase-init.js';
-  const perfil = await obterMeuPerfil();
-  if (perfil && perfil.role === 'cliente') {
-    window.location.href = 'portal/dashboard-cliente.html';
-  } else {
-    document.querySelector('.wrap').classList.add('autenticado');
+  // O conteúdo fica invisível (via CSS) até esse script confirmar a sessão.
+  // IMPORTANTE: tudo dentro de try/catch — se algo falhar (rede, permissão,
+  // etc.), mostra um erro visível em vez de deixar a tela preta pra sempre.
+  try {
+    const { obterMeuPerfil } = await import('assets/js/firebase-init.js');
+    const perfil = await obterMeuPerfil();
+
+    if (perfil && perfil.role === 'cliente') {
+      window.location.href = 'portal/dashboard-cliente.html';
+    } else {
+      document.querySelector('.wrap').classList.add('autenticado');
+    }
+  } catch (err) {
+    console.error('Erro ao verificar login:', err);
+    document.body.innerHTML = `
+      <div style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; text-align:center; color:#E9E9E7; font-family:Inter,Arial,sans-serif;">
+        <div>
+          <div style="font-size:40px; margin-bottom:12px;">⚠️</div>
+          <div style="font-size:16px; font-weight:700; margin-bottom:6px;">Não foi possível verificar o login</div>
+          <div style="font-size:13px; color:#9AA0A6; margin-bottom:16px;">${err.message}</div>
+          <button onclick="location.reload()" style="background:#F59E0B; color:#111; border:none; padding:10px 20px; border-radius:8px; font-weight:700; cursor:pointer;">Tentar de novo</button>
+        </div>
+      </div>`;
   }
 </script>
 
