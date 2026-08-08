@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Portal SafeSeg — Empresas</title>
-<link rel="stylesheet" href="../assets/css/safeseg-design-system.css">
+<link rel="stylesheet" href="safeseg-design-system.css">
 <style>
   html, body { height: 100%; }
   .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
@@ -93,7 +93,7 @@
 <div class="app">
   <nav class="sidebar">
     <div class="sidebar__logo">
-      <img src="../assets/img/logo-dark.png" alt="SafeSeg" style="background:var(--graphite-900); border-radius:8px; padding:4px; max-width:150px; display:block;">
+      <img src="assets/logo-dark.png" alt="SafeSeg" style="background:var(--graphite-900); border-radius:8px; padding:4px; max-width:150px; display:block;">
     </div>
     <a class="nav-item" href="dashboard.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
@@ -149,9 +149,12 @@
         </div>
       </div>
 
-      <div class="empresa-grid">
+      <div id="connStatus" class="text-muted" style="font-size:12px; margin-bottom:-8px;">Conectando ao Firestore...</div>
 
-        <div class="empresa-card">
+      <div class="empresa-grid" id="empresaGrid">
+
+        <!-- Conteúdo de exemplo — some assim que o Firestore responder com dado real -->
+        <div class="empresa-card" data-fallback="true">
           <div class="empresa-card__head">
             <div class="empresa-avatar">MT</div>
             <div>
@@ -170,63 +173,6 @@
           </div>
         </div>
 
-        <div class="empresa-card">
-          <div class="empresa-card__head">
-            <div class="empresa-avatar">CB</div>
-            <div>
-              <div class="empresa-nome">Construtora Bettega</div>
-              <div class="empresa-cnpj">98.765.432/0001-21</div>
-            </div>
-          </div>
-          <div class="empresa-setor">Construção Civil</div>
-          <div class="empresa-stats">
-            <div class="empresa-stat"><div class="empresa-stat__value">142</div><div class="empresa-stat__label">Colaboradores</div></div>
-            <div class="empresa-stat"><div class="empresa-stat__value" style="color:var(--status-warn)">21%</div><div class="empresa-stat__label">Vencido</div></div>
-          </div>
-          <div class="empresa-card__footer">
-            <span class="access-tag granted"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>Acesso ativo</span>
-            <button class="btn btn--ghost" style="padding:6px 10px; font-size:12px;">Gerenciar</button>
-          </div>
-        </div>
-
-        <div class="empresa-card">
-          <div class="empresa-card__head">
-            <div class="empresa-avatar">AS</div>
-            <div>
-              <div class="empresa-nome">Agroserra Ind.</div>
-              <div class="empresa-cnpj">11.222.333/0001-44</div>
-            </div>
-          </div>
-          <div class="empresa-setor">Agronegócio</div>
-          <div class="empresa-stats">
-            <div class="empresa-stat"><div class="empresa-stat__value">58</div><div class="empresa-stat__label">Colaboradores</div></div>
-            <div class="empresa-stat"><div class="empresa-stat__value" style="color:var(--status-warn)">17%</div><div class="empresa-stat__label">Vencido</div></div>
-          </div>
-          <div class="empresa-card__footer">
-            <span class="access-tag none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>Sem acesso</span>
-            <button class="btn btn--ghost" style="padding:6px 10px; font-size:12px;">Gerenciar</button>
-          </div>
-        </div>
-
-        <div class="empresa-card">
-          <div class="empresa-card__head">
-            <div class="empresa-avatar">TR</div>
-            <div>
-              <div class="empresa-nome">Transnorte Log.</div>
-              <div class="empresa-cnpj">55.666.777/0001-08</div>
-            </div>
-          </div>
-          <div class="empresa-setor">Transporte</div>
-          <div class="empresa-stats">
-            <div class="empresa-stat"><div class="empresa-stat__value">37</div><div class="empresa-stat__label">Colaboradores</div></div>
-            <div class="empresa-stat"><div class="empresa-stat__value" style="color:var(--status-ok)">9%</div><div class="empresa-stat__label">Vencido</div></div>
-          </div>
-          <div class="empresa-card__footer">
-            <span class="access-tag granted"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>Acesso ativo</span>
-            <button class="btn btn--ghost" style="padding:6px 10px; font-size:12px;">Gerenciar</button>
-          </div>
-        </div>
-
         <div class="new-empresa-card">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>
           <span style="font-size:var(--text-sm); font-weight:600;">Cadastrar nova empresa</span>
@@ -237,6 +183,81 @@
     </div>
   </div>
 </div>
+
+<script type="module">
+  import { db, collection, getDocs } from 'assets/js/firebase-init.js';
+
+  // Schema confirmado da coleção 'empresas' (verificado direto no Firestore):
+  // nome, cnpj, seg (segmento), cidade, resp (responsável).
+  // Certificados vivem como SUBCOLEÇÃO: empresas/{id}/certificados
+  function iniciais(nome) {
+    return (nome || '?').split(' ').filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('');
+  }
+
+  async function carregarEmpresas() {
+    const status = document.getElementById('connStatus');
+    const grid = document.getElementById('empresaGrid');
+    try {
+      const snap = await getDocs(collection(db, 'empresas'));
+      if (snap.empty) {
+        status.textContent = '⚠️ Conectado ao Firestore, mas a coleção "empresas" está vazia.';
+        return;
+      }
+
+      // remove os cards de exemplo (fallback)
+      grid.querySelectorAll('[data-fallback="true"]').forEach(el => el.remove());
+
+      // Busca cada empresa + conta os certificados da subcoleção dela, em paralelo
+      const empresasComContagem = await Promise.all(snap.docs.map(async docSnap => {
+        const d = docSnap.data();
+        let totalCertificados = 0;
+        try {
+          const certSnap = await getDocs(collection(db, 'empresas', docSnap.id, 'certificados'));
+          totalCertificados = certSnap.size;
+        } catch (e) {
+          // sem permissão ou subcoleção vazia — segue com 0
+        }
+        return { id: docSnap.id, ...d, totalCertificados };
+      }));
+
+      const cardsHtml = empresasComContagem.map(emp => `
+        <div class="empresa-card">
+          <div class="empresa-card__head">
+            <div class="empresa-avatar">${iniciais(emp.nome)}</div>
+            <div>
+              <div class="empresa-nome">${emp.nome || '(sem nome)'}</div>
+              <div class="empresa-cnpj">${emp.cnpj || '—'}</div>
+            </div>
+          </div>
+          ${emp.seg ? `<div class="empresa-setor">${emp.seg}</div>` : ''}
+          <div class="empresa-stats">
+            <div class="empresa-stat"><div class="empresa-stat__value">${emp.totalCertificados}</div><div class="empresa-stat__label">Certificados</div></div>
+          </div>
+          ${(emp.cidade || emp.resp) ? `<div style="font-size:12px; color:var(--graphite-600); display:flex; justify-content:space-between;">
+            ${emp.cidade ? `<span>📍 ${emp.cidade}</span>` : '<span></span>'}
+            ${emp.resp ? `<span>👤 ${emp.resp}</span>` : ''}
+          </div>` : ''}
+          <div class="empresa-card__footer">
+            <button class="btn btn--ghost" style="padding:6px 10px; font-size:12px; margin-left:auto;" data-id="${emp.id}">Gerenciar</button>
+          </div>
+        </div>
+      `);
+
+      // insere antes do card "+ Cadastrar nova empresa"
+      const novoCard = grid.querySelector('.new-empresa-card');
+      novoCard.insertAdjacentHTML('beforebegin', cardsHtml.join(''));
+
+      status.textContent = `✅ Conectado ao Firestore — ${snap.size} empresa(s) carregada(s) em tempo real.`;
+      status.style.color = 'var(--status-ok)';
+    } catch (err) {
+      console.error('Erro ao carregar empresas do Firestore:', err);
+      status.textContent = `⚠️ Não foi possível conectar ao Firestore (${err.message}). Mostrando dado de exemplo.`;
+      status.style.color = 'var(--status-warn)';
+    }
+  }
+
+  carregarEmpresas();
+</script>
 
 </body>
 </html>
