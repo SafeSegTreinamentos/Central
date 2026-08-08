@@ -65,15 +65,17 @@
   .collab-body { display: none; border-top: 1px solid var(--paper-200); }
   .collab-card.open .collab-body { display: block; }
   .cert-row {
-    display: flex; align-items: center; gap: var(--space-3);
+    display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3);
     padding: var(--space-3) var(--space-5);
     border-bottom: 1px solid var(--paper-100);
   }
   .cert-row:last-child { border-bottom: none; }
-  .cert-nr { font-family: var(--font-data); font-weight: 700; font-size: var(--text-sm); width: 70px; flex-shrink: 0; }
-  .cert-nome { flex: 1; font-size: var(--text-sm); color: var(--graphite-700); }
-  .cert-cont { font-family: var(--font-data); font-size: 12px; color: var(--graphite-600); width: 90px; }
-  .cert-data { font-family: var(--font-data); font-size: var(--text-sm); width: 90px; text-align: right; }
+  .cert-nr { font-family: var(--font-data); font-weight: 700; font-size: var(--text-sm); flex-shrink: 0; }
+  .cert-nome { flex: 1 1 auto; min-width: 120px; font-size: var(--text-sm); color: var(--graphite-700); }
+  /* Data/CONT/status sempre juntos e sempre alinhados à direita na mesma linha do desktop */
+  .cert-row__meta { display: flex; align-items: center; gap: var(--space-3); flex-shrink: 0; margin-left: auto; }
+  .cert-cont { font-family: var(--font-data); font-size: 12px; color: var(--graphite-600); }
+  .cert-data { font-family: var(--font-data); font-size: var(--text-sm); }
 
   /* Tabela de modelos */
   .modelos-table-wrap { overflow-x: auto; }
@@ -88,14 +90,12 @@
     .content { padding: var(--space-4) !important; }
     .topbar { padding: var(--space-3) var(--space-4) !important; }
     .collab-summary { justify-content: flex-start; }
-    .cert-row {
-      display: flex; flex-wrap: wrap; align-items: center;
-      gap: 4px 10px; padding: var(--space-3) var(--space-4);
-    }
-    .cert-nr { width: auto; flex: 0 0 auto; }
-    .cert-nome { flex: 1 1 160px; min-width: 140px; white-space: normal; font-size: 13px; }
-    .cert-cont { width: auto; font-size: 11px; }
-    .cert-data { width: auto; font-size: 12px; margin-left: auto; }
+    .cert-row { padding: var(--space-3) var(--space-4); }
+    .cert-nome { white-space: normal; font-size: 13px; }
+    /* truque: flex-basis 100% força esse bloco a sempre começar
+       uma linha nova própria, garantindo nome+código numa linha e
+       data/status noutra, em qualquer largura de tela */
+    .cert-row__meta { flex: 1 1 100%; margin-left: 0; justify-content: space-between; }
   }
 </style>
 </head>
@@ -280,9 +280,11 @@
             <div class="cert-row">
               <span class="cert-nr">${c.nr}</span>
               <span class="cert-nome">${c.nome}</span>
-              ${c.cont ? `<span class="cert-cont">CONT ${c.cont}</span>` : ''}
-              <span class="cert-data">${c.data || '—'}</span>
-              <span class="selo selo--${st.cls}">${st.label}</span>
+              <div class="cert-row__meta">
+                ${c.cont ? `<span class="cert-cont">CONT ${c.cont}</span>` : ''}
+                <span class="cert-data">${c.data || '—'}</span>
+                <span class="selo selo--${st.cls}">${st.label}</span>
+              </div>
             </div>`;
         }).join('');
 

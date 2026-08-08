@@ -43,25 +43,27 @@
   .collab-body { display: none; border-top: 1px solid var(--paper-200); }
   .collab-card.open .collab-body { display: block; }
 
-  .doc-row { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-5); border-bottom: 1px solid var(--paper-100); }
+  .doc-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); padding: var(--space-3) var(--space-5); border-bottom: 1px solid var(--paper-100); }
   .doc-row:last-child { border-bottom: none; }
   .doc-cat {
     font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
-    padding: 3px 9px; border-radius: 5px; width: 78px; text-align: center; flex-shrink: 0;
+    padding: 3px 9px; border-radius: 5px; text-align: center; flex-shrink: 0;
   }
   .doc-cat--pgr    { background: #EAE6F7; color: #6B4FBB; }
   .doc-cat--ltcat  { background: #E2F1F8; color: #2A7DA8; }
   .doc-cat--pcmso  { background: #FCEAD8; color: #C56A1E; }
   .doc-cat--laudo  { background: #E8F3E9; color: #3C8C4E; }
   .doc-cat--contrato { background: var(--paper-200); color: var(--graphite-700); }
-  .doc-nome { flex: 1; font-size: var(--text-sm); color: var(--graphite-700); }
-  .doc-data { font-family: var(--font-data); font-size: var(--text-sm); width: 90px; text-align: right; }
+  .doc-nome { flex: 1 1 auto; min-width: 120px; font-size: var(--text-sm); color: var(--graphite-700); }
+  .doc-row__meta { display: flex; align-items: center; gap: var(--space-3); flex-shrink: 0; margin-left: auto; }
+  .doc-data { font-family: var(--font-data); font-size: var(--text-sm); }
 
   @media (max-width: 900px) {
     .app { grid-template-columns: 1fr !important; }
     .content { padding: var(--space-4) !important; }
     .topbar { padding: var(--space-3) var(--space-4) !important; }
-    .doc-row { flex-wrap: wrap; }
+    .doc-nome { white-space: normal; font-size: 13px; }
+    .doc-row__meta { flex: 1 1 100%; margin-left: 0; justify-content: space-between; }
   }
 </style>
 </head>
@@ -227,7 +229,7 @@
 
         const rowsHtml = emp.documentos.map(d => {
           const st = statusPorData(d.data);
-          return `<div class="doc-row"><span class="doc-cat doc-cat--${catClass(d.categoria)}">${d.categoria}</span><span class="doc-nome">${d.nome}</span><span class="doc-data">${d.data || '—'}</span><span class="selo selo--${st.cls}">${st.label}</span></div>`;
+          return `<div class="doc-row"><span class="doc-cat doc-cat--${catClass(d.categoria)}">${d.categoria}</span><span class="doc-nome">${d.nome}</span><div class="doc-row__meta"><span class="doc-data">${d.data || '—'}</span><span class="selo selo--${st.cls}">${st.label}</span></div></div>`;
         }).join('');
 
         return `
