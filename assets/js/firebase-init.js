@@ -16,6 +16,9 @@ import {
   getDocs,
   doc,
   getDoc,
+  addDoc,
+  setDoc,
+  updateDoc,
   query,
   where,
   orderBy,
@@ -58,6 +61,6 @@ export function esperarAuth() {
 // Reexporta os helpers do Firestore/Auth pra não precisar importar
 // a URL gigante do CDN de novo em cada página que usar este arquivo.
 export {
-  collection, collectionGroup, getDocs, doc, getDoc, query, where, orderBy, limit,
-  onAuthStateChanged
+  collection, collectionGroup, getDocs, doc, getDoc, addDoc, setDoc, updateDoc,
+  query, where, orderBy, limit, onAuthStateChanged
 };

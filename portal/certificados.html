@@ -88,7 +88,12 @@
     .content { padding: var(--space-4) !important; }
     .topbar { padding: var(--space-3) var(--space-4) !important; }
     .collab-summary { justify-content: flex-start; }
-    .cert-row { flex-wrap: wrap; }
+    .cert-row {
+      display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+      padding: var(--space-3) var(--space-4);
+    }
+    .cert-row > * { width: auto !important; text-align: left !important; }
+    .cert-nome { white-space: normal; }
   }
 </style>
 </head>
@@ -99,31 +104,40 @@
     <div class="sidebar__logo">
       <img src="../assets/img/logo-dark.png" alt="SafeSeg" style="background:var(--graphite-900); border-radius:8px; padding:4px; max-width:150px; display:block;">
     </div>
+    
     <a class="nav-item" href="dashboard.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
       Dashboard
     </a>
+    <div class="nav-section-label">Gestão Interna</div>
+    <a class="nav-item" href="empresas.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17"/><path d="M19 21V10a1 1 0 0 0-1-1h-3"/><path d="M8 7h2M8 11h2M8 15h2"/></svg>
+      Empresas
+    </a>
+    <a class="nav-item" href="gerador-turmas.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 21h10M9 18v3M15 18v3"/></svg>
+      Gerador de Turmas
+    </a>
+    <a class="nav-item" href="tecnica.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9.5 2a2.5 2.5 0 0 0-2.5 2.5V6H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-2V4.5A2.5 2.5 0 0 0 14.5 2z"/><path d="M9 12h6M9 16h4"/></svg>
+      Central Técnica
+    </a>
     <div class="nav-section-label">Documentos &amp; Certificação</div>
-    <a class="nav-item active" href="#">
+    <a class="nav-item active" href="certificados.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 16c0-5 4-9 9-9s9 4 9 9"/><path d="M2 16h20"/><path d="M9 7V4"/></svg>
       Certificados
     </a>
-    <a class="nav-item" href="#">
+    <a class="nav-item" href="documentos.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/></svg>
+      Documentos
+    </a>
+    <a class="nav-item" href="agenda-turmas.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="3" width="12" height="7" rx="2"/><path d="M9 10v4M15 10v4M6 14h12v7H6z"/></svg>
       Agenda de Turmas
     </a>
-    <a class="nav-item" href="#">
+    <a class="nav-item" href="../validador/">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
       Validador Público
-    </a>
-    <div class="nav-section-label">Gestão Interna</div>
-    <a class="nav-item" href="#">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.2"/><path d="M4 20c0-4 3.5-6 8-6s8 2 8 6"/></svg>
-      Colaboradores
-    </a>
-    <a class="nav-item" href="#">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l1.5 3.2L17 7l-2.8 2.1L15 13l-3-2-3 2 .8-3.9L7 7l3.5-.8z"/></svg>
-      Configurações
     </a>
   </nav>
 
@@ -136,7 +150,7 @@
       </div>
       <div class="flex gap-2">
         <button class="btn btn--secondary">↓ Exportar</button>
-        <button class="btn btn--secondary">🗂️ Modelos</button>
+        <button class="btn btn--secondary" onclick="document.getElementById('modelosSection').scrollIntoView({behavior:'smooth'})">🗂️ Modelos</button>
         <a href="gerador-turmas.html" class="btn btn--primary">+ Gerar Turma</a>
       </div>
     </header>
@@ -159,7 +173,7 @@
       <div class="collab-list" id="collabList"></div>
 
       <!-- TABELA DE MODELOS -->
-      <section class="card">
+      <section class="card" id="modelosSection">
         <div class="section-title">🗂️ Modelos por curso <span class="text-muted" style="font-family:var(--font-body); font-size:11px; font-weight:500;">(ainda editado manualmente — não conectado ao Firestore)</span></div>
         <div class="modelos-table-wrap">
         <table>
