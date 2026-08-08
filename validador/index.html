@@ -135,7 +135,7 @@
 
       <div class="qr-box" id="qrBox">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM19 14v3M14 19h3M19 19h2"/></svg>
-        <div>Aponte a câmera para o QR code impresso no certificado.</div>
+        <div>Usa a <strong>câmera do próprio celular</strong> (não a desse site) pra escanear o QR do certificado — ela abre essa página sozinha, já com o resultado pronto. Não precisa digitar nada.</div>
         <button class="btn btn--secondary" onclick="simularLeituraQR()">Simular leitura (teste)</button>
       </div>
 
@@ -184,7 +184,7 @@
   // Pra ligar isso: troque a URL abaixo pela URL do seu Apps Script (termina
   // em /exec), publicando uma função que recebe o CPF e devolve só o
   // necessário (nome, empresa, lista de certificados) — nunca o banco todo.
-  const VALIDADOR_APPS_SCRIPT_URL = ''; // <-- cole aqui a URL do Apps Script quando tiver
+  const VALIDADOR_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz55Li88oyroPtFH1iTOV2nR58-xbuUAMkGcyb6GRzM3S6KQNARj7Sxvi1mZShhPg-WRg/exec';
 
   function pick(obj, ...keys) {
     for (const k of keys) if (obj[k] !== undefined && obj[k] !== null && obj[k] !== '') return obj[k];
@@ -265,9 +265,13 @@
   }
 
   function simularLeituraQR() {
-    document.getElementById('cpfInput').value = '123.456.789-01';
-    setTab('cpf');
-    buscarCPF();
+    const cpf = prompt('Simular escaneamento — digita um CPF real (só pra teste, imita o link que o QR abriria):');
+    if (!cpf) return;
+    const digits = cpf.replace(/\D/g, '');
+    if (digits.length !== 11) { alert('CPF precisa ter 11 dígitos.'); return; }
+    // recarrega a página exatamente como o QR faria de verdade (?cpf=...) —
+    // testa o mesmo caminho real, não um atalho separado
+    location.href = location.pathname + '?cpf=' + digits;
   }
 
   // ---------- Busca (real, via Firestore) ----------
@@ -290,17 +294,13 @@
     note.textContent = 'Buscando...';
     note.className = 'attempts-note';
 
-    if (!VALIDADOR_APPS_SCRIPT_URL) {
-      note.textContent = '⚠️ Validador ainda não conectado — falta configurar o endpoint do Apps Script (veja comentário no início do script).';
-      note.className = 'attempts-note locked';
-      return;
-    }
-
     try {
-      const res = await fetch(`${VALIDADOR_APPS_SCRIPT_URL}?action=validarCpf&cpf=${digits}`);
+      // O doGet do Apps Script já devolve exatamente isso quando recebe ?cpf=:
+      // { sucesso, encontrado, nome, treinamentos: [{ curso, instrutor, dataFim, cont, validade }] }
+      const res = await fetch(`${VALIDADOR_APPS_SCRIPT_URL}?cpf=${digits}`);
       const data = await res.json();
 
-      if (!data || !data.encontrado) {
+      if (!data || !data.sucesso || !data.encontrado) {
         document.getElementById('notFoundCard').classList.add('show');
         note.textContent = '';
         return;
@@ -308,16 +308,18 @@
 
       document.getElementById('resultAvatar').textContent = (data.nome || '?').split(' ').map(p=>p[0]).slice(0,2).join('');
       document.getElementById('resultName').textContent = data.nome || '(sem nome)';
-      document.getElementById('resultCpf').textContent = maskCPF(digits) + (data.empresa ? ' · ' + data.empresa : '');
+      document.getElementById('resultCpf').textContent = maskCPF(digits);
 
       const list = document.getElementById('certList');
-      list.innerHTML = (data.certificados || []).map(c => {
-        const st = statusPorData(c.validade);
+      list.innerHTML = (data.treinamentos || []).map(t => {
+        // "validade" é quando o certificado vence; se a planilha não tiver essa
+        // coluna preenchida ainda, cai pra "Pendente" em vez de inventar status
+        const st = statusPorData(t.validade);
         return `
           <div class="cert-item hazard-edge--${st.status}">
             <div class="cert-item__info">
-              <div class="cert-item__nr">${c.nr || '—'}</div>
-              <div class="cert-item__data">Válido até ${c.validade || '—'}</div>
+              <div class="cert-item__nr">${t.curso || '—'}</div>
+              <div class="cert-item__data">Concluído em ${t.dataFim || '—'}${t.validade ? ' · Válido até ' + t.validade : ''}</div>
             </div>
             <span class="selo selo--${st.status}">${st.statusLabel}</span>
           </div>`;
@@ -331,6 +333,22 @@
       note.className = 'attempts-note locked';
     }
   }
+
+  // ---------- Abertura via QR code ----------
+  // O QR impresso no certificado já vem com o CPF na própria URL
+  // (?cpf=12345678901) — se a pessoa chegou aqui escaneando o QR,
+  // a busca acontece sozinha, sem precisar digitar nada.
+  (function abrirViaQrSeTiver(){
+    const cpfDaUrl = new URLSearchParams(location.search).get('cpf');
+    if (cpfDaUrl) {
+      const digits = cpfDaUrl.replace(/\D/g, '');
+      if (digits.length === 11) {
+        let v = digits.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+        document.getElementById('cpfInput').value = v;
+        buscarCPF();
+      }
+    }
+  })();
 </script>
 
 </body>

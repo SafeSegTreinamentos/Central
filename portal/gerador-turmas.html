@@ -1106,22 +1106,88 @@ async function renderHistorico(){
     return da.localeCompare(db);
   });
   box.innerHTML = filtered.map(t=>`
-    <div class="hist-item">
-      <div>
-        <div class="code">${t.codigo} <span class="status-badge ${t.status||'gerado'}">${t.status==='rascunho'?'Rascunho':'Gerado'}</span></div>
-        <div class="meta" style="color:#F5A623;font-weight:600;">${turmaFriendlyName(t)}</div>
-        <div class="meta">${t.curso} · ${t.tipo} · ${t.alunos.length} aluno(s) · ${t.dias.length} dia(s) · ${t.empresa||'sem empresa'}${t.dias&&t.dias[0]?' · '+formatDateBR(t.dias[0].date):''}</div>
+    <div class="hist-item" style="flex-direction:column; align-items:stretch;">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div>
+          <div class="code">${t.codigo} <span class="status-badge ${t.status||'gerado'}">${t.status==='rascunho'?'Rascunho':'Gerado'}</span></div>
+          <div class="meta" style="color:#F5A623;font-weight:600;">${turmaFriendlyName(t)}</div>
+          <div class="meta">${t.curso} · ${t.tipo} · ${t.alunos.length} aluno(s) · ${t.dias.length} dia(s) · ${t.empresa||'sem empresa'}${t.dias&&t.dias[0]?' · '+formatDateBR(t.dias[0].date):''}</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${t.status==='rascunho' ? `<button class="btn secondary small" onclick="editarTurma('${t.id}')">✏️ Continuar editando</button>` : ''}
+          <button class="btn small" onclick="emitirCertificadosDaTurma('${t.id}')">📄 Emitir certificados</button>
+          ${t.pdfUrl ? `<a class="btn secondary small" href="${t.pdfUrl}" target="_blank" rel="noopener">Abrir PDF</a>` : ''}
+          <button class="btn ghost small" onclick="copyTurmaLink('${t.id}')">Copiar link</button>
+          <button class="btn secondary small" onclick="reprintTurma('${t.id}')">Reimprimir</button>
+          <button class="btn danger small" onclick="deleteTurma('${t.id}')">Excluir</button>
+        </div>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        ${t.status==='rascunho' ? `<button class="btn secondary small" onclick="editarTurma('${t.id}')">✏️ Continuar editando</button>` : ''}
-        ${t.pdfUrl ? `<a class="btn secondary small" href="${t.pdfUrl}" target="_blank" rel="noopener">Abrir PDF</a>` : ''}
-        <button class="btn ghost small" onclick="copyTurmaLink('${t.id}')">Copiar link</button>
-        <button class="btn secondary small" onclick="reprintTurma('${t.id}')">Reimprimir</button>
-        <button class="btn danger small" onclick="deleteTurma('${t.id}')">Excluir</button>
-      </div>
+      <div id="emissaoStatus-${t.id}" style="display:none; margin-top:10px; padding:10px 12px; background:#0f1215; border-radius:6px; font-size:12.5px;"></div>
     </div>`).join('');
 }
 document.getElementById('histSearch').addEventListener('input', renderHistorico);
+
+// ============================================================
+// EMISSÃO REAL DE CERTIFICADOS — chama o Apps Script de certificados
+// (ação 'gerarCertificado') uma vez por aluno da turma. Cada aluno
+// vira um certificado de verdade, com PDF salvo no Drive.
+//
+// ⚠️ Usa uma URL PRÓPRIA, fixa — não é a mesma do campo "Sincronização"
+// acima (aquele é de outro Apps Script, o de salvar/listar turmas).
+// São dois scripts diferentes, cada um com seu papel.
+// ============================================================
+const CERT_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz55Li88oyroPtFH1iTOV2nR58-xbuUAMkGcyb6GRzM3S6KQNARj7Sxvi1mZShhPg-WRg/exec';
+
+async function chamarScriptCertificados(payload){
+  const res = await fetch(CERT_APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  });
+  if(!res.ok) throw new Error('HTTP '+res.status);
+  return await res.json();
+}
+
+async function emitirCertificadosDaTurma(id){
+  const t = loadTurmas().find(x=>x.id===id);
+  if(!t){ toast('Turma não encontrada'); return; }
+  if(!t.alunos || t.alunos.length===0){ toast('Essa turma não tem aluno cadastrado'); return; }
+  if(!confirm(`Gerar ${t.alunos.length} certificado(s) real(is) pra essa turma? Isso cria os PDFs no Drive.`)) return;
+
+  const statusBox = document.getElementById(`emissaoStatus-${id}`);
+  statusBox.style.display = 'block';
+
+  const dataInicioISO = t.dias && t.dias[0] ? t.dias[0].date : '';
+  const dataFimISO = t.dias && t.dias.length ? t.dias[t.dias.length-1].date : dataInicioISO;
+
+  let sucesso = 0, falhas = [];
+  for (let i=0; i<t.alunos.length; i++){
+    const aluno = t.alunos[i];
+    statusBox.innerHTML = `Emitindo ${i+1}/${t.alunos.length} — ${aluno.nome}...`;
+    try{
+      const resultado = await chamarScriptCertificados({
+        acao: 'gerarCertificado',
+        nome: aluno.nome,
+        cpf: aluno.cpf,
+        curso: t.curso,
+        instrutor: t.instrutor,
+        dataInicioISO, dataFimISO,
+        carga: t.carga,
+        empresa: t.empresa
+      });
+      if(resultado && resultado.sucesso){ sucesso++; }
+      else{ falhas.push(`${aluno.nome}: ${resultado ? resultado.erro : 'sem resposta'}`); }
+    }catch(err){
+      falhas.push(`${aluno.nome}: ${err.message}`);
+    }
+  }
+
+  statusBox.innerHTML = `✅ ${sucesso} certificado(s) gerado(s) com sucesso.` +
+    (falhas.length ? `<br>⚠️ ${falhas.length} falha(s):<br>` + falhas.join('<br>') : '') +
+    `<br><span class="muted">Os PDFs já estão na pasta Certificados-PDF do Drive.</span>`;
+  toast(`Emissão concluída: ${sucesso} de ${t.alunos.length}`);
+}
+
 function reprintTurma(id){
   const t = loadTurmas().find(x=>x.id===id);
   if(!t) return;
