@@ -26,7 +26,9 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import {
   getAuth,
-  onAuthStateChanged
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -43,17 +45,82 @@ export const db = getFirestore(app);
 export const auth = getAuth(app);
 
 // ============================================================
-// esperarAuth() — resolve a corrida entre o Firestore tentar ler
-// dado e o Firebase ainda estar carregando a sessão salva do
-// usuário. Sem isso, uma leitura disparada rápido demais no
-// carregamento da página é recusada mesmo com o usuário já logado.
-// Todo módulo que lê dado do Firestore deve chamar isso PRIMEIRO.
+// TELA DE LOGIN — aparece automaticamente por cima de qualquer
+// página quando ninguém está logado. Não precisa mexer em nenhuma
+// página individual pra isso funcionar: toda página que usa
+// esperarAuth() (direto ou via obterMeuPerfil) já ganha isso.
 // ============================================================
-export function esperarAuth() {
+function mostrarTelaLogin() {
   return new Promise((resolve) => {
-    const unsub = onAuthStateChanged(auth, (user) => {
+    if (document.getElementById('authOverlay')) return; // já está mostrando
+
+    const overlay = document.createElement('div');
+    overlay.id = 'authOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:#14171B;display:flex;align-items:center;justify-content:center;z-index:99999;font-family:Inter,Arial,sans-serif;padding:16px;';
+    overlay.innerHTML = `
+      <div style="background:#fff;border-radius:16px;padding:32px 28px;max-width:360px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,0.4);">
+        <div style="font-family:'Bebas Neue',Arial,sans-serif;font-size:26px;letter-spacing:.03em;color:#14171B;margin-bottom:2px;">SAFESEG</div>
+        <p style="font-size:13px;color:#667085;margin:0 0 20px;">Entre com sua conta pra continuar</p>
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:#667085;display:block;margin-bottom:4px;">E-mail</label>
+        <input id="authEmail" type="email" placeholder="seuemail@exemplo.com" autocomplete="username"
+          style="width:100%;padding:10px 12px;border:1px solid #E7E2D4;border-radius:8px;margin-bottom:12px;font-size:14px;box-sizing:border-box;">
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:#667085;display:block;margin-bottom:4px;">Senha</label>
+        <input id="authSenha" type="password" placeholder="••••••••" autocomplete="current-password"
+          style="width:100%;padding:10px 12px;border:1px solid #E7E2D4;border-radius:8px;margin-bottom:14px;font-size:14px;box-sizing:border-box;">
+        <div id="authErro" style="color:#C6423A;font-size:12.5px;margin-bottom:12px;display:none;"></div>
+        <button id="authBtnEntrar" style="width:100%;padding:12px;background:linear-gradient(135deg,#F8CC3E,#C6900A);color:#14171B;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:14px;">Entrar</button>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    const emailInput = document.getElementById('authEmail');
+    const senhaInput = document.getElementById('authSenha');
+    const erroBox = document.getElementById('authErro');
+    const btn = document.getElementById('authBtnEntrar');
+
+    async function tentarLogin() {
+      const email = emailInput.value.trim();
+      const senha = senhaInput.value;
+      erroBox.style.display = 'none';
+      if (!email || !senha) {
+        erroBox.textContent = 'Preencha e-mail e senha.';
+        erroBox.style.display = 'block';
+        return;
+      }
+      btn.disabled = true;
+      btn.textContent = 'Entrando...';
+      try {
+        const cred = await signInWithEmailAndPassword(auth, email, senha);
+        overlay.remove();
+        resolve(cred.user);
+      } catch (err) {
+        erroBox.textContent = 'E-mail ou senha incorretos.';
+        erroBox.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Entrar';
+      }
+    }
+
+    btn.addEventListener('click', tentarLogin);
+    senhaInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') tentarLogin(); });
+    emailInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') senhaInput.focus(); });
+    emailInput.focus();
+  });
+}
+
+export function esperarAuth() {
+  // Resolve a corrida entre o Firestore tentar ler dado e o Firebase
+  // ainda estar carregando a sessão salva do usuário — e, se ninguém
+  // estiver logado, mostra a tela de login e só resolve depois que
+  // o login der certo.
+  return new Promise((resolve) => {
+    const unsub = onAuthStateChanged(auth, async (user) => {
       unsub();
-      resolve(user); // user = objeto do usuário logado, ou null se ninguém logado
+      if (user) {
+        resolve(user);
+      } else {
+        const userLogado = await mostrarTelaLogin();
+        resolve(userLogado);
+      }
     });
   });
 }
@@ -75,6 +142,6 @@ export async function obterMeuPerfil() {
 // a URL gigante do CDN de novo em cada página que usar este arquivo.
 export {
   collection, collectionGroup, getDocs, doc, getDoc, addDoc, setDoc, updateDoc,
-  query, where, orderBy, limit, onAuthStateChanged
+  query, where, orderBy, limit, onAuthStateChanged, signOut
 };
 // obterMeuPerfil e esperarAuth já exportados acima com 'export function'/'export async function'
