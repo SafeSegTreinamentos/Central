@@ -34,7 +34,7 @@
     grid-template-columns: repeat(3, 1fr);
     gap: var(--space-5);
   }
-  .kpi-grid--secondary { grid-template-columns: repeat(3, 1fr); }
+  .kpi-grid--secondary { grid-template-columns: repeat(2, 1fr); max-width: 700px; }
 
   .section-title {
     font-family: var(--font-display);
@@ -170,25 +170,22 @@
           <div class="kpi-card hazard-edge--ok">
             <div class="kpi-card__header">
               <div class="kpi-card__label">Certificados válidos</div>
-              <span class="trend trend--up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 15l6-6 6 6"/></svg>4%</span>
             </div>
-            <div class="kpi-card__value">1.284</div>
-            <div class="kpi-card__meta"><span class="selo selo--ok">87% da base</span></div>
+            <div class="kpi-card__value" id="kpiValidos">—</div>
+            <div class="kpi-card__meta" id="kpiValidosMeta"></div>
           </div>
           <div class="kpi-card hazard-edge--warn">
             <div class="kpi-card__header">
-              <div class="kpi-card__label">Vencendo em 30–60 dias</div>
-              <span class="trend trend--down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg>12%</span>
+              <div class="kpi-card__label">Vencendo em 60 dias</div>
             </div>
-            <div class="kpi-card__value">96</div>
+            <div class="kpi-card__value" id="kpiVencendo">—</div>
             <div class="kpi-card__meta"><span class="selo selo--warn">Atenção</span></div>
           </div>
           <div class="kpi-card hazard-edge--danger">
             <div class="kpi-card__header">
               <div class="kpi-card__label">Vencidos</div>
-              <span class="trend trend--flat">= 0%</span>
             </div>
-            <div class="kpi-card__value">58</div>
+            <div class="kpi-card__value" id="kpiVencidos">—</div>
             <div class="kpi-card__meta"><span class="selo selo--danger">Ação necessária</span></div>
           </div>
         </div>
@@ -199,18 +196,13 @@
         <div class="kpi-grid kpi-grid--secondary">
           <div class="kpi-card hazard-edge--pending">
             <div class="kpi-card__label">Colaboradores com pendência</div>
-            <div class="kpi-card__value">41</div>
-            <div class="kpi-card__meta">de 612 colaboradores ativos</div>
+            <div class="kpi-card__value" id="kpiPendencia">—</div>
+            <div class="kpi-card__meta" id="kpiPendenciaMeta"></div>
           </div>
           <div class="kpi-card hazard-edge--ok">
             <div class="kpi-card__label">Turmas agendadas · próx. 30d</div>
-            <div class="kpi-card__value">7</div>
-            <div class="kpi-card__meta">3 privadas · 4 abertas</div>
-          </div>
-          <div class="kpi-card hazard-edge--pending">
-            <div class="kpi-card__label">Tempo médio de renovação</div>
-            <div class="kpi-card__value">12<span style="font-size:1.2rem">d</span></div>
-            <div class="kpi-card__meta">antes do vencimento, média 6 meses</div>
+            <div class="kpi-card__value" id="kpiTurmas30d">—</div>
+            <div class="kpi-card__meta" id="kpiTurmas30dMeta"></div>
           </div>
         </div>
       </section>
@@ -218,7 +210,7 @@
       <!-- GRÁFICO + RANKING -->
       <section class="two-col">
         <div class="card">
-          <div class="section-title">Emissões por mês <span class="text-muted" style="font-family:var(--font-body); font-size:12px; font-weight:500;">últimos 6 meses</span></div>
+          <div class="section-title">Emissões por mês <span class="text-muted" style="font-family:var(--font-body); font-size:12px; font-weight:500;">exemplo — ainda não conectado</span></div>
           <div class="bar-chart">
             <div class="bar-col"><span class="bar-value">142</span><div class="bar" style="height:62%"></div><span class="bar-label">Mar</span></div>
             <div class="bar-col"><span class="bar-value">98</span><div class="bar" style="height:43%"></div><span class="bar-label">Abr</span></div>
@@ -231,7 +223,7 @@
         </div>
 
         <div class="card">
-          <div class="section-title">Empresas com maior % vencido</div>
+          <div class="section-title">Empresas com maior % vencido <span class="text-muted" style="font-family:var(--font-body); font-size:12px; font-weight:500;">exemplo — ainda não conectado</span></div>
           <div class="rank-list">
             <div class="rank-row">
               <div class="avatar-pill">MT</div>
@@ -261,19 +253,16 @@
         </div>
       </section>
 
-      <!-- PRÓXIMOS VENCIMENTOS -->
+      <!-- PRÓXIMOS VENCIMENTOS (dado real, mesma fonte dos KPIs) -->
       <section class="card">
-        <div class="section-title">Próximos vencimentos <a class="view-all" href="#">ver todos →</a></div>
+        <div class="section-title">Próximos vencimentos</div>
         <div class="table-scroll">
         <table>
           <thead>
             <tr><th>Colaborador</th><th>Empresa</th><th>Treinamento</th><th>Vencimento</th><th>Status</th></tr>
           </thead>
-          <tbody>
-            <tr><td>Adriano F. Silva</td><td>Metalúrgica Trentin</td><td class="data">NR-35</td><td class="data">12/08/2026</td><td><span class="selo selo--danger">Vencido</span></td></tr>
-            <tr><td>Camila R. Duarte</td><td>Construtora Bettega</td><td class="data">NR-10</td><td class="data">18/08/2026</td><td><span class="selo selo--warn">Atenção</span></td></tr>
-            <tr><td>Everton M. Costa</td><td>Agroserra Ind.</td><td class="data">NR-12</td><td class="data">22/08/2026</td><td><span class="selo selo--warn">Atenção</span></td></tr>
-            <tr><td>Juliana P. Alves</td><td>Transnorte Log.</td><td class="data">NR-06</td><td class="data">02/09/2026</td><td><span class="selo selo--pending">Pendente</span></td></tr>
+          <tbody id="vencimentosBody">
+            <tr><td colspan="5" class="text-muted" style="text-align:center; padding:16px;">Carregando...</td></tr>
           </tbody>
         </table>
         </div>
@@ -309,6 +298,122 @@
   .turma-mini-meta { font-size:12px; color:var(--graphite-600); }
   .turma-mini-empty { font-size:13px; color:var(--graphite-600); padding:12px 0; }
 </style>
+
+<script type="module">
+  import { db, collection, getDocs, esperarAuth } from '../assets/js/firebase-init.js';
+
+  function pick(obj, ...keys) {
+    for (const k of keys) if (obj[k] !== undefined && obj[k] !== null && obj[k] !== '') return obj[k];
+    return null;
+  }
+  function diasAteVencer(dataStr) {
+    if (!dataStr) return null;
+    const venc = new Date(dataStr.split('/').reverse().join('-'));
+    return (venc - new Date()) / 86400000;
+  }
+  function statusPorData(dataStr) {
+    const dias = diasAteVencer(dataStr);
+    if (dias === null) return { cls: 'pending', label: 'Pendente' };
+    if (dias < 0) return { cls: 'danger', label: 'Vencido' };
+    if (dias <= 60) return { cls: 'warn', label: 'Atenção' };
+    return { cls: 'ok', label: 'Válido' };
+  }
+
+  async function carregarKPIs() {
+    const user = await esperarAuth();
+    if (!user) {
+      document.getElementById('kpiValidos').textContent = '🔒';
+      document.getElementById('kpiValidosMeta').innerHTML = '<span class="text-muted">Faça login pra ver os dados</span>';
+      return;
+    }
+
+    try {
+      const empresasSnap = await getDocs(collection(db, 'empresas'));
+      const todosCertificados = []; // { colaborador, empresa, nr, data, status }
+      const colaboradoresComPendencia = new Set();
+      const totalColaboradores = new Set();
+
+      await Promise.all(empresasSnap.docs.map(async empDoc => {
+        const emp = empDoc.data();
+        const certSnap = await getDocs(collection(db, 'empresas', empDoc.id, 'certificados'));
+        certSnap.forEach(certDoc => {
+          const c = certDoc.data();
+          const colaborador = pick(c, 'colaborador', 'nome', 'aluno', 'funcionario') || '(sem nome)';
+          const data = pick(c, 'validade', 'dataVencimento', 'vencimento', 'dataValidade');
+          const st = statusPorData(data);
+          totalColaboradores.add(colaborador);
+          if (st.cls === 'danger' || st.cls === 'warn' || st.cls === 'pending') colaboradoresComPendencia.add(colaborador);
+          todosCertificados.push({
+            colaborador, empresa: emp.nome || '—',
+            nr: pick(c, 'nr', 'norma', 'curso', 'treinamento') || '—',
+            data, status: st
+          });
+        });
+      }));
+
+      const validos = todosCertificados.filter(c => c.status.cls === 'ok').length;
+      const vencendo = todosCertificados.filter(c => c.status.cls === 'warn').length;
+      const vencidos = todosCertificados.filter(c => c.status.cls === 'danger').length;
+
+      document.getElementById('kpiValidos').textContent = validos;
+      document.getElementById('kpiValidosMeta').innerHTML = todosCertificados.length
+        ? `<span class="selo selo--ok">${Math.round(validos/todosCertificados.length*100)}% da base</span>` : '';
+      document.getElementById('kpiVencendo').textContent = vencendo;
+      document.getElementById('kpiVencidos').textContent = vencidos;
+
+      document.getElementById('kpiPendencia').textContent = colaboradoresComPendencia.size;
+      document.getElementById('kpiPendenciaMeta').textContent = `de ${totalColaboradores.size} colaborador(es)`;
+
+      // Próximos vencimentos: ordena por data mais próxima, pega os 6 primeiros que já venceram ou vão vencer
+      const proximosVencimentos = todosCertificados
+        .filter(c => c.data)
+        .sort((a,b) => diasAteVencer(a.data) - diasAteVencer(b.data))
+        .slice(0, 6);
+
+      const tbody = document.getElementById('vencimentosBody');
+      if (proximosVencimentos.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center; padding:16px;">Nenhum certificado com data de vencimento cadastrada ainda.</td></tr>';
+      } else {
+        tbody.innerHTML = proximosVencimentos.map(c => `
+          <tr>
+            <td>${c.colaborador}</td>
+            <td>${c.empresa}</td>
+            <td class="data">${c.nr}</td>
+            <td class="data">${c.data}</td>
+            <td><span class="selo selo--${c.status.cls}">${c.status.label}</span></td>
+          </tr>`).join('');
+      }
+    } catch (err) {
+      console.error('Erro ao carregar KPIs do Dashboard:', err);
+      document.getElementById('kpiValidos').textContent = '⚠️';
+      document.getElementById('kpiValidosMeta').innerHTML = `<span class="text-muted">${err.message}</span>`;
+    }
+  }
+
+  // Turmas agendadas nos próximos 30 dias (mesma fonte do card "Próximas Turmas": localStorage do Gerador)
+  function carregarTurmas30d() {
+    try {
+      const turmas = JSON.parse(localStorage.getItem('safeseg_turmas_v1') || '[]');
+      const hoje = new Date().toISOString().slice(0,10);
+      const em30dias = new Date(Date.now() + 30*86400000).toISOString().slice(0,10);
+      let privadas = 0, abertas = 0;
+      turmas.forEach(t => {
+        const temDiaNoIntervalo = (t.dias||[]).some(d => d.date >= hoje && d.date <= em30dias);
+        if (!temDiaNoIntervalo) return;
+        const aberta = (t.empresa||'').toLowerCase().includes('ct safeseg') || !t.empresa;
+        if (aberta) abertas++; else privadas++;
+      });
+      document.getElementById('kpiTurmas30d').textContent = privadas + abertas;
+      document.getElementById('kpiTurmas30dMeta').textContent = `${privadas} privada(s) · ${abertas} aberta(s)`;
+    } catch (e) {
+      document.getElementById('kpiTurmas30d').textContent = '0';
+    }
+  }
+
+  carregarKPIs();
+  carregarTurmas30d();
+</script>
+
 <script>
 (function(){
   function formatDateBR(iso){

@@ -149,35 +149,13 @@
         </div>
       </div>
 
-      <div id="connStatus" class="text-muted" style="font-size:12px; margin-bottom:-8px;">Conectando ao Firestore...</div>
+      <div id="connStatus" class="text-muted" style="font-size:12px; margin-bottom:-8px;">Conectando...</div>
 
       <div class="empresa-grid" id="empresaGrid">
-
-        <!-- Conteúdo de exemplo — some assim que o Firestore responder com dado real -->
-        <div class="empresa-card" data-fallback="true">
-          <div class="empresa-card__head">
-            <div class="empresa-avatar">MT</div>
-            <div>
-              <div class="empresa-nome">Metalúrgica Trentin</div>
-              <div class="empresa-cnpj">12.345.678/0001-90</div>
-            </div>
-          </div>
-          <div class="empresa-setor">Metalurgia</div>
-          <div class="empresa-stats">
-            <div class="empresa-stat"><div class="empresa-stat__value">86</div><div class="empresa-stat__label">Colaboradores</div></div>
-            <div class="empresa-stat"><div class="empresa-stat__value" style="color:var(--status-danger)">34%</div><div class="empresa-stat__label">Vencido</div></div>
-          </div>
-          <div class="empresa-card__footer">
-            <span class="access-tag granted"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>Acesso ativo</span>
-            <button class="btn btn--ghost" style="padding:6px 10px; font-size:12px;">Gerenciar</button>
-          </div>
-        </div>
-
         <div class="new-empresa-card">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>
           <span style="font-size:var(--text-sm); font-weight:600;">Cadastrar nova empresa</span>
         </div>
-
       </div>
 
     </div>
@@ -185,10 +163,9 @@
 </div>
 
 <script type="module">
-  import { db, collection, getDocs } from '../assets/js/firebase-init.js';
+  import { db, collection, getDocs, esperarAuth } from '../assets/js/firebase-init.js';
 
-  // Schema confirmado da coleção 'empresas' (verificado direto no Firestore):
-  // nome, cnpj, seg (segmento), cidade, resp (responsável).
+  // Schema confirmado da coleção 'empresas': nome, cnpj, seg, cidade, resp.
   // Certificados vivem como SUBCOLEÇÃO: empresas/{id}/certificados
   function iniciais(nome) {
     return (nome || '?').split(' ').filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('');
@@ -197,26 +174,30 @@
   async function carregarEmpresas() {
     const status = document.getElementById('connStatus');
     const grid = document.getElementById('empresaGrid');
+
+    // 1) Espera o Firebase confirmar a sessão antes de tentar ler qualquer coisa
+    const user = await esperarAuth();
+    if (!user) {
+      status.textContent = '🔒 Você precisa estar logado pra ver as empresas.';
+      status.style.color = 'var(--status-warn)';
+      return;
+    }
+
+    // 2) Só agora tenta ler o Firestore, com a sessão já confirmada
     try {
       const snap = await getDocs(collection(db, 'empresas'));
       if (snap.empty) {
-        status.textContent = '⚠️ Conectado ao Firestore, mas a coleção "empresas" está vazia.';
+        status.textContent = 'Nenhuma empresa cadastrada ainda. Clique em "Cadastrar nova empresa".';
         return;
       }
 
-      // remove os cards de exemplo (fallback)
-      grid.querySelectorAll('[data-fallback="true"]').forEach(el => el.remove());
-
-      // Busca cada empresa + conta os certificados da subcoleção dela, em paralelo
       const empresasComContagem = await Promise.all(snap.docs.map(async docSnap => {
         const d = docSnap.data();
         let totalCertificados = 0;
         try {
           const certSnap = await getDocs(collection(db, 'empresas', docSnap.id, 'certificados'));
           totalCertificados = certSnap.size;
-        } catch (e) {
-          // sem permissão ou subcoleção vazia — segue com 0
-        }
+        } catch (e) { /* sem permissão ou subcoleção vazia */ }
         return { id: docSnap.id, ...d, totalCertificados };
       }));
 
@@ -243,16 +224,13 @@
         </div>
       `);
 
-      // insere antes do card "+ Cadastrar nova empresa"
-      const novoCard = grid.querySelector('.new-empresa-card');
-      novoCard.insertAdjacentHTML('beforebegin', cardsHtml.join(''));
-
-      status.textContent = `✅ Conectado ao Firestore — ${snap.size} empresa(s) carregada(s) em tempo real.`;
+      grid.querySelector('.new-empresa-card').insertAdjacentHTML('beforebegin', cardsHtml.join(''));
+      status.textContent = `${snap.size} empresa(s) carregada(s).`;
       status.style.color = 'var(--status-ok)';
     } catch (err) {
       console.error('Erro ao carregar empresas do Firestore:', err);
-      status.textContent = `⚠️ Não foi possível conectar ao Firestore (${err.message}). Mostrando dado de exemplo.`;
-      status.style.color = 'var(--status-warn)';
+      status.textContent = `⚠️ Erro ao carregar: ${err.message}`;
+      status.style.color = 'var(--status-danger)';
     }
   }
 

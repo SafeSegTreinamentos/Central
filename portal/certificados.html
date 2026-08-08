@@ -132,7 +132,7 @@
     <header class="topbar">
       <div>
         <h1>Certificados</h1>
-        <div class="sub">1.438 certificados · 612 colaboradores ativos</div>
+        <div class="sub" id="topbarSub">Carregando...</div>
       </div>
       <div class="flex gap-2">
         <button class="btn btn--secondary">↓ Exportar</button>
@@ -145,10 +145,7 @@
 
       <div class="toolbar">
         <div class="filter-tabs">
-          <button class="filter-tab active">Ativos <span class="count">571</span></button>
-          <button class="filter-tab">Pendentes <span class="count">41</span></button>
-          <button class="filter-tab">Inativos <span class="count">63</span></button>
-          <button class="filter-tab">Todos <span class="count">612</span></button>
+          <button class="filter-tab active">Todos <span class="count" id="countTodos"></span></button>
         </div>
         <div class="search-box">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
@@ -156,113 +153,14 @@
         </div>
       </div>
 
-      <!-- LISTA DE COLABORADORES -->
-      <div class="collab-list">
+      <div id="connStatus" class="text-muted" style="font-size:12px; margin-bottom:-8px;">Conectando...</div>
 
-        <div class="collab-card open">
-          <div class="collab-head" onclick="this.parentElement.classList.toggle('open')">
-            <div class="collab-avatar">AF</div>
-            <div class="collab-info">
-              <div class="collab-name">Adriano F. Silva</div>
-              <div class="collab-empresa">Metalúrgica Trentin</div>
-            </div>
-            <div class="collab-summary">
-              <span class="selo selo--danger">1 vencido</span>
-              <span class="selo selo--ok">3 válidos</span>
-            </div>
-            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-          </div>
-          <div class="collab-body">
-            <div class="cert-row">
-              <span class="cert-nr">NR-35</span>
-              <span class="cert-nome">Trabalho em Altura</span>
-              <span class="cert-cont">CONT 04821</span>
-              <span class="cert-data">12/08/2026</span>
-              <span class="selo selo--danger">Vencido</span>
-            </div>
-            <div class="cert-row">
-              <span class="cert-nr">NR-06</span>
-              <span class="cert-nome">EPI</span>
-              <span class="cert-cont">CONT 04822</span>
-              <span class="cert-data">03/01/2027</span>
-              <span class="selo selo--ok">Válido</span>
-            </div>
-            <div class="cert-row">
-              <span class="cert-nr">NR-12</span>
-              <span class="cert-nome">Máquinas e Equip.</span>
-              <span class="cert-cont">CONT 04823</span>
-              <span class="cert-data">19/02/2027</span>
-              <span class="selo selo--ok">Válido</span>
-            </div>
-            <div class="cert-row">
-              <span class="cert-nr">NR-10</span>
-              <span class="cert-nome">Elétrica</span>
-              <span class="cert-cont">CONT 04824</span>
-              <span class="cert-data">30/04/2027</span>
-              <span class="selo selo--ok">Válido</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="collab-card">
-          <div class="collab-head" onclick="this.parentElement.classList.toggle('open')">
-            <div class="collab-avatar">CD</div>
-            <div class="collab-info">
-              <div class="collab-name">Camila R. Duarte</div>
-              <div class="collab-empresa">Construtora Bettega</div>
-            </div>
-            <div class="collab-summary">
-              <span class="selo selo--warn">1 atenção</span>
-              <span class="selo selo--ok">2 válidos</span>
-            </div>
-            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-          </div>
-          <div class="collab-body">
-            <div class="cert-row">
-              <span class="cert-nr">NR-10</span>
-              <span class="cert-nome">Elétrica</span>
-              <span class="cert-cont">CONT 04901</span>
-              <span class="cert-data">18/08/2026</span>
-              <span class="selo selo--warn">Atenção</span>
-            </div>
-            <div class="cert-row">
-              <span class="cert-nr">NR-06</span>
-              <span class="cert-nome">EPI</span>
-              <span class="cert-cont">CONT 04902</span>
-              <span class="cert-data">11/11/2026</span>
-              <span class="selo selo--ok">Válido</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="collab-card">
-          <div class="collab-head" onclick="this.parentElement.classList.toggle('open')">
-            <div class="collab-avatar">EM</div>
-            <div class="collab-info">
-              <div class="collab-name">Everton M. Costa</div>
-              <div class="collab-empresa">Agroserra Ind.</div>
-            </div>
-            <div class="collab-summary">
-              <span class="selo selo--pending">Pendente</span>
-            </div>
-            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-          </div>
-          <div class="collab-body">
-            <div class="cert-row">
-              <span class="cert-nr">NR-12</span>
-              <span class="cert-nome">Máquinas e Equip.</span>
-              <span class="cert-cont">CONT 05011</span>
-              <span class="cert-data">22/08/2026</span>
-              <span class="selo selo--warn">Atenção</span>
-            </div>
-          </div>
-        </div>
-
-      </div>
+      <!-- LISTA DE COLABORADORES (gerada a partir do Firestore) -->
+      <div class="collab-list" id="collabList"></div>
 
       <!-- TABELA DE MODELOS -->
       <section class="card">
-        <div class="section-title">🗂️ Modelos por curso</div>
+        <div class="section-title">🗂️ Modelos por curso <span class="text-muted" style="font-family:var(--font-body); font-size:11px; font-weight:500;">(ainda editado manualmente — não conectado ao Firestore)</span></div>
         <div class="modelos-table-wrap">
         <table>
           <thead>
@@ -298,6 +196,129 @@
     </div>
   </div>
 </div>
+
+<script type="module">
+  import { db, collection, getDocs, esperarAuth } from '../assets/js/firebase-init.js';
+
+  // Certificados vivem em: empresas/{id}/certificados
+  // ⚠️ Schema do documento de certificado ainda NÃO foi confirmado no Firestore
+  // (só confirmamos o schema de 'empresas' e 'agenda' até agora). O código abaixo
+  // tenta várias variações comuns de nome de campo — se os nomes reais forem
+  // diferentes, é só me mandar um print de um documento de certificado que eu
+  // ajusto rapidinho, igual fizemos com Empresas.
+  function pick(obj, ...keys) {
+    for (const k of keys) if (obj[k] !== undefined && obj[k] !== null && obj[k] !== '') return obj[k];
+    return null;
+  }
+  function iniciais(nome) {
+    return (nome || '?').split(' ').filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('');
+  }
+  function statusPorData(dataStr) {
+    if (!dataStr) return { cls: 'pending', label: 'Pendente' };
+    const venc = new Date(dataStr.split('/').reverse().join('-')); // aceita DD/MM/AAAA
+    const hoje = new Date();
+    const dias = (venc - hoje) / 86400000;
+    if (dias < 0) return { cls: 'danger', label: 'Vencido' };
+    if (dias <= 60) return { cls: 'warn', label: 'Atenção' };
+    return { cls: 'ok', label: 'Válido' };
+  }
+
+  async function carregarCertificados() {
+    const status = document.getElementById('connStatus');
+    const box = document.getElementById('collabList');
+
+    const user = await esperarAuth();
+    if (!user) {
+      status.textContent = '🔒 Você precisa estar logado pra ver os certificados.';
+      status.style.color = 'var(--status-warn)';
+      document.getElementById('topbarSub').textContent = 'Login necessário';
+      return;
+    }
+
+    try {
+      const empresasSnap = await getDocs(collection(db, 'empresas'));
+      if (empresasSnap.empty) {
+        status.textContent = 'Nenhuma empresa cadastrada ainda.';
+        return;
+      }
+
+      // Pra cada empresa, busca a subcoleção de certificados e agrupa por colaborador
+      const colaboradoresMap = {}; // chave: nome do colaborador -> { empresa, certificados: [] }
+
+      await Promise.all(empresasSnap.docs.map(async empDoc => {
+        const emp = empDoc.data();
+        const certSnap = await getDocs(collection(db, 'empresas', empDoc.id, 'certificados'));
+        certSnap.forEach(certDoc => {
+          const c = certDoc.data();
+          const colaborador = pick(c, 'colaborador', 'nome', 'aluno', 'funcionario') || '(sem nome)';
+          const key = `${empDoc.id}__${colaborador}`;
+          if (!colaboradoresMap[key]) {
+            colaboradoresMap[key] = { nome: colaborador, empresa: emp.nome || '(empresa sem nome)', certificados: [] };
+          }
+          colaboradoresMap[key].certificados.push({
+            nr: pick(c, 'nr', 'norma', 'curso', 'treinamento') || '—',
+            nome: pick(c, 'nomeCurso', 'descricao', 'tituloCurso') || '',
+            cont: pick(c, 'cont', 'CONT', 'controle'),
+            data: pick(c, 'validade', 'dataVencimento', 'vencimento', 'dataValidade')
+          });
+        });
+      }));
+
+      const colaboradores = Object.values(colaboradoresMap);
+      if (colaboradores.length === 0) {
+        status.textContent = 'Conectado — nenhum certificado encontrado ainda nas empresas cadastradas.';
+        box.innerHTML = '';
+        return;
+      }
+
+      box.innerHTML = colaboradores.map((col, i) => {
+        const certsHtml = col.certificados.map(c => {
+          const st = statusPorData(c.data);
+          return `
+            <div class="cert-row">
+              <span class="cert-nr">${c.nr}</span>
+              <span class="cert-nome">${c.nome}</span>
+              ${c.cont ? `<span class="cert-cont">CONT ${c.cont}</span>` : ''}
+              <span class="cert-data">${c.data || '—'}</span>
+              <span class="selo selo--${st.cls}">${st.label}</span>
+            </div>`;
+        }).join('');
+
+        // resumo: conta quantos de cada status
+        const counts = { danger: 0, warn: 0, ok: 0, pending: 0 };
+        col.certificados.forEach(c => counts[statusPorData(c.data).cls]++);
+        const resumoHtml = Object.entries(counts).filter(([,n]) => n > 0)
+          .map(([cls, n]) => `<span class="selo selo--${cls}">${n} ${cls==='ok'?'válido(s)':cls==='danger'?'vencido(s)':cls==='warn'?'atenção':'pendente(s)'}</span>`).join('');
+
+        return `
+          <div class="collab-card ${i === 0 ? 'open' : ''}">
+            <div class="collab-head" onclick="this.parentElement.classList.toggle('open')">
+              <div class="collab-avatar">${iniciais(col.nome)}</div>
+              <div class="collab-info">
+                <div class="collab-name">${col.nome}</div>
+                <div class="collab-empresa">${col.empresa}</div>
+              </div>
+              <div class="collab-summary">${resumoHtml}</div>
+              <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </div>
+            <div class="collab-body">${certsHtml}</div>
+          </div>`;
+      }).join('');
+
+      status.textContent = `${colaboradores.length} colaborador(es) carregado(s).`;
+      status.style.color = 'var(--status-ok)';
+      document.getElementById('topbarSub').textContent =
+        `${empresasSnap.size} empresa(s) · ${colaboradores.length} colaborador(es) · ${colaboradores.reduce((s,c)=>s+c.certificados.length,0)} certificado(s)`;
+      document.getElementById('countTodos').textContent = colaboradores.length;
+    } catch (err) {
+      console.error('Erro ao carregar certificados:', err);
+      status.textContent = `⚠️ Erro ao carregar: ${err.message}`;
+      status.style.color = 'var(--status-danger)';
+    }
+  }
+
+  carregarCertificados();
+</script>
 
 </body>
 </html>
