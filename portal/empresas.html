@@ -217,6 +217,19 @@
             <button onclick="fecharModalAcesso()" style="background:none; border:none; font-size:20px; cursor:pointer; color:var(--graphite-600);">✕</button>
           </div>
           <div style="padding:20px; display:flex; flex-direction:column; gap:12px;">
+
+            <!-- USUÁRIOS JÁ VINCULADOS A ESSA EMPRESA -->
+            <div>
+              <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:6px;">Acessos já criados</label>
+              <div id="acessoUsuariosList" style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px;">
+                <div class="text-muted" style="font-size:12.5px;">Carregando...</div>
+              </div>
+            </div>
+
+            <div style="border-top:1px solid var(--paper-200); padding-top:12px;">
+              <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:8px;">+ Criar novo acesso</label>
+            </div>
+
             <div class="text-muted" style="font-size:12.5px; background:var(--paper-100); padding:10px 12px; border-radius:8px;">
               Cria um login novo pra essa empresa acessar o Portal do Cliente. Isso não afeta sua sessão como admin.
             </div>
@@ -251,7 +264,7 @@
 </div>
 
 <script type="module">
-  import { db, collection, getDocs, addDoc, esperarAuth, criarUsuarioCliente } from '../assets/js/firebase-init.js';
+  import { db, collection, getDocs, addDoc, query, where, updateDoc, deleteDoc, doc, esperarAuth, criarUsuarioCliente } from '../assets/js/firebase-init.js';
 
   // Schema confirmado da coleção 'empresas': nome, cnpj, seg, cidade, resp.
   // Certificados vivem como SUBCOLEÇÃO: empresas/{id}/certificados
@@ -378,6 +391,7 @@
     document.getElementById('acessoErro').style.display = 'none';
     document.getElementById('acessoSucesso').style.display = 'none';
     document.getElementById('modalAcessoOverlay').style.display = 'flex';
+    carregarUsuariosDaEmpresa();
   };
   window.fecharModalAcesso = function() {
     document.getElementById('modalAcessoOverlay').style.display = 'none';
@@ -385,6 +399,51 @@
   window.gerarSenhaAleatoria = function() {
     const senha = Math.random().toString(36).slice(-8) + Math.floor(Math.random()*90+10);
     document.getElementById('acessoSenha').value = senha;
+  };
+
+  async function carregarUsuariosDaEmpresa() {
+    const box = document.getElementById('acessoUsuariosList');
+    box.innerHTML = '<div class="text-muted" style="font-size:12.5px;">Carregando...</div>';
+    try {
+      const snap = await getDocs(query(collection(db, 'usuarios'), where('empresaId', '==', empresaAtualId)));
+      if (snap.empty) {
+        box.innerHTML = '<div class="text-muted" style="font-size:12.5px;">Nenhum acesso criado ainda pra essa empresa.</div>';
+        return;
+      }
+      box.innerHTML = snap.docs.map(d => {
+        const u = d.data();
+        return `
+          <div style="display:flex; align-items:center; gap:8px; border:1px solid var(--paper-200); border-radius:8px; padding:8px 10px;">
+            <div style="flex:1; min-width:0;">
+              <input type="text" value="${(u.nome||'').replace(/"/g,'&quot;')}" placeholder="Nome"
+                style="width:100%; border:none; font-size:13px; font-weight:600; padding:2px 0; background:transparent;"
+                onchange="editarNomeUsuario('${d.id}', this.value)">
+              <div style="font-size:11px; color:var(--graphite-600);">${u.email || ''}</div>
+            </div>
+            <button class="btn btn--danger" style="padding:5px 9px; font-size:11px;" onclick="removerAcessoUsuario('${d.id}')">Remover</button>
+          </div>`;
+      }).join('');
+    } catch (err) {
+      box.innerHTML = `<div style="color:var(--status-danger); font-size:12.5px;">Erro ao carregar: ${err.message}</div>`;
+    }
+  }
+
+  window.editarNomeUsuario = async function(uid, novoNome) {
+    try {
+      await updateDoc(doc(db, 'usuarios', uid), { nome: novoNome });
+    } catch (err) {
+      alert('Erro ao atualizar: ' + err.message);
+    }
+  };
+
+  window.removerAcessoUsuario = async function(uid) {
+    if (!confirm('Remover o acesso desse usuário? Ele não vai mais conseguir ver os dados da empresa. (A conta de login em si continua existindo — isso só revoga o acesso; pra excluir a conta por completo, precisa ser feito direto no console do Firebase.)')) return;
+    try {
+      await deleteDoc(doc(db, 'usuarios', uid));
+      carregarUsuariosDaEmpresa();
+    } catch (err) {
+      alert('Erro ao remover: ' + err.message);
+    }
   };
   window.criarAcesso = async function() {
     const nome = document.getElementById('acessoNome').value.trim();
@@ -419,6 +478,10 @@
     if (resultado.ok) {
       sucessoBox.textContent = `✅ Acesso criado! Login: ${email} · Senha: ${senha} — anote isso, não fica salvo em outro lugar.`;
       sucessoBox.style.display = 'block';
+      document.getElementById('acessoNome').value = '';
+      document.getElementById('acessoEmail').value = '';
+      document.getElementById('acessoSenha').value = '';
+      carregarUsuariosDaEmpresa();
     } else {
       erroBox.textContent = `Erro ao criar acesso: ${resultado.error}`;
       erroBox.style.display = 'block';

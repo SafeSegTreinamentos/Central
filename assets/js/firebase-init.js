@@ -19,6 +19,7 @@ import {
   addDoc,
   setDoc,
   updateDoc,
+  deleteDoc,
   query,
   where,
   orderBy,
@@ -172,7 +173,7 @@ export async function obterMeuPerfil() {
 // Reexporta os helpers do Firestore/Auth pra não precisar importar
 // a URL gigante do CDN de novo em cada página que usar este arquivo.
 export {
-  collection, collectionGroup, getDocs, doc, getDoc, addDoc, setDoc, updateDoc,
+  collection, collectionGroup, getDocs, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc,
   query, where, orderBy, limit, onAuthStateChanged, signOut
 };
 // obterMeuPerfil e esperarAuth já exportados acima com 'export function'/'export async function'
