@@ -180,60 +180,12 @@
         <!-- CALENDÁRIO -->
         <div class="card">
           <div class="cal-head">
-            <div class="cal-nav"><button>‹</button></div>
-            <div class="cal-title">Agosto 2026</div>
-            <div class="cal-nav"><button>›</button></div>
+            <div class="cal-nav"><button onclick="mudarMes(-1)">‹</button></div>
+            <div class="cal-title" id="calTitle">—</div>
+            <div class="cal-nav"><button onclick="mudarMes(1)">›</button></div>
           </div>
-          <div class="cal-grid">
+          <div class="cal-grid" id="calGrid">
             <div class="cal-dow">D</div><div class="cal-dow">S</div><div class="cal-dow">T</div><div class="cal-dow">Q</div><div class="cal-dow">Q</div><div class="cal-dow">S</div><div class="cal-dow">S</div>
-
-            <div class="cal-day muted"><span class="num">26</span></div>
-            <div class="cal-day muted"><span class="num">27</span></div>
-            <div class="cal-day muted"><span class="num">28</span></div>
-            <div class="cal-day muted"><span class="num">29</span></div>
-            <div class="cal-day muted"><span class="num">30</span></div>
-            <div class="cal-day muted"><span class="num">31</span></div>
-            <div class="cal-day"><span class="num">1</span></div>
-
-            <div class="cal-day"><span class="num">2</span></div>
-            <div class="cal-day"><span class="num">3</span></div>
-            <div class="cal-day"><span class="num">4</span></div>
-            <div class="cal-day"><span class="num">5</span></div>
-            <div class="cal-day has-event" data-scope="all"><span class="num">6</span><span class="cal-event cal-event--aberto">NR-35 Aberto</span></div>
-            <div class="cal-day has-event" data-scope="own-brf"><span class="num">7</span><span class="cal-event cal-event--privado">BRF · NR-06</span></div>
-            <div class="cal-day"><span class="num">8</span></div>
-
-            <div class="cal-day"><span class="num">9</span></div>
-            <div class="cal-day"><span class="num">10</span></div>
-            <div class="cal-day has-event" data-scope="admin"><span class="num">11</span><span class="cal-event cal-event--privado">Ocupado</span></div>
-            <div class="cal-day"><span class="num">12</span></div>
-            <div class="cal-day"><span class="num">13</span></div>
-            <div class="cal-day"><span class="num">14</span></div>
-            <div class="cal-day"><span class="num">15</span></div>
-
-            <div class="cal-day"><span class="num">16</span></div>
-            <div class="cal-day"><span class="num">17</span></div>
-            <div class="cal-day"><span class="num">18</span></div>
-            <div class="cal-day has-event" data-scope="all"><span class="num">19</span><span class="cal-event cal-event--aberto">NR-10 Aberto</span></div>
-            <div class="cal-day"><span class="num">20</span></div>
-            <div class="cal-day"><span class="num">21</span></div>
-            <div class="cal-day"><span class="num">22</span></div>
-
-            <div class="cal-day today"><span class="num">23</span></div>
-            <div class="cal-day"><span class="num">24</span></div>
-            <div class="cal-day"><span class="num">25</span></div>
-            <div class="cal-day has-event" data-scope="admin"><span class="num">26</span><span class="cal-event cal-event--privado">Ocupado</span></div>
-            <div class="cal-day"><span class="num">27</span></div>
-            <div class="cal-day"><span class="num">28</span></div>
-            <div class="cal-day"><span class="num">29</span></div>
-
-            <div class="cal-day"><span class="num">30</span></div>
-            <div class="cal-day"><span class="num">31</span></div>
-            <div class="cal-day muted"><span class="num">1</span></div>
-            <div class="cal-day muted"><span class="num">2</span></div>
-            <div class="cal-day muted"><span class="num">3</span></div>
-            <div class="cal-day muted"><span class="num">4</span></div>
-            <div class="cal-day muted"><span class="num">5</span></div>
           </div>
 
           <div class="legend">
@@ -245,47 +197,8 @@
         <!-- LISTA DE PRÓXIMAS TURMAS -->
         <div class="card">
           <div class="section-title">Próximas turmas</div>
-          <div class="turma-list">
-            <div class="turma-item" data-scope="own-brf">
-              <div class="turma-item__top">
-                <span class="turma-curso">NR-06 · EPI</span>
-                <span class="tipo-tag tipo-tag--privado">Privado</span>
-              </div>
-              <div class="turma-data">07/08/2026 · 08:00 · Sede BRF</div>
-              <div class="turma-empresa">BRF — 9 participantes</div>
-            </div>
-            <div class="turma-item" data-scope="all">
-              <div class="turma-item__top">
-                <span class="turma-curso">NR-35 · Trabalho em Altura</span>
-                <span class="tipo-tag tipo-tag--aberto">Aberto</span>
-              </div>
-              <div class="turma-data">06/08/2026 · 08:00 · CT SafeSeg</div>
-              <div class="turma-empresa">12 participantes confirmados</div>
-            </div>
-            <div class="turma-item" data-scope="admin">
-              <div class="turma-item__top">
-                <span class="turma-curso">NR-12 · Máquinas e Equip.</span>
-                <span class="tipo-tag tipo-tag--privado">Privado</span>
-              </div>
-              <div class="turma-data">11/08/2026 · 13:30 · Planta do cliente</div>
-              <div class="turma-empresa">Metalúrgica Trentin — 8 participantes</div>
-            </div>
-            <div class="turma-item" data-scope="all">
-              <div class="turma-item__top">
-                <span class="turma-curso">NR-10 · Elétrica Básica</span>
-                <span class="tipo-tag tipo-tag--aberto">Aberto</span>
-              </div>
-              <div class="turma-data">19/08/2026 · 08:00 · CT SafeSeg</div>
-              <div class="turma-empresa">6 participantes confirmados</div>
-            </div>
-            <div class="turma-item" data-scope="admin">
-              <div class="turma-item__top">
-                <span class="turma-curso">NR-06 · EPI</span>
-                <span class="tipo-tag tipo-tag--privado">Privado</span>
-              </div>
-              <div class="turma-data">26/08/2026 · 09:00 · Planta do cliente</div>
-              <div class="turma-empresa">Construtora Bettega — 15 participantes</div>
-            </div>
+          <div class="turma-list" id="turmaListReal">
+            <div class="text-muted" style="font-size:13px;">Carregando...</div>
           </div>
         </div>
 
@@ -297,34 +210,168 @@
 <!-- Criação de turma agora acontece exclusivamente no Gerador de Turmas (ver botão "+ Nova Turma" acima) -->
 
 <script>
-function addDia() {
-  const row = document.createElement('div');
-  row.className = 'day-row';
-  row.innerHTML = '<input type="date"><button class="row-remove" onclick="this.parentElement.remove()">✕</button>';
-  document.getElementById('diasList').appendChild(row);
+/* ============================================================
+   DADO REAL — mesma chave que o Gerador de Turmas usa
+============================================================ */
+const LS_TURMAS = 'safeseg_turmas_v1';
+function loadTurmasReais(){
+  try{ return JSON.parse(localStorage.getItem(LS_TURMAS) || '[]'); }
+  catch(e){ return []; }
 }
-function addAluno() {
-  const row = document.createElement('div');
-  row.className = 'aluno-row';
-  row.innerHTML = '<input type="text" placeholder="Nome completo"><input type="text" placeholder="CPF" style="max-width:140px;"><button class="row-remove" onclick="this.parentElement.remove()">✕</button>';
-  document.getElementById('alunosList').appendChild(row);
+function isAberta(turma){
+  return (turma.empresa || '').toLowerCase().includes('ct safeseg') || !turma.empresa;
+}
+// Empresa de demonstração pra visão "Cliente" (na versão real isso vem do login)
+const EMPRESA_DEMO_CLIENTE = 'BRF';
+
+let currentView = 'admin';
+let viewDate = new Date(); // mês exibido no calendário
+
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+function scopeDaTurma(turma){
+  if (isAberta(turma)) return 'all';
+  if ((turma.empresa||'').toUpperCase().includes(EMPRESA_DEMO_CLIENTE)) return 'own-brf';
+  return 'admin';
 }
 
+function formatDateBR(iso){
+  if(!iso) return '';
+  const [y,m,d]=iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+/* ============================================================
+   CALENDÁRIO — gerado com base no mês/ano de viewDate
+============================================================ */
+function renderCalendar(){
+  const ano = viewDate.getFullYear();
+  const mes = viewDate.getMonth(); // 0-11
+  document.getElementById('calTitle').textContent = `${MESES[mes]} ${ano}`;
+
+  const turmas = loadTurmasReais();
+  // mapa: 'YYYY-MM-DD' -> [{turma, dia}]
+  const eventosPorDia = {};
+  turmas.forEach(t => {
+    (t.dias || []).forEach(d => {
+      if (!d.date) return;
+      if (!eventosPorDia[d.date]) eventosPorDia[d.date] = [];
+      eventosPorDia[d.date].push(t);
+    });
+  });
+
+  const primeiroDiaSemana = new Date(ano, mes, 1).getDay(); // 0=domingo
+  const diasNoMes = new Date(ano, mes + 1, 0).getDate();
+  const diasNoMesAnterior = new Date(ano, mes, 0).getDate();
+  const hojeISO = new Date().toISOString().slice(0,10);
+
+  let cells = [];
+
+  // dias do mês anterior (esmaecidos)
+  for (let i = primeiroDiaSemana - 1; i >= 0; i--) {
+    cells.push({ num: diasNoMesAnterior - i, muted: true });
+  }
+  // dias do mês atual
+  for (let d = 1; d <= diasNoMes; d++) {
+    const iso = `${ano}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    cells.push({ num: d, iso, isToday: iso === hojeISO });
+  }
+  // completa a última semana com dias do próximo mês
+  while (cells.length % 7 !== 0) {
+    cells.push({ num: cells.length - (primeiroDiaSemana + diasNoMes) + 1, muted: true });
+  }
+
+  const html = cells.map(c => {
+    if (!c.iso) {
+      return `<div class="cal-day muted"><span class="num">${c.num}</span></div>`;
+    }
+    const eventos = eventosPorDia[c.iso] || [];
+    let classes = 'cal-day';
+    if (c.isToday) classes += ' today';
+    if (eventos.length > 0) classes += ' has-event';
+
+    // pega o primeiro evento pra decidir cor/escopo do dia (visão simplificada)
+    let eventHtml = '';
+    let scopeAttr = '';
+    if (eventos.length > 0) {
+      const principal = eventos[0];
+      const aberta = isAberta(principal);
+      scopeAttr = scopeDaTurma(principal);
+      const hideClass = (currentView === 'client' && scopeAttr === 'admin') ? ' client-mode' : '';
+      classes += hideClass;
+      eventHtml = `<span class="cal-event cal-event--${aberta ? 'aberto' : 'privado'}">${principal.curso ? principal.curso.split('—')[0].split('·')[0].trim() : 'Turma'}</span>`;
+    }
+
+    return `<div class="${classes}" data-scope="${scopeAttr}"><span class="num">${c.num}</span>${eventHtml}</div>`;
+  }).join('');
+
+  document.getElementById('calGrid').innerHTML =
+    `<div class="cal-dow">D</div><div class="cal-dow">S</div><div class="cal-dow">T</div><div class="cal-dow">Q</div><div class="cal-dow">Q</div><div class="cal-dow">S</div><div class="cal-dow">S</div>` + html;
+}
+
+function mudarMes(delta){
+  viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + delta, 1);
+  renderCalendar();
+}
+
+/* ============================================================
+   LISTA "PRÓXIMAS TURMAS" — real, ordenada por data mais próxima
+============================================================ */
+function renderTurmaListReal(){
+  const hojeISO = new Date().toISOString().slice(0,10);
+  const turmas = loadTurmasReais();
+
+  let itens = turmas.map(t => {
+    const diasFuturos = (t.dias || []).filter(d => d.date >= hojeISO).sort((a,b)=>a.date.localeCompare(b.date));
+    if (diasFuturos.length === 0) return null;
+    return { turma: t, proximoDia: diasFuturos[0] };
+  }).filter(Boolean);
+
+  itens.sort((a,b) => a.proximoDia.date.localeCompare(b.proximoDia.date));
+
+  const box = document.getElementById('turmaListReal');
+  if (itens.length === 0) {
+    box.innerHTML = `<div class="text-muted" style="font-size:13px;">Nenhuma turma futura salva ainda. Crie uma no <a href="gerador-turmas.html" style="color:var(--gold-600); font-weight:600;">Gerador de Turmas</a>.</div>`;
+    return;
+  }
+
+  box.innerHTML = itens.map(it => {
+    const t = it.turma;
+    const aberta = isAberta(t);
+    const scope = scopeDaTurma(t);
+    const hideClass = (currentView === 'client' && scope === 'admin') ? ' client-mode' : '';
+    return `
+      <div class="turma-item${hideClass}" data-scope="${scope}">
+        <div class="turma-item__top">
+          <span class="turma-curso">${t.curso || 'Treinamento'}</span>
+          <span class="tipo-tag tipo-tag--${aberta ? 'aberto' : 'privado'}">${aberta ? 'Aberto' : 'Privado'}</span>
+        </div>
+        <div class="turma-data">${formatDateBR(it.proximoDia.date)} · ${it.proximoDia.ini || ''} · ${t.empresa || 'CT SafeSeg'}</div>
+        <div class="turma-empresa">${(t.alunos||[]).length} participante(s) · ${t.codigo || ''} ${t.status==='rascunho' ? '· <span style=\"color:var(--status-warn)\">rascunho</span>' : ''}</div>
+      </div>`;
+  }).join('');
+}
+
+/* ============================================================
+   TOGGLE ADMIN / CLIENTE
+============================================================ */
 function setView(mode, btn) {
+  currentView = mode;
   document.querySelectorAll('.view-opt').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   const note = document.getElementById('viewNote');
-  document.querySelectorAll('.cal-day, .turma-item').forEach(el => {
-    if (mode === 'client') {
-      el.classList.add('client-mode');
-    } else {
-      el.classList.remove('client-mode');
-    }
-  });
   note.textContent = mode === 'admin'
     ? 'Admin vê todas as turmas, privadas e abertas.'
-    : 'BRF vê só a própria turma privada (07/08) + as turmas abertas. As turmas de outras empresas somem completamente.';
+    : `${EMPRESA_DEMO_CLIENTE} vê só a própria turma privada + as turmas abertas. As turmas de outras empresas somem completamente.`;
+  renderCalendar();
+  renderTurmaListReal();
 }
+
+/* ============================================================
+   INIT
+============================================================ */
+renderCalendar();
+renderTurmaListReal();
 </script>
 
 </body>
