@@ -207,6 +207,10 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
       Validador Público
     </a>
+    <a class="ssnav-item" href="#" onclick="fazerLogout(); return false;" style="color:#F87171; margin-top:auto;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      Sair
+    </a>
   </nav>
 
   <div class="ssnav-main">
@@ -1237,5 +1241,16 @@ document.getElementById('fDataInicio').value = new Date().toISOString().slice(0,
 const __turmaParam = new URLSearchParams(location.search).get('turma');
 if(__turmaParam){ loadTurmaFromLink(__turmaParam); }
 </script>
+
+<!-- Script de logout — independente -->
+<script type="module">
+  import { auth, signOut } from "../assets/js/firebase-init.js";
+  window.fazerLogout = async function() {
+    if (!confirm("Sair da sua conta?")) return;
+    await signOut(auth);
+    location.reload();
+  };
+</script>
+
 </body>
 </html>

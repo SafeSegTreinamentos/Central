@@ -88,6 +88,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="3" width="12" height="7" rx="2"/><path d="M9 10v4M15 10v4M6 14h12v7H6z"/></svg>
       Agenda de Turmas
     </a>
+    <button class="nav-item" style="width:100%; text-align:left; border:none; background:transparent; cursor:pointer; margin-top:auto; color:var(--status-danger);" onclick="fazerLogout()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      Sair
+    </button>
   </nav>
 
   <div class="main">
@@ -139,7 +143,7 @@
 </div>
 
 <script type="module">
-  import { db, collection, getDocs, obterMeuPerfil } from '../assets/js/firebase-init.js';
+  import { db, collection, getDocs, query, where, or, obterMeuPerfil } from '../assets/js/firebase-init.js';
 
   const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   let viewDate = new Date();
@@ -242,12 +246,13 @@
     empresaIdCache = perfil.empresaId;
 
     try {
-      const agendaSnap = await getDocs(collection(db, 'agenda'));
+      const qAgenda = query(
+        collection(db, 'agenda'),
+        or(where('tipo', '==', 'aberto'), where('empresaId', '==', perfil.empresaId))
+      );
+      const agendaSnap = await getDocs(qAgenda);
       minhasTurmasCache = [];
-      agendaSnap.forEach(d => {
-        const a = d.data();
-        if (a.tipo === 'aberto' || a.empresaId === perfil.empresaId) minhasTurmasCache.push(a);
-      });
+      agendaSnap.forEach(d => minhasTurmasCache.push(d.data()));
 
       const hojeISO = new Date().toISOString().slice(0,10);
       const em30 = new Date(Date.now() + 30*86400000).toISOString().slice(0,10);
@@ -267,6 +272,15 @@
   }
 
   carregarAgenda();
+</script>
+<!-- Script de logout — independente, funciona mesmo se o resto da página falhar -->
+<script type="module">
+  import { auth, signOut } from "../assets/js/firebase-init.js";
+  window.fazerLogout = async function() {
+    if (!confirm("Sair da sua conta?")) return;
+    await signOut(auth);
+    location.reload();
+  };
 </script>
 
 </body>

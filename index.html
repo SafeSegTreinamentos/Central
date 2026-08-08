@@ -97,7 +97,12 @@ h1,h2,h3{font-family:'Bebas Neue',Arial,sans-serif;letter-spacing:.5px;margin:0;
   // IMPORTANTE: tudo dentro de try/catch — se algo falhar (rede, permissão,
   // etc.), mostra um erro visível em vez de deixar a tela preta pra sempre.
   try {
-    const { obterMeuPerfil } = await import('./assets/js/firebase-init.js');
+    const { obterMeuPerfil, auth, signOut } = await import('./assets/js/firebase-init.js');
+    window.fazerLogout = async function() {
+      if (!confirm('Sair da sua conta?')) return;
+      await signOut(auth);
+      location.reload();
+    };
     const perfil = await obterMeuPerfil();
 
     if (perfil && perfil.role === 'cliente') {
@@ -123,7 +128,8 @@ h1,h2,h3{font-family:'Bebas Neue',Arial,sans-serif;letter-spacing:.5px;margin:0;
 
 <div class="wrap">
 
-  <div class="header">
+  <div class="header" style="position:relative;">
+    <button onclick="fazerLogout()" style="position:absolute; top:0; right:0; background:var(--graphite2); border:1px solid var(--line); color:#F87171; padding:7px 14px; border-radius:20px; font-size:12px; cursor:pointer;">Sair</button>
     <img src="assets/img/logo-dark.png" alt="SafeSeg">
     <h1>QG SAFESEG</h1>
     <div class="sub">Central de gestão — tudo em um só lugar</div>
