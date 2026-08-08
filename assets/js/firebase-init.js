@@ -28,6 +28,7 @@ import {
   getAuth,
   onAuthStateChanged,
   signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
@@ -43,6 +44,36 @@ const firebaseConfig = {
 export const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
+
+// ============================================================
+// criarUsuarioCliente() — cria um novo login (e-mail/senha) pra um
+// cliente, vinculado a uma empresa, SEM deslogar o admin.
+//
+// Truque: cria um segundo "app" Firebase só pra esse momento (mesmo
+// projeto, mesma configuração), usa ele pra criar a conta, desloga
+// só essa instância secundária — a sessão do admin (app principal)
+// nunca é tocada.
+// ============================================================
+export async function criarUsuarioCliente({ nome, email, senha, empresaId }) {
+  const secondaryApp = initializeApp(firebaseConfig, 'secundario-' + Date.now());
+  const secondaryAuth = getAuth(secondaryApp);
+  try {
+    const cred = await createUserWithEmailAndPassword(secondaryAuth, email, senha);
+    const novoUid = cred.user.uid;
+    // grava o perfil no banco principal (o admin logado tem permissão de escrita)
+    await setDoc(doc(db, 'usuarios', novoUid), {
+      nome: nome || '',
+      email,
+      role: 'cliente',
+      empresaId
+    });
+    await signOut(secondaryAuth);
+    return { ok: true, uid: novoUid };
+  } catch (err) {
+    try { await signOut(secondaryAuth); } catch (e) {}
+    return { ok: false, error: err.message };
+  }
+}
 
 // ============================================================
 // TELA DE LOGIN — aparece automaticamente por cima de qualquer

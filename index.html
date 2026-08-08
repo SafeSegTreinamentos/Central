@@ -86,6 +86,17 @@ h1,h2,h3{font-family:'Bebas Neue',Arial,sans-serif;letter-spacing:.5px;margin:0;
 </head>
 <body>
 
+<script type="module">
+  // Bloqueia o Hub até confirmar login real — só ter o link não basta mais.
+  // Depois de logar, confere o perfil: cliente vai direto pro dashboard dele,
+  // sem ver os cards administrativos do Hub. Só admin fica aqui de fato.
+  import { obterMeuPerfil } from 'assets/js/firebase-init.js';
+  const perfil = await obterMeuPerfil();
+  if (perfil && perfil.role === 'cliente') {
+    window.location.href = 'portal/dashboard-cliente.html';
+  }
+</script>
+
 <div class="hazard"></div>
 
 <div class="wrap">

@@ -206,13 +206,52 @@
         </div>
       </div>
 
+      <!-- MODAL GERENCIAR ACESSO (criar login de cliente) -->
+      <div id="modalAcessoOverlay" style="display:none; position:fixed; inset:0; background:rgba(20,23,27,0.55); align-items:center; justify-content:center; z-index:50; padding:16px;">
+        <div style="background:#fff; border-radius:16px; width:100%; max-width:440px; box-shadow:0 8px 24px rgba(0,0,0,0.2);">
+          <div style="padding:20px; border-bottom:1px solid var(--paper-200); display:flex; align-items:center; justify-content:space-between;">
+            <div>
+              <h3 style="font-family:var(--font-display); font-size:1.2rem; margin:0;">Gerenciar Acesso</h3>
+              <div id="acessoEmpresaNome" style="font-size:13px; color:var(--graphite-600); margin-top:2px;"></div>
+            </div>
+            <button onclick="fecharModalAcesso()" style="background:none; border:none; font-size:20px; cursor:pointer; color:var(--graphite-600);">✕</button>
+          </div>
+          <div style="padding:20px; display:flex; flex-direction:column; gap:12px;">
+            <div class="text-muted" style="font-size:12.5px; background:var(--paper-100); padding:10px 12px; border-radius:8px;">
+              Cria um login novo pra essa empresa acessar o Portal do Cliente. Isso não afeta sua sessão como admin.
+            </div>
+            <div>
+              <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Nome do responsável</label>
+              <input type="text" id="acessoNome" placeholder="Nome de quem vai acessar" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+            </div>
+            <div>
+              <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">E-mail de acesso</label>
+              <input type="email" id="acessoEmail" placeholder="cliente@empresa.com" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+            </div>
+            <div>
+              <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Senha inicial</label>
+              <div style="display:flex; gap:8px;">
+                <input type="text" id="acessoSenha" placeholder="Mínimo 6 caracteres" style="flex:1; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+                <button class="btn btn--secondary" style="padding:9px 12px; font-size:12px;" onclick="gerarSenhaAleatoria()">Gerar</button>
+              </div>
+            </div>
+            <div id="acessoErro" style="color:var(--status-danger); font-size:13px; display:none;"></div>
+            <div id="acessoSucesso" style="color:var(--status-ok); font-size:13px; display:none; background:var(--status-ok-bg); padding:10px 12px; border-radius:8px;"></div>
+          </div>
+          <div style="padding:16px 20px; border-top:1px solid var(--paper-200); display:flex; justify-content:flex-end; gap:8px;">
+            <button class="btn btn--secondary" onclick="fecharModalAcesso()">Fechar</button>
+            <button class="btn btn--primary" id="btnCriarAcesso" onclick="criarAcesso()">Criar acesso</button>
+          </div>
+        </div>
+      </div>
+
     </div>
 
   </div>
 </div>
 
 <script type="module">
-  import { db, collection, getDocs, addDoc, esperarAuth } from '../assets/js/firebase-init.js';
+  import { db, collection, getDocs, addDoc, esperarAuth, criarUsuarioCliente } from '../assets/js/firebase-init.js';
 
   // Schema confirmado da coleção 'empresas': nome, cnpj, seg, cidade, resp.
   // Certificados vivem como SUBCOLEÇÃO: empresas/{id}/certificados
@@ -268,7 +307,7 @@
             ${emp.resp ? `<span>👤 ${emp.resp}</span>` : ''}
           </div>` : ''}
           <div class="empresa-card__footer">
-            <button class="btn btn--ghost" style="padding:6px 10px; font-size:12px; margin-left:auto;" data-id="${emp.id}">Gerenciar</button>
+            <button class="btn btn--ghost" style="padding:6px 10px; font-size:12px; margin-left:auto;" onclick="abrirModalAcesso('${emp.id}', '${(emp.nome||'').replace(/'/g,"\\'")}')">Gerenciar acesso</button>
           </div>
         </div>
       `);
@@ -325,6 +364,64 @@
     } finally {
       btn.disabled = false;
       btn.textContent = 'Salvar empresa';
+    }
+  };
+
+  // ---------- Modal Gerenciar Acesso (criar login de cliente) ----------
+  let empresaAtualId = null;
+  window.abrirModalAcesso = function(empresaId, empresaNome) {
+    empresaAtualId = empresaId;
+    document.getElementById('acessoEmpresaNome').textContent = empresaNome;
+    document.getElementById('acessoNome').value = '';
+    document.getElementById('acessoEmail').value = '';
+    document.getElementById('acessoSenha').value = '';
+    document.getElementById('acessoErro').style.display = 'none';
+    document.getElementById('acessoSucesso').style.display = 'none';
+    document.getElementById('modalAcessoOverlay').style.display = 'flex';
+  };
+  window.fecharModalAcesso = function() {
+    document.getElementById('modalAcessoOverlay').style.display = 'none';
+  };
+  window.gerarSenhaAleatoria = function() {
+    const senha = Math.random().toString(36).slice(-8) + Math.floor(Math.random()*90+10);
+    document.getElementById('acessoSenha').value = senha;
+  };
+  window.criarAcesso = async function() {
+    const nome = document.getElementById('acessoNome').value.trim();
+    const email = document.getElementById('acessoEmail').value.trim();
+    const senha = document.getElementById('acessoSenha').value;
+    const erroBox = document.getElementById('acessoErro');
+    const sucessoBox = document.getElementById('acessoSucesso');
+    const btn = document.getElementById('btnCriarAcesso');
+
+    erroBox.style.display = 'none';
+    sucessoBox.style.display = 'none';
+
+    if (!email || !senha) {
+      erroBox.textContent = 'Preencha e-mail e senha.';
+      erroBox.style.display = 'block';
+      return;
+    }
+    if (senha.length < 6) {
+      erroBox.textContent = 'A senha precisa ter pelo menos 6 caracteres.';
+      erroBox.style.display = 'block';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Criando...';
+
+    const resultado = await criarUsuarioCliente({ nome, email, senha, empresaId: empresaAtualId });
+
+    btn.disabled = false;
+    btn.textContent = 'Criar acesso';
+
+    if (resultado.ok) {
+      sucessoBox.textContent = `✅ Acesso criado! Login: ${email} · Senha: ${senha} — anote isso, não fica salvo em outro lugar.`;
+      sucessoBox.style.display = 'block';
+    } else {
+      erroBox.textContent = `Erro ao criar acesso: ${resultado.error}`;
+      erroBox.style.display = 'block';
     }
   };
 </script>
