@@ -168,7 +168,7 @@
     <header class="topbar">
       <div>
         <h1>Agenda de Turmas</h1>
-        <div class="sub">7 turmas nos próximos 30 dias · 3 privadas · 4 abertas</div>
+        <div class="sub" id="topbarSub">Carregando...</div>
       </div>
       <div class="flex gap-2">
         <a href="gerador-turmas.html" class="btn btn--primary">+ Nova Turma</a>
@@ -177,16 +177,9 @@
 
     <div class="content">
 
-      <div class="view-toggle">
-        <span class="view-toggle__label">Visualização:</span>
-        <div class="view-toggle__opts">
-          <button class="view-opt active" onclick="setView('admin', this)">Admin</button>
-          <button class="view-opt" onclick="setView('client', this)">Cliente · BRF</button>
-        </div>
-        <span class="view-toggle__note" id="viewNote">Admin vê todas as turmas, privadas e abertas.</span>
-      </div>
+      <div id="connStatus" class="text-muted" style="font-size:12px; margin-top:-8px;">Conectando...</div>
 
-      <div class="text-muted" style="font-size:12px; margin-top:-8px;">📌 Reservas de data só acontecem pelo <a href="gerador-turmas.html" style="color:var(--gold-600); font-weight:600;">Gerador de Turmas</a> — aqui é só consulta.</div>
+      <div class="text-muted" style="font-size:12px;">📌 Reservas de data só acontecem pelo <a href="gerador-turmas.html" style="color:var(--gold-600); font-weight:600;">Gerador de Turmas</a> — aqui é só consulta. Como admin, você vê todas as turmas, privadas e abertas.</div>
 
       <section class="two-col">
 
@@ -224,35 +217,24 @@
 
 <script>
 /* ============================================================
-   DADO REAL — mesma chave que o Gerador de Turmas usa
+<script type="module">
+/* ============================================================
+   DADO REAL — direto do Firestore (mesma coleção que os
+   clientes já leem: 'agenda', com curso/data/tipo/empresaId)
 ============================================================ */
-const LS_TURMAS = 'safeseg_turmas_v1';
-function loadTurmasReais(){
-  try{ return JSON.parse(localStorage.getItem(LS_TURMAS) || '[]'); }
-  catch(e){ return []; }
-}
-function isAberta(turma){
-  return (turma.empresa || '').toLowerCase().includes('ct safeseg') || !turma.empresa;
-}
-// Empresa de demonstração pra visão "Cliente" (na versão real isso vem do login)
-const EMPRESA_DEMO_CLIENTE = 'BRF';
-
-let currentView = 'admin';
-let viewDate = new Date(); // mês exibido no calendário
-
-const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-
-function scopeDaTurma(turma){
-  if (isAberta(turma)) return 'all';
-  if ((turma.empresa||'').toUpperCase().includes(EMPRESA_DEMO_CLIENTE)) return 'own-brf';
-  return 'admin';
-}
+let empresasNomes = {}; // id -> nome, pra mostrar o nome certo no calendário
 
 function formatDateBR(iso){
   if(!iso) return '';
   const [y,m,d]=iso.split('-');
   return `${d}/${m}/${y}`;
 }
+
+let currentView = 'admin';
+let viewDate = new Date(); // mês exibido no calendário
+let turmasCache = [];
+
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
 /* ============================================================
    CALENDÁRIO — gerado com base no mês/ano de viewDate
@@ -262,15 +244,12 @@ function renderCalendar(){
   const mes = viewDate.getMonth(); // 0-11
   document.getElementById('calTitle').textContent = `${MESES[mes]} ${ano}`;
 
-  const turmas = loadTurmasReais();
-  // mapa: 'YYYY-MM-DD' -> [{turma, dia}]
+  // mapa: 'YYYY-MM-DD' -> [turma]
   const eventosPorDia = {};
-  turmas.forEach(t => {
-    (t.dias || []).forEach(d => {
-      if (!d.date) return;
-      if (!eventosPorDia[d.date]) eventosPorDia[d.date] = [];
-      eventosPorDia[d.date].push(t);
-    });
+  turmasCache.forEach(t => {
+    if (!t.data) return;
+    if (!eventosPorDia[t.data]) eventosPorDia[t.data] = [];
+    eventosPorDia[t.data].push(t);
   });
 
   const primeiroDiaSemana = new Date(ano, mes, 1).getDay(); // 0=domingo
@@ -279,43 +258,26 @@ function renderCalendar(){
   const hojeISO = new Date().toISOString().slice(0,10);
 
   let cells = [];
-
-  // dias do mês anterior (esmaecidos)
-  for (let i = primeiroDiaSemana - 1; i >= 0; i--) {
-    cells.push({ num: diasNoMesAnterior - i, muted: true });
-  }
-  // dias do mês atual
+  for (let i = primeiroDiaSemana - 1; i >= 0; i--) cells.push({ num: diasNoMesAnterior - i, muted: true });
   for (let d = 1; d <= diasNoMes; d++) {
     const iso = `${ano}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     cells.push({ num: d, iso, isToday: iso === hojeISO });
   }
-  // completa a última semana com dias do próximo mês
-  while (cells.length % 7 !== 0) {
-    cells.push({ num: cells.length - (primeiroDiaSemana + diasNoMes) + 1, muted: true });
-  }
+  while (cells.length % 7 !== 0) cells.push({ num: cells.length - (primeiroDiaSemana + diasNoMes) + 1, muted: true });
 
   const html = cells.map(c => {
-    if (!c.iso) {
-      return `<div class="cal-day muted"><span class="num">${c.num}</span></div>`;
-    }
+    if (!c.iso) return `<div class="cal-day muted"><span class="num">${c.num}</span></div>`;
     const eventos = eventosPorDia[c.iso] || [];
     let classes = 'cal-day';
     if (c.isToday) classes += ' today';
-    if (eventos.length > 0) classes += ' has-event';
-
-    // pega o primeiro evento pra decidir cor/escopo do dia (visão simplificada)
     let eventHtml = '';
-    let scopeAttr = '';
     if (eventos.length > 0) {
+      classes += ' has-event';
       const principal = eventos[0];
-      const aberta = isAberta(principal);
-      scopeAttr = scopeDaTurma(principal);
-      const hideClass = (currentView === 'client' && scopeAttr === 'admin') ? ' client-mode' : '';
-      classes += hideClass;
+      const aberta = principal.tipo === 'aberto';
       eventHtml = `<span class="cal-event cal-event--${aberta ? 'aberto' : 'privado'}">${principal.curso ? principal.curso.split('—')[0].split('·')[0].trim() : 'Turma'}</span>`;
     }
-
-    return `<div class="${classes}" data-scope="${scopeAttr}"><span class="num">${c.num}</span>${eventHtml}</div>`;
+    return `<div class="${classes}"><span class="num">${c.num}</span>${eventHtml}</div>`;
   }).join('');
 
   document.getElementById('calGrid').innerHTML =
@@ -326,21 +288,14 @@ function mudarMes(delta){
   viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + delta, 1);
   renderCalendar();
 }
+window.mudarMes = mudarMes;
 
 /* ============================================================
    LISTA "PRÓXIMAS TURMAS" — real, ordenada por data mais próxima
 ============================================================ */
 function renderTurmaListReal(){
   const hojeISO = new Date().toISOString().slice(0,10);
-  const turmas = loadTurmasReais();
-
-  let itens = turmas.map(t => {
-    const diasFuturos = (t.dias || []).filter(d => d.date >= hojeISO).sort((a,b)=>a.date.localeCompare(b.date));
-    if (diasFuturos.length === 0) return null;
-    return { turma: t, proximoDia: diasFuturos[0] };
-  }).filter(Boolean);
-
-  itens.sort((a,b) => a.proximoDia.date.localeCompare(b.proximoDia.date));
+  let itens = turmasCache.filter(t => t.data >= hojeISO).sort((a,b) => a.data.localeCompare(b.data));
 
   const box = document.getElementById('turmaListReal');
   if (itens.length === 0) {
@@ -348,43 +303,56 @@ function renderTurmaListReal(){
     return;
   }
 
-  box.innerHTML = itens.map(it => {
-    const t = it.turma;
-    const aberta = isAberta(t);
-    const scope = scopeDaTurma(t);
-    const hideClass = (currentView === 'client' && scope === 'admin') ? ' client-mode' : '';
+  box.innerHTML = itens.map(t => {
+    const aberta = t.tipo === 'aberto';
+    const nomeEmpresa = aberta ? 'CT SafeSeg' : (empresasNomes[t.empresaId] || '(empresa)');
     return `
-      <div class="turma-item${hideClass}" data-scope="${scope}">
+      <div class="turma-item">
         <div class="turma-item__top">
           <span class="turma-curso">${t.curso || 'Treinamento'}</span>
           <span class="tipo-tag tipo-tag--${aberta ? 'aberto' : 'privado'}">${aberta ? 'Aberto' : 'Privado'}</span>
         </div>
-        <div class="turma-data">${formatDateBR(it.proximoDia.date)} · ${it.proximoDia.ini || ''} · ${t.empresa || 'CT SafeSeg'}</div>
-        <div class="turma-empresa">${(t.alunos||[]).length} participante(s) · ${t.codigo || ''} ${t.status==='rascunho' ? '· <span style=\"color:var(--status-warn)\">rascunho</span>' : ''}</div>
+        <div class="turma-data">${formatDateBR(t.data)} · ${nomeEmpresa}</div>
       </div>`;
   }).join('');
 }
 
 /* ============================================================
-   TOGGLE ADMIN / CLIENTE
+   LOGIN + CARREGAMENTO REAL
 ============================================================ */
-function setView(mode, btn) {
-  currentView = mode;
-  document.querySelectorAll('.view-opt').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  const note = document.getElementById('viewNote');
-  note.textContent = mode === 'admin'
-    ? 'Admin vê todas as turmas, privadas e abertas.'
-    : `${EMPRESA_DEMO_CLIENTE} vê só a própria turma privada + as turmas abertas. As turmas de outras empresas somem completamente.`;
-  renderCalendar();
-  renderTurmaListReal();
+async function iniciar(){
+  const status = document.getElementById('connStatus');
+  try {
+    const { obterMeuPerfil, db, collection, getDocs } = await import('assets/js/firebase-init.js');
+    const perfil = await obterMeuPerfil();
+    if (perfil && perfil.role === 'cliente') {
+      window.location.href = 'agenda-cliente.html';
+      return;
+    }
+
+    const [empresasSnap, agendaSnap] = await Promise.all([
+      getDocs(collection(db, 'empresas')),
+      getDocs(collection(db, 'agenda'))
+    ]);
+    empresasSnap.forEach(d => { empresasNomes[d.id] = d.data().nome || '(sem nome)'; });
+    turmasCache = agendaSnap.docs.map(d => d.data());
+
+    document.getElementById('topbarSub').textContent = turmasCache.length
+      ? `${turmasCache.length} turma(s) cadastrada(s) no total`
+      : 'Nenhuma turma cadastrada ainda';
+    status.textContent = `✅ ${turmasCache.length} turma(s) carregada(s).`;
+    status.style.color = 'var(--status-ok)';
+
+    renderCalendar();
+    renderTurmaListReal();
+  } catch (err) {
+    console.error('Erro ao carregar Agenda:', err);
+    status.textContent = `⚠️ Erro ao carregar: ${err.message}`;
+    status.style.color = 'var(--status-danger)';
+  }
 }
 
-/* ============================================================
-   INIT
-============================================================ */
-renderCalendar();
-renderTurmaListReal();
+iniciar();
 </script>
 <!-- Script de logout — independente, funciona mesmo se o resto da página falhar -->
 <script type="module">

@@ -97,6 +97,9 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
 
 /* ===== NAVEGAÇÃO LATERAL DO PORTAL (classes com prefixo ssnav- para nunca colidir com o app original) ===== */
 .ssnav-shell{display:grid;grid-template-columns:230px 1fr;min-height:100vh;}
+/* Esconde tudo até confirmar login — mesma técnica usada no Hub */
+.ssnav-shell{visibility:hidden;}
+.ssnav-shell.autenticado{visibility:visible;}
 .ssnav-sidebar{background:#0e1013;border-right:1px solid var(--line);padding:20px 12px;display:flex;flex-direction:column;gap:3px;}
 .ssnav-logo{padding:0 8px 20px;}
 .ssnav-logo img{width:100%;max-width:140px;display:block;}
@@ -163,6 +166,69 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
 </style>
 </head>
 <body>
+
+<script type="module">
+  // Bloqueia a página até confirmar login (esse arquivo não tinha isso ainda).
+  // Também busca as empresas reais do Firestore pro seletor, e prepara a
+  // função que grava a Agenda no lugar certo (Firestore, não localStorage).
+  try {
+    const { obterMeuPerfil, db, collection, getDocs, addDoc, query, where, deleteDoc } = await import('assets/js/firebase-init.js');
+    const perfil = await obterMeuPerfil();
+    if (perfil && perfil.role === 'cliente') {
+      window.location.href = 'dashboard-cliente.html';
+    } else {
+      document.querySelector('.ssnav-shell').classList.add('autenticado');
+    }
+
+    // Carrega empresas reais no seletor
+    (async () => {
+      try {
+        const snap = await getDocs(collection(db, 'empresas'));
+        const select = document.getElementById('fEmpresa');
+        snap.forEach(d => {
+          const opt = document.createElement('option');
+          opt.value = d.id;
+          opt.textContent = d.data().nome || '(sem nome)';
+          select.appendChild(opt);
+        });
+      } catch (e) { console.error('Erro ao carregar empresas:', e); }
+    })();
+
+    // Grava/atualiza a Agenda real no Firestore — uma turma com N dias vira
+    // N documentos na coleção 'agenda' (mesmo schema que o resto do sistema já usa)
+    window.sincronizarAgendaFirestore = async function(turma) {
+      try {
+        // remove os dias antigos dessa turma antes de regravar (evita duplicar em edições)
+        const antigos = await getDocs(query(collection(db, 'agenda'), where('turmaId', '==', turma.id)));
+        for (const d of antigos.docs) await deleteDoc(d.ref);
+
+        for (const dia of (turma.dias || [])) {
+          await addDoc(collection(db, 'agenda'), {
+            turmaId: turma.id,
+            curso: turma.curso,
+            data: dia.date,
+            tipo: turma.empresaId ? 'privado' : 'aberto',
+            empresaId: turma.empresaId || '',
+            criadoEm: new Date().toISOString()
+          });
+        }
+      } catch (e) {
+        console.error('Erro ao sincronizar agenda no Firestore:', e);
+      }
+    };
+  } catch (err) {
+    console.error('Erro ao verificar login:', err);
+    document.body.innerHTML = `
+      <div style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; text-align:center; color:#E9E9E7; font-family:Inter,Arial,sans-serif; background:#14171B;">
+        <div>
+          <div style="font-size:40px; margin-bottom:12px;">⚠️</div>
+          <div style="font-size:16px; font-weight:700; margin-bottom:6px;">Não foi possível verificar o login</div>
+          <div style="font-size:13px; color:#9AA0A6; margin-bottom:16px;">${err.message}</div>
+          <button onclick="location.reload()" style="background:#F59E0B; color:#111; border:none; padding:10px 20px; border-radius:8px; font-weight:700; cursor:pointer;">Tentar de novo</button>
+        </div>
+      </div>`;
+  }
+</script>
 
 <div class="ssnav-shell">
   <nav class="ssnav-sidebar no-print">
@@ -278,8 +344,10 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
           <input id="fCarga" placeholder="Ex: 08 Horas">
         </div>
         <div class="field">
-          <label>Empresa (cliente)</label>
-          <input id="fEmpresa" placeholder="Nome da empresa">
+          <label>Empresa (cliente) <small style="color:var(--amber); font-weight:400;">— define quem vê essa turma no Portal do Cliente</small></label>
+          <select id="fEmpresa">
+            <option value="">CT SafeSeg (Aberto a todos)</option>
+          </select>
         </div>
         <div class="field">
           <label>CNPJ da empresa</label>
@@ -794,11 +862,14 @@ document.getElementById('fPlanilhaUpload').addEventListener('change', async (e)=
 function collectForm(){
   const cursoSel=document.getElementById('fCurso');
   const cursoNome = cursoSel.value==='custom' ? (prompt('Nome do curso:')||'Curso') : loadCursos()[+cursoSel.value].nome;
+  const empresaSel = document.getElementById('fEmpresa');
+  const empresaOpt = empresaSel.options[empresaSel.selectedIndex];
   return {
     curso: cursoNome,
     tipo: document.getElementById('fTipo').value,
     carga: document.getElementById('fCarga').value,
-    empresa: document.getElementById('fEmpresa').value,
+    empresaId: empresaSel.value || '', // vazio = aberto a todos (CT SafeSeg)
+    empresa: empresaSel.value ? (empresaOpt ? empresaOpt.textContent : '') : 'CT SafeSeg',
     cnpj: document.getElementById('fCnpj').value,
     instrutor: document.getElementById('fInstrutor').value,
     dias: diasState,
@@ -981,6 +1052,7 @@ document.getElementById('btnSalvarTurma').addEventListener('click', async ()=>{
   currentTurmaId = turma.id;
   currentTurmaCodigo = turma.codigo;
   updateActiveTurmaBanner();
+  if (window.sincronizarAgendaFirestore) await window.sincronizarAgendaFirestore(turma);
 });
 
 document.getElementById('btnGerarTurma').addEventListener('click', async ()=>{
@@ -1022,6 +1094,7 @@ document.getElementById('btnGerarTurma').addEventListener('click', async ()=>{
   currentTurmaId = turma.id;
   currentTurmaCodigo = turma.codigo;
   updateActiveTurmaBanner();
+  if (window.sincronizarAgendaFirestore) await window.sincronizarAgendaFirestore(turma);
   renderPrintDoc(turma);
   document.getElementById('printRoot').style.display='block';
   toast(`Turma ${turma.codigo} finalizada${url?' e salva na nuvem':''}${turma.pdfUrl?' — PDF salvo no Drive':''}`);
@@ -1065,7 +1138,7 @@ function editarTurma(id){
   document.getElementById('fCurso').value = idx!==-1 ? idx : 'custom';
   document.getElementById('fTipo').value = t.tipo||'Formação';
   document.getElementById('fCarga').value = t.carga||'';
-  document.getElementById('fEmpresa').value = t.empresa||'';
+  document.getElementById('fEmpresa').value = t.empresaId||'';
   document.getElementById('fCnpj').value = t.cnpj||'';
   document.getElementById('fInstrutor').value = t.instrutor||'Deverson R. F. Pomerenk';
   document.getElementById('fConteudo').value = t.conteudo||'';
@@ -1109,13 +1182,22 @@ async function renderHistorico(){
     <div class="hist-item" style="flex-direction:column; align-items:stretch;">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
         <div>
-          <div class="code">${t.codigo} <span class="status-badge ${t.status||'gerado'}">${t.status==='rascunho'?'Rascunho':'Gerado'}</span></div>
+          <div class="code">
+            ${t.codigo}
+            <span class="status-badge ${t.status||'gerado'}">${t.status==='rascunho'?'Rascunho':'Gerado'}</span>
+            <span class="status-badge ${t.concluida?'gerado':'rascunho'}" style="cursor:pointer;" onclick="alternarConcluida('${t.id}')" title="Clique pra marcar/desmarcar">
+              ${t.concluida ? '✅ Concluída' : '⏳ Em andamento'}
+            </span>
+          </div>
           <div class="meta" style="color:#F5A623;font-weight:600;">${turmaFriendlyName(t)}</div>
           <div class="meta">${t.curso} · ${t.tipo} · ${t.alunos.length} aluno(s) · ${t.dias.length} dia(s) · ${t.empresa||'sem empresa'}${t.dias&&t.dias[0]?' · '+formatDateBR(t.dias[0].date):''}</div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           ${t.status==='rascunho' ? `<button class="btn secondary small" onclick="editarTurma('${t.id}')">✏️ Continuar editando</button>` : ''}
-          <button class="btn small" onclick="emitirCertificadosDaTurma('${t.id}')">📄 Emitir certificados</button>
+          ${t.concluida
+            ? `<button class="btn small" onclick="emitirCertificadosDaTurma('${t.id}')">📄 Emitir certificados</button>`
+            : `<button class="btn ghost small" disabled title="Marque a turma como Concluída primeiro" style="opacity:.5; cursor:not-allowed;">📄 Emitir certificados</button>`
+          }
           ${t.pdfUrl ? `<a class="btn secondary small" href="${t.pdfUrl}" target="_blank" rel="noopener">Abrir PDF</a>` : ''}
           <button class="btn ghost small" onclick="copyTurmaLink('${t.id}')">Copiar link</button>
           <button class="btn secondary small" onclick="reprintTurma('${t.id}')">Reimprimir</button>
@@ -1126,6 +1208,15 @@ async function renderHistorico(){
     </div>`).join('');
 }
 document.getElementById('histSearch').addEventListener('input', renderHistorico);
+
+function alternarConcluida(id){
+  const list = loadTurmas();
+  const idx = list.findIndex(t=>t.id===id);
+  if(idx===-1) return;
+  list[idx].concluida = !list[idx].concluida;
+  saveTurmas(list);
+  renderHistorico();
+}
 
 // ============================================================
 // EMISSÃO REAL DE CERTIFICADOS — chama o Apps Script de certificados
@@ -1151,6 +1242,7 @@ async function chamarScriptCertificados(payload){
 async function emitirCertificadosDaTurma(id){
   const t = loadTurmas().find(x=>x.id===id);
   if(!t){ toast('Turma não encontrada'); return; }
+  if(!t.concluida){ toast('Marca a turma como "Concluída" antes de emitir os certificados.'); return; }
   if(!t.alunos || t.alunos.length===0){ toast('Essa turma não tem aluno cadastrado'); return; }
   if(!confirm(`Gerar ${t.alunos.length} certificado(s) real(is) pra essa turma? Isso cria os PDFs no Drive.`)) return;
 
