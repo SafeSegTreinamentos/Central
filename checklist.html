@@ -361,6 +361,71 @@ body{margin:0;font-family:'Inter',Arial,sans-serif;background:var(--graphite);co
 
 ---
 
+## 🚀 EXPANSÃO GRANDE — CRM + Financeiro + Propostas (14/08, em desenho, aguardando input do usuário)
+
+**Decisões já confirmadas pelo usuário:**
+- Financeiro: **completo** (contas a pagar/receber, fatura por cliente, fluxo de caixa) — não é só resumo
+- CRM: **completo dos dois lados** (funil de vendas E histórico de relacionamento por cliente — igualmente importantes)
+- Propostas: usuário **já tem sistema pronto**, quer **integrar/plugar** no Portal (não reescrever do zero) — aguardando o usuário compartilhar esse sistema/código
+
+**Arquitetura proposta pelo assistente (aguardando confirmação do usuário):**
+- Nova coleção `leads`, separada de `empresas` — cobre o funil (Prospecção → Proposta Enviada → Negociação → Fechado/Perdido), origem, valor estimado
+- Ao fechar negócio, lead vira empresa com um clique ("Converter em Empresa"), sem perder histórico
+- Motivo da separação: `empresas` hoje = só clientes já fechados, com acesso ao Portal / funcionários / certificados. Misturar prospect nessa coleção geraria risco de permissão indevida
+
+**Módulos planejados:**
+1. **CRM**
+   - `leads` (funil de vendas)
+   - Histórico de interação — timeline por lead E por empresa já cliente (ligação, e-mail, reunião, observação)
+   - Tarefas/lembretes de follow-up
+2. **Financeiro**
+   - Contas a Receber (por empresa, vinculado ao que ela contratou)
+   - Contas a Pagar (despesas gerais)
+   - Faturamento por cliente
+   - Painel de fluxo de caixa (entradas x saídas por mês)
+   - Referencia a estrutura já existente no Drive (`05_FINANCEIRO`) em vez de recriar
+3. **Propostas**
+   - Depende do sistema que o usuário já tem — aguardando compartilhamento
+   - Uma vez integrado: proposta linkada ao lead/empresa, status refletindo automaticamente no funil do CRM
+
+**Pendente do usuário antes de codar qualquer coisa:**
+- ⬜ Compartilhar o sistema de Propostas existente (código, link, ou explicação de como funciona)
+- ⬜ Confirmar (ou ajustar) a separação `leads` / `empresas`
+
+### 🔌 Ideias de integrações externas (14/08, apresentadas — aguardando priorização)
+
+**Comunicação:**
+- WhatsApp automático (lembrete de treinamento, certificado pronto, cobrança) — via API oficial/Twilio/Z-API — tem custo mensal
+- E-mail transacional mais robusto (SendGrid) — só se o volume do Apps Script/MailApp ficar pequeno demais
+
+**Órgãos públicos / validação automática:**
+- Consulta automática de CNPJ ao cadastrar empresa (API gratuita tipo BrasilAPI) — preenche razão social/endereço sozinho
+- Validação matemática de CPF antes de salvar — grátis, só lógica
+
+**Financeiro:**
+- Emissão automática de Nota Fiscal (eNotas, Focus NFe) — tem custo mensal
+- Cobrança automática via Pix/boleto (Asaas, Mercado Pago) — tem custo por transação
+
+**Google Workspace:**
+- Google Calendar sincronizado com as turmas do Gerador (grátis, já tem Workspace)
+- Google Meet automático pra treinamento EAD
+
+**Documentos/Assinatura:**
+- Assinatura eletrônica de contrato/proposta (Autentique, D4Sign) — tem plano grátis com limite
+
+**Marketing:**
+- Agendamento de post no Instagram direto do sistema, aproveitando a pasta `Conteudo-Instagram` que já existe
+
+**BI:**
+- Google Looker Studio conectado no Firestore — dashboards mais avançados, grátis
+
+**IA/Automação:**
+- Chatbot simples no WhatsApp pra consultar validade de certificado por CPF, reaproveitando o Validador já existente
+
+**Status:** nenhuma dessas foi iniciada — aguardando o usuário escolher prioridade, junto com a definição de CRM/Financeiro/Propostas acima.
+
+---
+
 ## BACKLOG DE PROJETOS FUTUROS (ideias registradas, sem prazo — avaliar quando fizer sentido)
 
 ### 🆕 Ideias de automação/funcionalidade sugeridas (13/08) — aguardando priorização do usuário
@@ -477,10 +542,23 @@ body{margin:0;font-family:'Inter',Arial,sans-serif;background:var(--graphite);co
   document.getElementById('mdOutput').innerHTML = marked.parse(raw);
 </script>
 <script type="module">
-  import { esperarAuth } from 'assets/js/firebase-init.js';
-  await esperarAuth();
-  document.getElementById('topbarEl').classList.add('autenticado');
-  document.getElementById('wrapEl').classList.add('autenticado');
+  try {
+    const { esperarAuth } = await import('./assets/js/firebase-init.js');
+    await esperarAuth();
+    document.getElementById('topbarEl').classList.add('autenticado');
+    document.getElementById('wrapEl').classList.add('autenticado');
+  } catch (err) {
+    console.error('Erro ao verificar login:', err);
+    document.body.innerHTML = `
+      <div style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; text-align:center; color:#E9E9E7; font-family:Inter,Arial,sans-serif;">
+        <div>
+          <div style="font-size:40px; margin-bottom:12px;">⚠️</div>
+          <div style="font-size:16px; font-weight:700; margin-bottom:6px;">Não foi possível verificar o login</div>
+          <div style="font-size:13px; color:#9AA0A6; margin-bottom:16px;">${err.message}</div>
+          <button onclick="location.reload()" style="background:#F59E0B; color:#111; border:none; padding:10px 20px; border-radius:8px; font-weight:700; cursor:pointer;">Tentar de novo</button>
+        </div>
+      </div>`;
+  }
 </script>
 </body>
 </html>
