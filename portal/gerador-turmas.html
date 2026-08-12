@@ -257,6 +257,10 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 21h10M9 18v3M15 18v3"/></svg>
       Gerador de Turmas
     </a>
+    <a class="ssnav-item" href="turmas.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 10v6M2 10l10-5 10 5-10 5-10-5z"/><path d="M6 12v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/></svg>
+      Turmas
+    </a>
     <a class="ssnav-item" href="tecnica.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9.5 2a2.5 2.5 0 0 0-2.5 2.5V6H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-2V4.5A2.5 2.5 0 0 0 14.5 2z"/><path d="M9 12h6M9 16h4"/></svg>
       Central Técnica
@@ -1245,19 +1249,14 @@ async function renderHistorico(){
           <div class="code">
             ${t.codigo}
             <span class="status-badge ${t.status||'gerado'}">${t.status==='rascunho'?'Rascunho':'Gerado'}</span>
-            <span class="status-badge ${t.concluida?'gerado':'rascunho'}" style="cursor:pointer;" onclick="alternarConcluida('${t.id}')" title="Clique pra marcar/desmarcar">
-              ${t.concluida ? '✅ Concluída' : '⏳ Em andamento'}
-            </span>
           </div>
           <div class="meta" style="color:#F5A623;font-weight:600;">${turmaFriendlyName(t)}</div>
-          <div class="meta">${t.curso} · ${t.tipo} · ${t.alunos.length} aluno(s) · ${t.dias.length} dia(s) · ${t.empresa||'sem empresa'}${t.dias&&t.dias[0]?' · '+formatDateBR(t.dias[0].date):''}</div>
+          <div class="meta">${t.curso} · ${t.tipo} · ${t.alunos.length} aluno(s) (${(t.alunos||[]).filter(a=>a.aprovado).length} aprovado(s)) · ${t.dias.length} dia(s) · ${t.empresa||'sem empresa'}${t.dias&&t.dias[0]?' · '+formatDateBR(t.dias[0].date):''}</div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           ${t.status==='rascunho' ? `<button class="btn secondary small" onclick="editarTurma('${t.id}')">✏️ Continuar editando</button>` : ''}
-          ${t.concluida
-            ? `<button class="btn small" onclick="emitirCertificadosDaTurma('${t.id}')">📄 Emitir certificados</button>`
-            : `<button class="btn ghost small" disabled title="Marque a turma como Concluída primeiro" style="opacity:.5; cursor:not-allowed;">📄 Emitir certificados</button>`
-          }
+          <a href="turmas.html" class="btn secondary small" style="text-decoration:none;">✅ Nota/Aprovação</a>
+          <button class="btn small" onclick="emitirCertificadosDaTurma('${t.id}')">📄 Emitir certificados</button>
           ${t.pdfUrl ? `<a class="btn secondary small" href="${t.pdfUrl}" target="_blank" rel="noopener">Abrir PDF</a>` : ''}
           <button class="btn ghost small" onclick="copyTurmaLink('${t.id}')">Copiar link</button>
           <button class="btn secondary small" onclick="reprintTurma('${t.id}')">Reimprimir</button>
@@ -1302,9 +1301,14 @@ async function chamarScriptCertificados(payload){
 async function emitirCertificadosDaTurma(id){
   const t = loadTurmas().find(x=>x.id===id);
   if(!t){ toast('Turma não encontrada'); return; }
-  if(!t.concluida){ toast('Marca a turma como "Concluída" antes de emitir os certificados.'); return; }
   if(!t.alunos || t.alunos.length===0){ toast('Essa turma não tem aluno cadastrado'); return; }
-  if(!confirm(`Gerar ${t.alunos.length} certificado(s) real(is) pra essa turma? Isso cria os PDFs no Drive.`)) return;
+
+  const aprovados = t.alunos.filter(a => a.aprovado);
+  if(aprovados.length===0){
+    toast('Nenhum aluno aprovado ainda — marca a aprovação na aba "Turmas" antes de emitir.');
+    return;
+  }
+  if(!confirm(`Gerar ${aprovados.length} certificado(s) real(is) — só dos alunos já aprovados (de ${t.alunos.length} no total)? Isso cria os PDFs no Drive.`)) return;
 
   const statusBox = document.getElementById(`emissaoStatus-${id}`);
   statusBox.style.display = 'block';
@@ -1313,9 +1317,9 @@ async function emitirCertificadosDaTurma(id){
   const dataFimISO = t.dias && t.dias.length ? t.dias[t.dias.length-1].date : dataInicioISO;
 
   let sucesso = 0, falhas = [];
-  for (let i=0; i<t.alunos.length; i++){
-    const aluno = t.alunos[i];
-    statusBox.innerHTML = `Emitindo ${i+1}/${t.alunos.length} — ${aluno.nome}...`;
+  for (let i=0; i<aprovados.length; i++){
+    const aluno = aprovados[i];
+    statusBox.innerHTML = `Emitindo ${i+1}/${aprovados.length} — ${aluno.nome}...`;
     try{
       const resultado = await chamarScriptCertificados({
         acao: 'gerarCertificado',
@@ -1334,10 +1338,12 @@ async function emitirCertificadosDaTurma(id){
     }
   }
 
+  const naoAprovados = t.alunos.length - aprovados.length;
   statusBox.innerHTML = `✅ ${sucesso} certificado(s) gerado(s) com sucesso.` +
+    (naoAprovados > 0 ? `<br><span class="muted">${naoAprovados} aluno(s) não aprovado(s) ainda foram pulados.</span>` : '') +
     (falhas.length ? `<br>⚠️ ${falhas.length} falha(s):<br>` + falhas.join('<br>') : '') +
     `<br><span class="muted">Os PDFs já estão na pasta Certificados-PDF do Drive.</span>`;
-  toast(`Emissão concluída: ${sucesso} de ${t.alunos.length}`);
+  toast(`Emissão concluída: ${sucesso} de ${aprovados.length} aprovado(s)`);
 }
 
 function reprintTurma(id){
