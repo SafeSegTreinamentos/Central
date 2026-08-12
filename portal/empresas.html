@@ -201,6 +201,24 @@
               <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Responsável</label>
               <input type="text" id="novaEmpresaResp" placeholder="Nome do contato" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
             </div>
+            <div style="display:flex; gap:10px;">
+              <div style="flex:1;">
+                <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Telefone</label>
+                <input type="text" id="novaEmpresaTelefone" placeholder="(46) 99999-9999" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+              </div>
+              <div style="flex:1;">
+                <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">E-mail</label>
+                <input type="email" id="novaEmpresaEmail" placeholder="contato@empresa.com" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+              </div>
+            </div>
+            <div>
+              <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Endereço</label>
+              <input type="text" id="novaEmpresaEndereco" placeholder="Rua, número, bairro" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+            </div>
+            <div>
+              <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Observações</label>
+              <textarea id="novaEmpresaObs" placeholder="Anotações internas sobre essa empresa" rows="2" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px; font-family:inherit; resize:vertical;"></textarea>
+            </div>
             <div id="novaEmpresaErro" style="color:var(--status-danger); font-size:13px; display:none;"></div>
           </div>
           <div style="padding:16px 20px; border-top:1px solid var(--paper-200); display:flex; justify-content:flex-end; gap:8px;">
@@ -307,12 +325,16 @@
 
       const empresasComContagem = await Promise.all(snap.docs.map(async docSnap => {
         const d = docSnap.data();
-        let totalCertificados = 0;
+        let totalCertificados = 0, totalFuncionarios = 0;
         try {
           const certSnap = await getDocs(collection(db, 'empresas', docSnap.id, 'certificados'));
           totalCertificados = certSnap.size;
         } catch (e) { /* sem permissão ou subcoleção vazia */ }
-        return { id: docSnap.id, ...d, totalCertificados, temAcesso: empresasComAcesso.has(docSnap.id) };
+        try {
+          const funcSnap = await getDocs(collection(db, 'empresas', docSnap.id, 'funcionarios'));
+          totalFuncionarios = funcSnap.docs.filter(f => f.data().status !== 'inativo').length;
+        } catch (e) { /* sem permissão ou subcoleção vazia */ }
+        return { id: docSnap.id, ...d, totalCertificados, totalFuncionarios, temAcesso: empresasComAcesso.has(docSnap.id) };
       }));
 
       window.__empresasData = empresasComContagem;
@@ -345,7 +367,7 @@
 
     const cardsHtml = filtradas.map(emp => `
       <div class="empresa-card">
-        <div class="empresa-card__head">
+        <div class="empresa-card__head" style="cursor:pointer;" onclick="location.href='empresa-detalhe.html?id=${emp.id}'">
           <div class="empresa-avatar">${iniciais(emp.nome)}</div>
           <div>
             <div class="empresa-nome">${emp.nome || '(sem nome)'}</div>
@@ -355,14 +377,16 @@
         ${emp.seg ? `<div class="empresa-setor">${emp.seg}</div>` : ''}
         <div class="empresa-stats">
           <div class="empresa-stat"><div class="empresa-stat__value">${emp.totalCertificados}</div><div class="empresa-stat__label">Certificados</div></div>
+          <div class="empresa-stat"><div class="empresa-stat__value">${emp.totalFuncionarios ?? '—'}</div><div class="empresa-stat__label">Funcionários</div></div>
         </div>
         ${(emp.cidade || emp.resp) ? `<div style="font-size:12px; color:var(--graphite-600); display:flex; justify-content:space-between;">
           ${emp.cidade ? `<span>📍 ${emp.cidade}</span>` : '<span></span>'}
           ${emp.resp ? `<span>👤 ${emp.resp}</span>` : ''}
         </div>` : ''}
-        <div class="empresa-card__footer" style="display:flex; align-items:center; gap:8px;">
+        <div class="empresa-card__footer" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
           <span class="selo selo--${emp.temAcesso ? 'ok' : 'pending'}">${emp.temAcesso ? 'Acesso ativo' : 'Sem acesso'}</span>
-          <button class="btn btn--ghost" style="padding:6px 10px; font-size:12px; margin-left:auto;" onclick="abrirModalAcesso('${emp.id}', '${(emp.nome||'').replace(/'/g,"\\'")}')">Gerenciar acesso</button>
+          <a href="empresa-detalhe.html?id=${emp.id}" class="btn btn--secondary" style="padding:6px 10px; font-size:12px; margin-left:auto; text-decoration:none;">Ver detalhes</a>
+          <button class="btn btn--ghost" style="padding:6px 10px; font-size:12px;" onclick="abrirModalAcesso('${emp.id}', '${(emp.nome||'').replace(/'/g,"\\'")}')">Gerenciar acesso</button>
         </div>
       </div>
     `);
@@ -403,6 +427,10 @@
     const seg = document.getElementById('novaEmpresaSeg').value.trim();
     const cidade = document.getElementById('novaEmpresaCidade').value.trim();
     const resp = document.getElementById('novaEmpresaResp').value.trim();
+    const telefone = document.getElementById('novaEmpresaTelefone').value.trim();
+    const email = document.getElementById('novaEmpresaEmail').value.trim();
+    const endereco = document.getElementById('novaEmpresaEndereco').value.trim();
+    const obs = document.getElementById('novaEmpresaObs').value.trim();
     const erroBox = document.getElementById('novaEmpresaErro');
     const btn = document.getElementById('btnSalvarEmpresa');
 
@@ -417,8 +445,10 @@
     erroBox.style.display = 'none';
 
     try {
-      await addDoc(collection(db, 'empresas'), { nome, cnpj, seg, cidade, resp });
+      await addDoc(collection(db, 'empresas'), { nome, cnpj, seg, cidade, resp, telefone, email, endereco, obs });
       window.fecharModalNovaEmpresa();
+      ['novaEmpresaNome','novaEmpresaCnpj','novaEmpresaSeg','novaEmpresaCidade','novaEmpresaResp','novaEmpresaTelefone','novaEmpresaEmail','novaEmpresaEndereco','novaEmpresaObs']
+        .forEach(id => { document.getElementById(id).value = ''; });
       // recarrega a lista já com a empresa nova
       document.getElementById('empresaGrid').querySelectorAll('.empresa-card').forEach(el => el.remove());
       carregarEmpresas();
