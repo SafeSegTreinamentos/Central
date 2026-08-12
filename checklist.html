@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SafeSeg | Checklist do Projeto</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<style>
+:root{
+  --amber:#F59E0B; --amber-dark:#B45309;
+  --graphite:#14171B; --graphite2:#1D2126; --graphite3:#262B32;
+  --line:#33393f; --text:#E9E9E7; --muted:#9AA0A6;
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:'Inter',Arial,sans-serif;background:var(--graphite);color:var(--text);}
+.hazard{height:6px;background:repeating-linear-gradient(45deg,var(--amber) 0 14px,#111 14px 28px);}
+.topbar{display:flex; align-items:center; justify-content:space-between; padding:20px 24px; border-bottom:1px solid var(--line);}
+.topbar h1{font-family:'Bebas Neue',Arial,sans-serif; font-size:26px; letter-spacing:.03em; margin:0; color:#fff;}
+.back-link{color:var(--amber); text-decoration:none; font-size:13px; font-weight:600;}
+.wrap{max-width:900px; margin:0 auto; padding:24px 20px 80px;}
+.wrap{visibility:hidden;}
+.wrap.autenticado{visibility:visible;}
+.topbar{visibility:hidden;}
+.topbar.autenticado{visibility:visible;}
+.md-content{background:var(--graphite2); border:1px solid var(--line); border-radius:10px; padding:28px 32px; line-height:1.65; font-size:14.5px;}
+.md-content h1{font-family:'Bebas Neue',Arial,sans-serif; font-size:28px; color:var(--amber); border-bottom:2px solid var(--line); padding-bottom:10px;}
+.md-content h2{font-family:'Bebas Neue',Arial,sans-serif; font-size:22px; color:#fff; margin-top:32px; border-bottom:1px solid var(--line); padding-bottom:6px;}
+.md-content h3{font-size:16px; color:var(--amber); margin-top:22px;}
+.md-content code{background:#0f1215; padding:2px 6px; border-radius:4px; font-size:12.5px; color:#F8CC3E;}
+.md-content pre{background:#0f1215; padding:14px; border-radius:8px; overflow-x:auto;}
+.md-content pre code{background:none; padding:0;}
+.md-content ul, .md-content ol{padding-left:22px;}
+.md-content li{margin-bottom:4px;}
+.md-content a{color:var(--amber);}
+.md-content hr{border:none; border-top:1px solid var(--line); margin:24px 0;}
+.md-content strong{color:#fff;}
+.md-content blockquote{border-left:3px solid var(--amber); margin:0; padding:4px 16px; color:var(--muted); background:rgba(245,158,11,.06);}
+</style>
+</head>
+<body>
+<div class="hazard"></div>
+<div class="topbar" id="topbarEl">
+  <h1>📋 Checklist do Projeto</h1>
+  <a class="back-link" href="index.html">← Voltar pro Hub</a>
+</div>
+<div class="wrap" id="wrapEl">
+  <div class="md-content" id="mdOutput">Carregando...</div>
+</div>
+
+<textarea id="mdSource" style="display:none;"># Portal SafeSeg — Checklist Mestre do Projeto
+
+> Documento vivo. Atualizado ao final de cada etapa entregue.
+> Legenda: ✅ Concluído · 🔄 Em andamento · ⬜ Pendente · 🔍 A triar (avaliar se mantém)
+
+**Última atualização:** múltiplas rodadas de correção já publicadas em produção (Hub, Dashboard, Certificados, Empresas, Documentos, Agenda de Turmas, Gerador de Turmas, Validador, Arquivos/Drive). Sistema real está no ar e sendo testado ativamente pelo usuário com dado real (empresas CALMAQ e ARMAC).
+
+**Importante — separação de ambientes:**
+- 🌐 **Produção real:** `safesegtreinamentos.github.io/Central/` (Hub) + Portal de usuários (tela escura da screenshot) — está no ar, funcionando, ninguém mexeu nele ainda
+- 🧪 **Protótipo em desenvolvimento:** arquivos que estou gerando no chat (`dashboard.html`, `certificados.html` etc.) — só sobem pra produção depois de aprovados
+
+**Autonomia:** nada aqui é definitivo só porque já foi construído — tenho liberdade pra melhorar visual e processo de qualquer módulo, mesmo os prontos, a não ser que você diga explicitamente que quer manter algo como está.
+
+---
+
+## 🔴 PAUSADO AQUI — retomar nessa ordem quando voltar
+
+**Status:** rodada grande de correções entregue — Hub, Dashboard, Certificados, Documentos, Empresas. **Ainda não subiu pro GitHub.**
+
+### O que foi corrigido nessa rodada
+1. ✅ **Bug crítico de import corrigido em TODOS os arquivos** — `Failed to resolve module specifier` (faltava `../` no `import()` dinâmico usado por Gerador de Turmas e Agenda de Turmas). Provavelmente resolve boa parte dos "botão não funciona" que você reportou.
+2. ✅ **Hub**: painel de gestão conectado ao Firestore real (empresas, certificados válidos, pendências, turmas 30d — tirei "Receita no ano" por não ter fonte de dado)
+3. ✅ **Dashboard**: card "Colaboradores com pendência" agora clicável (abre lista real); "Exportar CSV" e "+ Nova Turma" funcionando
+4. ✅ **Certificados**: filtro por empresa, busca por nome, exportação CSV
+5. ✅ **Documentos**: filtro por categoria, busca, exportação CSV, modal "+ Novo Documento" gravando no Firestore
+6. ✅ **Empresas**: texto do topo conectado ao real (conta empresas + acesso ativo de verdade), busca, exportação CSV, selo de "Acesso ativo/Sem acesso" em cada card
+
+### O que foi corrigido nessa rodada (2)
+1. ✅ **Faixa branca na logo — achada e corrigida de vez.** Não era CSS: literalmente sobraram 8 pixels brancos na borda direita do arquivo `logo-dark.png` (artefato de exportação de algum editor de imagem). Cortei fora — como é o mesmo arquivo usado em todo o sistema, resolve em toda parte de uma vez
+2. ✅ **Empresas: campos expandidos** — Nova Empresa agora também pede telefone, e-mail, endereço e observações
+3. ✅ **Nova página "Detalhe da Empresa"** (`empresa-detalhe.html`) — clica em qualquer empresa (ou "Ver detalhes") pra abrir: ficha completa editável + módulo de **Funcionários** (adicionar, editar, inativar/reativar). Cada funcionário tem nome, CPF, cargo, telefone, data de admissão, status
+4. ✅ Card de empresa agora mostra contagem de funcionários ativos também, não só certificados
+
+### ⬜ Ainda pendente
+- ⬜ **Subir o `deploy-ready.zip`**
+- ⬜ **Validador Público** — pedi pro usuário testar a URL do Apps Script direto no navegador (`?cpf=...`) pra descobrir se é problema de permissão de implantação ("Quem tem acesso") ou outra coisa. Aguardando resposta
+- ⬜ **Acesso da própria empresa aos funcionários dela** — ✅ **CONSTRUÍDO.** Nova página `funcionarios-cliente.html`, link novo no menu do cliente. Mesma lógica de CRUD do lado admin (adicionar, editar, inativar/reativar). **Depende de uma Regra do Firestore ser atualizada primeiro** — arquivo `ATUALIZAR-firestore-rules-funcionarios.txt` tem o antes/depois exato pra colar
+- ⬜ **Vincular funcionários reais ao Gerador de Turmas** — ✅ **FEITO (só admin por enquanto, cliente fica pra depois — decisão confirmada)**. Novo seletor "Adicionar da lista de funcionários" no passo 3 do Gerador — escolhe a empresa no passo 1, e o seletor carrega os funcionários ativos dela automaticamente. Continua podendo digitar/importar qualquer nome manualmente também
+- ✅ **Sincronização Certificado ↔ Funcionário — Apps Script pronto, front-end pendente.** Criei a ação `listarAlunosCompleto` (arquivo `adicionar-ao-apps-script-certificado-sync-alunos.gs.txt`) que devolve todo mundo da planilha "ALUNOS GERAL" com CPF + lista de cursos. **Falta:** construir a tela/lógica que cruza isso com os `certificados` já existentes no Firestore, cria/atualiza os `funcionarios` de cada empresa com CPF real, e joga quem não bate com nenhuma empresa pra uma empresa especial "Não Alocados" (ainda não criada)
+- ⬜ **Flag por aluno dentro da turma** — hoje "Concluída" é um status da turma inteira; usuário quer marcar aluno por aluno quem finalizou, pra emitir certificado só de quem completou. Requer repensar a estrutura de `alunos` dentro da turma
+- ⬜ **"Modelos" — pasta dedicada estilo planilha** — ainda não entendi bem o pedido, preciso perguntar de novo
+- ⬜ **BI / painel de gestão profissional** — escopo ainda não definido
+
+**Quando voltar:** só falar "bora continuar de onde paramos" que eu retomo direto daqui.
+
+---
+
+
+
+## FASE 0 — Fundamentos (concluída)
+- ✅ Levantamento de arquitetura técnica (Firebase Auth, Firestore, Apps Script, GitHub Pages)
+- ✅ Mapeamento de perfis de acesso (Administrador / Cliente) e regras de segregação
+- ✅ Definição dos 6 indicadores gerenciais reais do Dashboard
+- ✅ Inventário do Hub real em produção (confirmado ao vivo): Dashboard, Relatórios, Empresas, Certificados, Documentos, Contratos, Financeiro, Agendado, Checklist
+- 🔍 **Módulos existentes no Portal real que ainda não estavam no documento de conhecimento do projeto** — precisam de triagem (ver seção abaixo antes da Fase 3)
+
+---
+
+## DECISÕES DE ESCOPO (registradas)
+- ⚠️ **Regra de visibilidade da Agenda — ATUALIZADA (substitui o texto original do documento do projeto).** Antes: outras empresas viam "Data ocupada" nas turmas privadas de terceiros. Agora: **cliente só vê (1) turmas privadas da própria empresa e (2) turmas abertas a todos (CT SafeSeg)** — turmas privadas de outras empresas ficam totalmente invisíveis, sem placeholder. Admin continua vendo tudo.
+- ✅ **Fluxo de reserva definido:** a Agenda de Turmas não cria mais turmas — toda criação (e portanto toda reserva de data) acontece exclusivamente pelo Gerador de Turmas. Isso unifica geração de lista de presença + reserva de calendário num único passo.
+- ✅ **Código de turma padronizado:** formato AAMMDD-NN (ano-mês-dia + sequência), nunca repete.
+- ⚠️ **PDF automático no Drive** — a interface já está pronta pra receber o link (`pdfUrl`), mas a geração/upload do PDF em si é trabalho de backend (Apps Script), ainda não implementado.
+- ✅ **Novo módulo: Gerador de Turmas.** Hoje vive como ferramenta separada no Hub; migra pra dentro do Portal como aba exclusiva do admin. Emissão em lote sequencial (CONT), participantes de empresas diferentes na mesma turma, conectado à planilha "ALUNOS GERAL".
+- ✅ **Contratos** → não vira módulo dedicado. Entra como categoria dentro de **Documentos** (baixo custo, reversível). Revisar só se surgir necessidade real e específica (valor, assinatura, vigência comercial).
+- ✅ **Financeiro** → **removido do escopo do Portal.** Fluxo de caixa fica em ferramenta externa dedicada, fora do SafeSeg.
+- ✅ **Checklist** → **descontinuado.** Sem função clara, sem KPI, sem caso de uso definido. Não entra na reforma.
+- ✅ **Relatórios** → **deixa de ser módulo separado.** Vira botão "Exportar" embutido em cada tela (Certificados, Documentos, Dashboard). Mesma função, menos uma tela pra manter, exporta de onde você já está.
+- ✅ **Empresas** → mantido, entra na reforma visual (base que alimenta Certificados/Documentos/Dashboard).
+- ✅ **Documentos** → mantido, reorganizar por empresa + categoria (PGR, LTCAT, PCMSO, Laudos, Contratos), mesmo padrão visual de agrupamento do Certificados.
+- ✅ **Agendado** → mantido e funcional, renomear para **"Agenda de Turmas"** na reforma visual.
+- ✅ **Portal do Cliente** → mesma reforma do Dashboard admin, escopo restrito à própria empresa (via regra do Firestore já existente).
+
+---
+
+## PRIORIZAÇÃO DO SISTEMA (definida por importância real pro negócio)
+
+### 🔴 Essenciais — sustentam o negócio
+- **Certificados** — o produto em si
+- **Empresas** — base de tudo, alimenta os outros módulos
+- **Agenda de Turmas** — motor que alimenta Certificados
+- **Gerador de Turmas** — sua ferramenta diária de emissão em lote, migrada do Hub
+- **Dashboard** — central de comando do dia a dia
+
+### 🟡 Importantes, secundários
+- **Documentos** (com Contratos) — segunda frente de receita (consultoria), robustez menor que Certificados
+- **Validador Público** — importância é de credibilidade/segurança, não de uso diário seu; prioridade de segurança alta, prioridade de redesign baixa
+
+### 🟢 Baixa prioridade / formato revisado
+- **Relatórios** → absorvido como botão "Exportar" nas telas (ver Decisões de Escopo)
+- **Dashboard do Cliente** → só investe pesado se o cliente realmente usa hoje; pode ficar em fase posterior
+- **Hub** → vitrine leve, não precisa de esforço técnico grande (indicador ao vivo pode esperar)
+
+### ❌ Fora do escopo
+- Financeiro (fora do Portal)
+- Checklist (descontinuado)
+
+---
+
+## FASE 0.5 — Triagem de módulos (concluída)
+~~Módulos que existem no Portal real de produção mas não estavam documentados~~ — resolvido, ver "Decisões de escopo" acima.
+
+---
+
+## FASE 1 — Design System (base visual)
+- ✅ Paleta extraída da logo oficial (dourado metálico + grafite)
+- ✅ Tipografia definida (Bebas Neue / Inter / Space Mono para dados)
+- ✅ Componentes-base: botões, cards, tabelas, sidebar
+- ✅ Elemento de assinatura visual: **Selo** (badge de status em formato de carimbo)
+- ✅ Faixa de risco (hazard stripe) como elemento funcional, não decorativo
+- ✅ Responsividade (sidebar → barra superior no mobile, grid adaptável)
+- ✅ Indicadores de tendência nos KPIs (setas de variação)
+- 🔄 Ajustes finos de acordo com feedback visual (em aberto, ajustar sob demanda)
+- ⬜ Ícones de categoria do Hub em SVG dedicado (hoje reaproveitados dos ícones de menu)
+
+---
+
+## FASE 2 — Hub + Dashboard
+### Dashboard
+- ✅ Layout aplicado com design system novo
+- ✅ Protótipo aprovado visualmente (teste mobile ok)
+- ✅ Refinamento aprovado (botão Exportar, menu atualizado)
+- ✅ **KPIs principais conectados ao Firestore real**: Válidos, Vencendo, Vencidos, Colaboradores com pendência — calculados a partir dos certificados reais de todas as empresas
+- ✅ **Turmas agendadas 30d** conectado ao localStorage real do Gerador de Turmas
+- ✅ **Tabela "Próximos vencimentos"** conectada e real, ordenada por data
+- ✅ Card "Próximas Turmas" já era real desde antes
+- ⚠️ **"Emissões por mês" e "Empresas com maior % vencido" continuam com dado de exemplo** — marcados na tela com aviso "exemplo — ainda não conectado" (não escondi, deixei visível e sinalizado, pra não sumir com a ideia visual antes de decidirmos a fonte certa desses dois)
+- ⬜ Conectar "Emissões por mês" (precisa de campo de data de emissão no certificado, ainda não confirmado)
+- ⬜ Conectar "Empresas com maior % vencido" (precisa da agregação por empresa, computável a partir do mesmo dado já buscado — próximo passo natural)
+
+### Dashboard do Cliente (novo módulo)
+- ✅ Protótipo visual entregue — mesma linguagem visual do Dashboard admin, escopo travado numa única empresa
+- ✅ Banner de identidade da empresa logada no topo (deixa claro que é visão restrita)
+- ✅ Sidebar reduzida: só Dashboard, Certificados e Agenda de Turmas — sem Empresas, sem Gerador de Turmas, sem Documentos (regra de ocultar já registrada), sem Configurações
+- ✅ KPIs adaptados: removido o "ranking de empresas" (não faz sentido pra visão de uma empresa só); mantidos válidos/vencendo/vencidos, colaboradores com pendência, turmas 30d
+- ✅ "Próximas turmas" e "Próximos vencimentos" lado a lado, já filtrados pra empresa
+- ✅ Tabela de certificados da equipe, mesmo padrão visual do admin
+- ✅ Links do menu conectados entre as 3 telas do cliente (Dashboard ↔ Certificados ↔ Agenda)
+- ✅ **CONECTADO AO FIRESTORE REAL** — usa `obterMeuPerfil()` (lê `usuarios/{uid}`) pra descobrir automaticamente qual empresa o cliente logado pertence (via `empresaId`), depois busca só os certificados dessa empresa. Nenhuma empresa fixa tipo "BRF" mais — funciona pra qualquer cliente real que logar
+- ✅ "Próximas turmas" conectado à coleção real `agenda` (a mesma que já existia no projeto original, com `curso`/`data`/`tipo`/`empresaId`) — filtra turmas abertas + turmas da própria empresa
+- ✅ **Bug de permissão corrigido (testado em produção pelo usuário, com dado real)** — o Dashboard e a Agenda do Cliente buscavam a coleção `agenda` inteira e filtravam depois no navegador; o Firestore recusa isso de propósito (não filtra "escondido", recusa a consulta inteira se ela não vier pré-filtrada). Corrigido usando `or(where(...), where(...))` direto na consulta — assim o Firestore já sabe de antemão que só vai devolver documento permitido
+- ✅ **CONFIRMADO FUNCIONANDO DE PONTA A PONTA** — testado pelo usuário com empresa real (ARMAC LOCACAO), fluxo completo: login → Hub protegido → criar acesso de cliente → logout → login como cliente → redirecionamento automático pro Dashboard do Cliente → dados reais da empresa certa em todo lugar (Dashboard, Certificados, Agenda), sem vazamento de dado de outra empresa
+
+### Certificados (Cliente)
+- ✅ Protótipo visual entregue — mesmo agrupamento por colaborador do Certificados admin, mas só dos colaboradores da própria empresa
+- ✅ Sem botão "Gerar Turma" nem tabela de Modelos (funções exclusivas do admin)
+- ✅ **CONECTADO AO FIRESTORE REAL** — mesma lógica de `obterMeuPerfil()`, busca só `empresas/{minhaEmpresaId}/certificados`
+- ✅ Layout mobile corrigido (mesma técnica robusta aplicada no Certificados admin)
+
+### Agenda de Turmas (Cliente)
+- ✅ Protótipo visual entregue — mesma regra de visibilidade do Agenda admin, mas **sem o toggle** (cliente sempre vê só a própria visão, não escolhe)
+- ✅ Sem botão "+ Nova Turma" — cliente não cria turma, só visualiza
+- ✅ Aviso explicativo no topo sobre a regra de visibilidade (transparência com o cliente sobre o que ele vê e não vê)
+- ✅ **CONECTADO AO FIRESTORE REAL** — calendário dinâmico (mês real, navegação funcionando) lendo a coleção `agenda`, filtrado por `tipo == 'aberto'` OU `empresaId` da própria empresa — exatamente como as Regras do Firestore já esperam
+
+⚠️ **Nota importante:** pra essas 3 telas funcionarem de verdade, precisa existir pelo menos um usuário em `usuarios/{uid}` com `role: "cliente"` e `empresaId` apontando pra uma empresa real — sem isso, aparece o aviso "login não configurado como acesso de cliente"
+
+### Central Técnica (ideia registrada — protótipo já existe, mas fica em espera)
+- 💡 Protótipo já foi construído (Banco de Perguntas, Normas Regulamentadoras com links oficiais, Conhecimento Técnico) — arquivo `tecnica.html` existe e funciona, mas fica **guardado como ideia por enquanto**, sem entrar no fluxo ativo do checklist até você decidir retomar
+
+### Hub (Painel Central)
+- ✅ Protótipo redesenhado — busca, categorias em abas (Todos/Operacional/Sistemas/Jogos/Institucional), painel executivo mini no topo (turmas, pendências, empresas ativas, receita no ano)
+- ✅ Categoria **Operacional** — cards linkando pros módulos reais do Portal (Dashboard, Certificados, Empresas, Documentos, Agenda, Portal do Cliente)
+- ✅ Categoria **Sistemas** — Gerador de Turmas e Central Técnica ativos; CRM, Financeiro e Loja de EPI's como "Em breve" (do backlog, já visíveis mas não clicáveis)
+- ✅ Categoria **Jogos** — estrutura pronta, 2 exemplos "Em breve"; nota explicando que cada jogo abre isolado, sem link de volta (decisão de segurança já registrada)
+- ✅ Categoria **Institucional** — Validador Público
+- ✅ **Aprovado pelo usuário**
+- ⬜ Sincronização entre dispositivos (hoje `localStorage`, cada aparelho tem sua própria lista de favoritos/config)
+- ⬜ Indicador ao vivo nos cards puxando dado real do Firestore (hoje painel executivo é mock)
+- ✅ **Login obrigatório pra acessar o Hub** — bloqueado por autenticação real (Firebase Auth), reaproveitando a mesma tela de login das outras páginas. Não dá mais pra entrar só com o link; recusei fazer uma senha fixa no código porque isso não protege nada de verdade (apareceria no "Ver código-fonte")
+- ✅ **Bug de brecha corrigido** — o conteúdo do Hub aparecia por uma fração de segundo antes da tela de login carregar (o JS levava um instante pra confirmar a sessão). Agora o conteúdo fica escondido via CSS desde o primeiro instante, só aparece depois da autenticação ser confirmada — sem brecha nenhuma
+- ✅ **Bug de importação corrigido** — o Hub ficava com tela preta pra sempre porque o caminho do módulo JavaScript (`firebase-init.js`) estava sem o prefixo `./` — regra técnica do navegador: sem `./`, `../` ou `/` na frente, o import de módulo é inválido e trava tudo. Só acontecia na raiz (Hub); os outros arquivos (dentro de `/portal/`) escaparam por acidente porque o `../` já resolvia certo
+- ✅ **Redirecionamento por perfil** — depois do login, se o `role` for `cliente`, vai direto pro Dashboard do Cliente, sem passar pelo Hub (que é 100% administrativo). Só `admin` fica no Hub de fato
+
+---
+
+## FASE 3 — Módulos operacionais
+### Certificados (núcleo do sistema)
+- ✅ Protótipo visual entregue (agrupamento por colaborador, filtros, tabela de Modelos)
+- ✅ Refinamento aprovado (botão Exportar, menu atualizado)
+- ⚠️ **Descoberta ao conectar Empresas ao Firestore:** certificados vivem como **subcoleção** `empresas/{id}/certificados`, não como coleção separada. Conectar este módulo precisa iterar por empresa, não buscar tudo de uma vez — importante pra próxima etapa
+- ✅ **CONECTADO AO FIRESTORE REAL** — agrupa certificados por colaborador, iterando a subcoleção de cada empresa. Sem nenhum colaborador de exemplo.
+- ⚠️ **Schema do certificado ainda não confirmado 100%** — o código tenta várias variações de nome de campo (`colaborador`/`nome`/`aluno`, `nr`/`norma`/`curso`, `validade`/`dataVencimento`/`vencimento`). Se os campos reais tiverem outro nome, um print de um documento de certificado resolve rápido, igual fizemos com Empresas
+- ⬜ Lógica real de filtro por status (hoje só mostra "Todos")
+- ✅ **RECEBI O CÓDIGO REAL DO APPS SCRIPT DE EMISSÃO** — confirma que a emissão já é conectada à planilha "ALUNOS GERAL" via `Config_Modelos`, com sync de CONT automático (reaproveita linha reservada ou soma +1)
+- ✅ **Tabela de Modelos conectada de verdade** — "Salvar" agora chama o Apps Script real (`salvarModelo`/`atualizarModelo`), "Excluir" chama `excluirModelo`, e a lista carrega da planilha real (`listarModelos`) — não é mais `localStorage`
+- ✅ **Emissão real implementada no Gerador de Turmas** — botão "📄 Emitir certificados" em cada turma do Histórico, chama `gerarCertificado` uma vez por aluno, com barra de progresso e resumo de sucesso/falha ao final. PDF sai direto na pasta Certificados-PDF do Drive
+- ⚠️ **Duas URLs de Apps Script diferentes coexistem** — uma pra sincronizar turma (campo "Sincronização" do Gerador, ainda não confirmada como script real) e outra pra emissão/modelos/validação (confirmada, é a mesma usada em Certificados e Validador). Isso é meio confuso — vale considerar unificar num só script no futuro
+- ✅ **Empresa vira seletor real** — antes era texto livre, agora busca as empresas de verdade no Firestore. Isso é o que faz o vínculo com o cliente funcionar (`empresaId` certo, não nome digitado à mão)
+- ✅ **Grava a reserva na Agenda real do Firestore** — toda vez que salva/gera uma turma, escreve automaticamente na coleção `agenda` (um documento por dia da turma), no mesmo formato que o resto do sistema já usa
+- ✅ Login obrigatório adicionado (esse arquivo também não tinha)
+- ✅ **Status "Concluída" adicionado** — turma só pode ter certificado emitido depois de marcada como concluída (clicável no Histórico); antes só existia "turma" e "aluno", sem controle de "já aconteceu de verdade"
+- ⬜ Campo "Cidade" não é capturado no formulário de turma — emissão usa o padrão do próprio Apps Script ("Dois Vizinhos - PR") quando não informado
+
+### Empresas (novo no escopo)
+- ✅ Protótipo visual entregue (cards de empresa, indicador de acesso, CNPJ, setor, % vencido)
+- ✅ Aprovado pelo usuário
+- ✅ **CONECTADO AO FIRESTORE REAL** — schema confirmado direto no banco: `nome`, `cnpj`, `seg`, `cidade`, `resp`. Card mostra contagem real de certificados (lida da subcoleção `empresas/{id}/certificados`)
+- ✅ **Corrigido: espera a autenticação confirmar antes de tentar ler** (`esperarAuth()`) — essa era a causa real da primeira tentativa não ter funcionado
+- ✅ **Sem dado de exemplo nenhum** — se não tiver login, mostra aviso de login necessário; se não tiver empresa, mostra aviso de lista vazia
+- ⬜ Fluxo real de "Gerenciar" (editar dados, ativar/desativar acesso do cliente)
+- ✅ **"Gerenciar acesso" implementado** — cada empresa tem um botão que abre um modal pra criar login de cliente (e-mail + senha), gravando automaticamente `role: "cliente"` e `empresaId` certos em `usuarios/{uid}`. Usa uma instância secundária do Firebase Auth por trás, então **não desloga o admin** — exatamente o mecanismo que o projeto original já previa ("via app secundário do Firebase, sem Cloud Functions")
+- ✅ Botão "Gerar" senha aleatória, e aviso claro depois de criar (mostra login+senha uma única vez, já que não fica salvo em lugar nenhum)
+- ✅ **Lista de acessos existentes adicionada** — o modal "Gerenciar acesso" agora mostra todos os usuários já vinculados àquela empresa, com edição do nome (direto na lista) e botão "Remover"
+- ⚠️ **Limitação honesta sobre "Remover":** isso apaga o vínculo (`usuarios/{uid}`), o que revoga o acesso de verdade — mas a conta de login em si (e-mail/senha no Firebase Authentication) continua existindo por trás. Excluir a conta por completo exigiria Firebase Admin SDK (backend), que não temos configurado. Pra maioria dos casos, revogar o vínculo já resolve (a pessoa não consegue mais ver nada, só não consegue reaproveitar aquele e-mail pra criar conta nova sem apagar manualmente no Console)
+- ✅ **Botão "Sair" adicionado em todas as 11 páginas internas** (menu lateral, embaixo, em vermelho) — não existia antes, agora dá pra deslogar de qualquer lugar sem precisar limpar cookies na mão
+- ⬜ Campo de "acesso ao portal" — não existe ainda no Firestore; avaliar se cria campo novo ou deriva da coleção `usuarios`
+- ⬜ Ligar criação de acesso aqui (hoje feito separado, via app secundário do Firebase)
+
+### Documentos (novo no escopo, reestruturado)
+- ✅ Protótipo visual entregue, agrupado por empresa (mesmo padrão do Certificados)
+- ✅ Categorias aplicadas: PGR, LTCAT, PCMSO, Laudos, **Contratos** (incorporado, ver Decisões de Escopo)
+- ✅ Aprovado pelo usuário
+- ⚠️ **Ocultar do Portal do Cliente por enquanto** — módulo fica admin-only até decisão em contrário
+- ✅ **CONECTADO AO FIRESTORE REAL** — criado do zero como subcoleção `empresas/{id}/documentos` (não existia dado antes, então essa foi minha decisão de arquitetura, alinhada ao padrão de Certificados)
+- ✅ Sem dado de exemplo, agrupado por empresa, categorias PGR/LTCAT/PCMSO/Laudo/Contrato mantidas
+- ⬜ Status de validade — já calculado a partir da data real assim que você cadastrar documentos
+- ⬜ Upload/anexo de arquivo por documento (provavelmente Google Drive, já que a estrutura de pastas por cliente já existe)
+- ⬜ Formulário de "+ Novo Documento" (hoje o botão existe mas ainda não grava no Firestore)
+
+### Agenda de Turmas (ex-Agendado)
+- ✅ Protótipo visual entregue (calendário mensal + lista de próximas turmas)
+- ✅ Renomeado de "Agendado" para "Agenda de Turmas"
+- ✅ **Virou tela de consulta apenas** — criação de turma removida daqui, botão "+ Nova Turma" agora leva direto pro Gerador de Turmas
+- ✅ Aprovado pelo usuário (junto com a aprovação do Gerador de Turmas)
+- ✅ **CORRIGIDO — unificado com Firestore real.** O admin lia de `localStorage` (dado do Gerador de Turmas) enquanto os clientes liam do Firestore — dois bancos desconectados, por isso o cliente não via turma criada pelo admin. Agora ambos leem da mesma coleção `agenda` do Firestore
+- ✅ **Toggle falso "Cliente · BRF" removido** — era demonstração de protótipo antigo, sem sentido depois de conectar o Firestore de verdade. Admin só vê a visão real dele agora, sem toggle
+- ✅ Login obrigatório adicionado (esse arquivo não tinha)
+- ✅ Navegação real entre meses funcionando
+
+### Gerador de Turmas (novo módulo, migrado do Hub)
+- ✅ **App real recebido do usuário** — substitui o protótipo visual anterior. Já tem: catálogo de cursos (NRs pré-cadastradas), geração de dias (pulando domingo), upload de planilha .xlsx/.csv sem dependência externa, importar lista colada, geração de PDF frente/verso por dia (dados + lista de presença), histórico de turmas, sincronização opcional via Apps Script/Google Sheets
+- ✅ Navegação lateral do Portal integrada (sidebar linkando Dashboard/Empresas/Certificados/Documentos/Agenda), mantendo 100% da lógica original intacta
+- ✅ Código sequencial no formato **AAMMDD-NN**, nunca repete
+- ✅ **Identidade visual removida** — sem upload de logo nem seletor de cor, documento sempre no âmbar padrão SafeSeg
+- ✅ **Card de sincronização recolhível** — some da tela por padrão (`<details>`), mostra só um selo de status (Modo local/Conectado/Erro), abre ao clicar
+- ✅ **3 bugs de impressão corrigidos após teste real do usuário:**
+  1. Folha em branco no início — o container da sidebar tinha altura mínima de tela inteira (`min-height:100vh`) que não zerava no modo impressão, empurrando a lista inteira uma página pra frente
+  2. Mensagem "Turma finalizada..." aparecendo repetida no rodapé de toda página — o aviso (toast) não tinha a marcação de "não imprimir"
+  3. Amarelo fraco na lista — navegador não imprime cor de fundo por padrão a menos que seja forçado (`print-color-adjust: exact`); sem isso, o cabeçalho preto com texto âmbar da tabela saía sem o fundo preto. Corrigido + amarelo usado em texto direto (sem fundo escuro) trocado por um tom mais forte (`--doc-accent-strong`)
+- ✅ Tabela recalibrada num meio-termo mais seguro entre a versão muito compacta e a que estourou página — menos risco de continuar em folha extra
+- ✅ **Fluxo Salvar → Gerar implementado:**
+  - Botão "💾 Salvar Turma" cria o rascunho, gera o código **na hora e ele fica fixo** (reserva a data), sem exigir alunos ainda
+  - Banner "Turma ativa" mostra o código + status (Rascunho/Gerado) + quantos alunos já salvos, com botão "Começar turma nova"
+  - Botão "🖨️ Gerar Lista de Presença (final)" finaliza usando o **mesmo código**, agora com a lista completa, e imprime
+  - Histórico mostra selo Rascunho/Gerado, ordenado por data mais próxima, com botão "✏️ Continuar editando" nos rascunhos — reabre o formulário com tudo preenchido
+  - Link direto (`?turma=ID`) abre automaticamente em modo de edição se for rascunho, ou só visualização se já gerado
+- ✅ **Aprovado pelo usuário** — testado o fluxo completo de impressão real (Salvar como PDF), 2 folhas corretas, sem página em branco, cor forte
+- ⬜ **Backend: salvar PDF automaticamente no Drive** — interface já pronta (campo `pdfUrl`), falta o Apps Script gerar e devolver o link
+- ⬜ **Backend: gravar a reserva na coleção `agenda`/`agenda_disponibilidade`** de verdade ao salvar rascunho — hoje a "reserva" existe como registro local/nuvem da turma, mas ainda não escreve nas coleções de agenda do Firestore
+- ✅ **Conectada a dado real** — calendário gerado dinamicamente (mês/ano reais, navegação entre meses), lê as turmas do mesmo `localStorage` do Gerador, lista "Próximas turmas" também real. Testado em produção pelo usuário após deploy.
+
+### Relatórios — absorvido (não é mais módulo)
+- ⬜ Remover item "Relatórios" do menu lateral em todas as telas
+- ⬜ Adicionar botão "Exportar" (CSV, depois PDF) no Dashboard
+- ⬜ Adicionar botão "Exportar" na tela de Certificados (respeitando filtro ativo: Ativos/Pendentes/etc.)
+- ⬜ Adicionar botão "Exportar" na tela de Documentos
+- ⬜ Exportação em PDF (herda a pendência que já existia no Relatórios)
+
+### Validador Público
+- ✅ Protótipo visual entregue — página pública sem sidebar (não é área logada), header próprio com logo
+- ✅ Aplicado design system (selo de status, hazard-edge, cores) mantendo o padrão do resto do Portal mesmo sendo página separada
+- ✅ Busca por CPF (com máscara automática ao digitar) e aba "Ler QR Code" (placeholder de câmera + botão de simulação pra teste)
+- ✅ **CPF mascarado no resultado** — nunca mostra completo, só `123.***.***-01` (pendência antiga do projeto, resolvida)
+- ✅ **Rate limiting simulado no front-end** — bloqueia por 1 minuto após 5 tentativas na mesma sessão, com aviso progressivo antes do bloqueio
+- ✅ Sem link de download de PDF no resultado (mantém o padrão já definido no projeto)
+- ✅ Estado de "não encontrado" tratado separadamente
+- ✅ **Aprovado pelo usuário** — testado no celular real, fluxo de "não encontrado" e aviso de tentativas restantes confirmados funcionando
+- ⚠️ **Rate limiting real precisa ser no servidor** — o limite no front-end é só cosmético/primeira camada; alguém pode contornar limpando o `sessionStorage`. Precisa de regra equivalente no Firestore/Cloud Function pra valer de verdade
+- ⚠️ **Correção importante depois de ver as Regras reais do Firestore:** a ideia de liberar `allow read: if true` na subcoleção certificados foi **descartada** — isso exporia certificados de TODAS as empresas pra qualquer pessoa na internet, quebrando a proteção por empresa que as regras já garantem no resto do sistema. Firestore Rules não consegue distinguir "busca filtrada por 1 CPF" de "listagem sem filtro nenhum"
+- ✅ **Caminho correto identificado:** conectar ao mesmo Apps Script que o Gerador de Turmas já usa — ele roda do lado do servidor do Google e pode validar sem expor o Firestore. Código já preparado com o campo `VALIDADOR_APPS_SCRIPT_URL` esperando a URL
+- ✅ **CONECTADO DE VERDADE** — recebi o código real do Apps Script (`Codigo.gs`) e a URL de produção. Corrigido pra bater exatamente com o formato real que o `doGet` devolve (`treinamentos`, `curso`, `dataFim`, `cont`, `validade` — não mais os nomes que eu tinha chutado antes)
+- ✅ **Fluxo do QR code fechado** — o Apps Script já gerava um QR único por pessoa (`salvarQrCodeAluno`, salvo no Drive) apontando pra `validador/?cpf=...`, mas o Validador não sabia ler esse parâmetro da URL. Agora, ao abrir com `?cpf=` (é assim que o QR sempre abriu), a busca acontece sozinha — sem precisar digitar nada
+- ✅ Esclarecido: não precisa de leitor de câmera dentro do site — a câmera nativa do celular já escaneia o QR físico e abre o link direto, o "leitor" customizado nunca foi necessário de verdade
+- ⬜ Leitura real de QR code (câmera) — hoje só o botão de simulação
+
+### ~~Financeiro~~ — removido do escopo do Portal
+### ~~Checklist~~ — descontinuado
+
+---
+
+## FASE 4 — Segurança (transversal, rodar junto com Fase 3)
+- ✅ Autenticação real via Firebase (já implementado)
+- ✅ Regras de acesso no servidor via Firestore Rules (já implementado — **confirmado direto no arquivo real**, sistema de `role` admin/cliente + `empresaId` por documento, bem estruturado)
+- ✅ Separação de dado sensível de agendamento em 2 coleções (já implementado)
+- ✅ **Tela de login real implementada** — bug crítico encontrado: nenhuma das páginas novas tinha formulário de login, só mostravam "🔒 precisa estar logado" sem dar jeito de logar. Corrigido de um jeito que resolve **todas as páginas de uma vez só**: a tela de login aparece automaticamente por cima de qualquer página quando ninguém está autenticado, direto no `firebase-init.js` compartilhado — nenhuma página individual precisou ser alterada
+- ⚠️ **Requisito pra todo módulo conectado funcionar:** o usuário logado precisa ter um documento em `usuarios/{uid}` com `role: "admin"` — sem isso, mesmo logado, todas as leituras (Empresas/Certificados/Documentos/Dashboard) são recusadas pela regra `souAdmin()`. Confirmar que sua conta de teste tem isso.
+- ⚠️ **Documentos oculto no Portal do Cliente** — nova regra a implementar no Firestore Rules (admin vê, cliente não vê, por enquanto)
+- ✅ Mascaramento de CPF no validador público (feito na Fase 3)
+- ⚠️ **Rate limiting do Validador Público** — feito só no front-end por enquanto (cosmético); precisa de proteção real no servidor (Firestore Rules ou Cloud Function) pra não ser contornável
+- ⬜ Log de auditoria de acesso
+- ⬜ Backup automático do Firestore
+- ⬜ Timeout de sessão por inatividade
+
+---
+
+## FASE 5 — Funcionalidades pendentes (não visuais)
+- ⬜ Alerta automático de vencimento por e-mail (60 dias)
+- ⬜ Exportação de relatórios em PDF
+- ⬜ Sincronização do Hub entre dispositivos
+
+---
+
+## FASE 6 — Deploy e produção
+- ✅ Estrutura de pastas `/assets/css/`, `/assets/img/`, `/portal/`, `/validador/` montada e empacotada (`deploy-ready.zip`)
+- ✅ Caminhos relativos de todos os arquivos corrigidos pra nova estrutura (CSS, imagens, links entre páginas)
+- ✅ `GUIA-DEPLOY.md` escrito — passo a passo detalhado, com tabela clara do que já existe vs o que muda vs o que continua só visual
+- ⬜ **Backup do repositório atual antes de sobrescrever** (passo manual do usuário)
+- ⬜ Upload real dos arquivos pro GitHub (passo manual do usuário — interface web ou git)
+- ⬜ Teste pós-deploy em produção real (não mais arquivo local) — desktop + mobile
+- ⬜ Confirmar que login do Firebase continua funcionando normalmente após a troca de arquivos
+
+---
+
+## BACKLOG DE PROJETOS FUTUROS (ideias registradas, sem prazo — avaliar quando fizer sentido)
+
+### 🆕 Ideias de automação/funcionalidade sugeridas (13/08) — aguardando priorização do usuário
+
+**Automação de vencimento (maior impacto, retoma pendência antiga do projeto):**
+- Alerta automático por e-mail/WhatsApp quando certificado tá a 60/30/15 dias de vencer — pro admin E pro cliente
+- "Renovação automática": ao emitir novo certificado do mesmo curso pra mesma pessoa, linkar automaticamente com o anterior como "substituído por"
+- Sugestão automática de turma: ao criar turma de um curso X, o sistema sugere quais funcionários daquela empresa já estão com esse curso vencido/vencendo — poupa trabalho de escolher manualmente
+
+**Portal do Cliente — mais autoatendimento:**
+- "Solicitar treinamento" — cliente pede agendamento (sem criar a turma direto), vira notificação pro admin decidir
+- Baixar todos os certificados da empresa em lote (zip)
+- Central de notificações dentro do próprio sistema (sininho no Hub: "3 certificados vencem essa semana")
+
+**Relatórios e BI:**
+- Dashboard preditivo — não só "quem tá vencido hoje", mas "quantos vencem em cada um dos próximos 6 meses" (ajuda a planejar turma com antecedência, não reagir de última hora)
+- Relatório de conformidade em PDF pra empresa mostrar em fiscalização/auditoria
+- Exportação agendada automática (ex: toda segunda-feira manda um resumo por e-mail)
+
+**Segurança e governança:**
+- Log de auditoria — quem alterou o quê e quando (importante com múltiplas pessoas mexendo: admin + vários clientes)
+- Backup automático periódico do Firestore (pendência antiga do projeto, nunca implementada)
+
+**Operacional:**
+- Assinatura digital na lista de presença (captura em tela no dia do treinamento, em vez de só PDF impresso)
+- QR code também no crachá/credencial física do colaborador, não só no certificado (a infraestrutura de QR já existe)
+- PWA instalável (adicionar à tela inicial do celular, funciona mais como app)
+
+**Status:** aguardando o usuário escolher prioridade — nada disso foi iniciado ainda.
+
+### Ordem de dificuldade real (definida em 13/08, avança uma por vez)
+1. ✅ **Dashboard preditivo — CONSTRUÍDO.** Novo gráfico de barras no Dashboard: "Previsão de vencimentos" mostrando quantos certificados vencem em cada um dos próximos 6 meses. Cor muda conforme a gravidade (verde/amarelo/vermelho). Zero infraestrutura nova, só cálculo em cima do dado que o Dashboard já carrega
+2. ⬜ Central de notificações no sistema
+3. ⬜ Log de auditoria (básico)
+4. ⬜ Renovação automática (linkar certificados)
+5. ⬜ Sugestão automática de turma
+6. ⬜ Assinatura digital na lista de presença
+7. ⬜ Alerta automático de vencimento por e-mail (precisa gatilho por tempo no Apps Script + ler a planilha)
+8. ⬜ Exportação agendada automática
+9. ⬜ "Solicitar treinamento" (cliente pede agendamento)
+10. ⬜ Baixar certificados em lote (zip) — trava em como o Drive libera download, precisa investigar
+11. ⬜ Relatório de conformidade em PDF
+12. ⬜ QR no crachá físico — precisa de modelo de design novo
+13. ⬜ Backup automático do Firestore — o mais difícil, Apps Script não fala nativo com Firestore
+
+
+> Nada aqui entra em desenvolvimento agora. É só pra não perder a ideia. Retomar item por item quando/se houver energia, tempo ou demanda real pra isso.
+
+### Hub — estrutura ampliada
+- 💡 Aba **Sistemas** — cards agrupados por categoria (Comercial, Segurança/Treinamento, Institucional), com selo de status (Ativo/Em breve/Beta)
+- 💡 Aba **Jogos** — catálogo de jogos educativos usados em treinamento, com tag de NR relacionada. **Importante:** cada jogo é página isolada, sem menu/link de volta pro Hub — evita a pessoa "voltar" acidentalmente, já que bloqueio real por senha não é o objetivo aqui (uso em sala de aula, sem login)
+- 💡 Painel executivo mini na tela inicial do Hub (diferente do Dashboard do Portal — é um resumo bem enxuto tipo "hoje você tem X turma, Y pendência")
+
+### Sistemas comercializáveis (potencial produto pra vender, não só uso interno)
+- 💡 **Sistema de votação CIPA** — eleição digital conforme NR-5. **Exige validação jurídica antes de uso oficial.** Requer backend robusto de verdade (Firestore com regra anti-duplicidade de voto, token único por eleitor) — não é protótipo simples, é categoria à parte de segurança
+- 💡 **Gerador de jogos/quiz genérico** — motor onde você cria pergunta+resposta e ele gera o jogo sozinho, em vez de cada jogo ser feito na mão. Reaproveitável pra qualquer curso novo, potencial produto próprio
+- 💡 **Plataforma EAD simples** — vídeo-aula + certificado automático ao concluir
+- 💡 **Gerador de laudos técnicos assistido** — PGR/LTCAT com preenchimento facilitado, reduz tempo de produção da frente de consultoria
+
+### Loja de EPI's (e-commerce)
+- 💡 Catálogo de produtos, carrinho, checkout, integração de pagamento (Pix/cartão), controle simples de estoque
+
+### Outras ideias de operação
+- 💡 **App de inspeção/checklist de campo** — vistoria de segurança com foto + assinatura digital pelo celular (diferente do antigo "Checklist" cortado do escopo — esse tem propósito claro de produto de auditoria)
+- 💡 **Programa de indicação** — cliente indica cliente, ganha desconto; baixo custo de construir
+
+---
+
+## CORREÇÕES APÓS TESTE REAL EM PRODUÇÃO (rodada de bugs reportados)
+- ✅ **Menu lateral padronizado em TODOS os arquivos** — bug encontrado: Certificados (e outros) tinham links `href="#"` (não iam a lugar nenhum) porque o menu nunca foi atualizado depois que Empresas/Documentos/Gerador de Turmas/Central Técnica foram criados. Agora todo módulo linka pra todos os outros, incluindo Validador Público que estava faltando até no Gerador de Turmas e Central Técnica
+- ✅ **"+ Cadastrar nova empresa" agora funciona de verdade** — abre modal, grava direto no Firestore (`addDoc`), recarrega a lista automaticamente
+- ✅ **Botão "🗂️ Modelos" agora funciona** — rola suavemente até a seção (antes não fazia nada)
+- ✅ **Bug de quebra de texto no mobile corrigido** — linhas de certificado ficavam espremidas em telas estreitas causando quebra de uma palavra por linha; agora empilha em coluna, legível
+- ✅ Confirmado com o usuário: dados reais carregando certinho (16 colaboradores, 48 certificados, 3 empresas)
+- ✅ **Layout mobile do Certificados refeito** — antes espremia o nome do curso em ~50px de largura (fazendo cada palavra quebrar numa linha); agora curso+nome ficam juntos numa linha, data+status na linha de baixo, lado a lado de verdade
+- ✅ **Tabela de Modelos totalmente reformulada** — agora tem "+ Adicionar modelo", edição direta em cada campo, e "Excluir" por linha. Salvo no navegador (`localStorage`) por enquanto — funciona de verdade, só ainda não sincroniza em nuvem
+- ✅ Adicionada variante `.btn--danger` no design system compartilhado (botão vermelho de exclusão), disponível pra qualquer módulo usar dali pra frente
+- ✅ **Bug real corrigido: Modelos não funcionava porque estava no mesmo bloco de script do Firestore** — se a conexão falhasse por qualquer motivo, o script inteiro parava, incluindo a parte de Modelos que nem depende do banco. Agora são dois `<script>` separados e independentes
+- ✅ **Botão "🏠 Central (Hub)" adicionado em todas as páginas internas** (menu lateral, destacado em dourado/escuro) — não existia antes, cada página era uma "ilha" sem volta fácil pro Hub
+- ✅ **Dashboard: ranking "Empresas com maior % vencido" agora é real**, calculado a partir do mesmo dado buscado pros KPIs (sem nenhuma chamada extra ao Firestore)
+- ✅ **Gráfico "Emissões por mês" removido** — não tinha como preencher com dado real ainda (precisa de campo de data de emissão não confirmado no schema), preferi tirar a esconder que era fake em vez de manter número inventado
+- ✅ **Quebra de linha corrigida de vez (Certificados e Documentos)** — a correção anterior não era robusta o suficiente e voltou a quebrar; agora usa uma técnica de flexbox que **garante** nome+código numa linha e data/status noutra, independente da largura da tela (testado o princípio, não depende mais de cálculo de largura mínima)
+
+---
+
+### Arquivos (Drive) — novo módulo
+- ✅ Protótipo entregue — navegador de pastas do Drive, um nível por vez (evita travar o Apps Script tentando ler tudo de uma vez)
+- ✅ Breadcrumb clicável, ícone de pasta vs arquivo, clique em arquivo abre direto no Drive
+- ✅ Adicionado como card no Hub, categoria Sistemas
+- ✅ **Apps Script separado criado** (`apps-script-arquivos-drive-SEPARADO.gs.txt`) — projeto próprio, não misturado com o script de certificados
+- ✅ **URL real registrada:** `https://script.google.com/macros/s/AKfycbwWWL4q9o9jbgev27rvbGmQT6KqUdjt4sNC60-QueJ-6oQUye08yrqsRVAsizbtUQHm/exec` — já deixei pré-preenchida na tela, junto com o ID da pasta raiz do Drive (`19dlr6Z19sBt-saQVG3pdsiP39aib6Edh`, já documentado no projeto)
+- ✅ **Novo: "Gerar planilha com o mapa completo"** — varre toda a árvore de pastas/subpastas a partir da raiz (não só um nível) e cria uma planilha nova no Drive, com caminho completo, tipo (pasta/arquivo), nome, link clicável, tamanho e data de cada item
+- ✅ Função de teste direto no editor do Apps Script (`gerarMapaCompletoAgora`) — roda sem precisar da tela do Portal, útil pra conferir antes de usar pela interface
+- ⬜ **Ainda não testado de ponta a ponta** — falta confirmar que a implantação do Apps Script funcionou de verdade (autorização concedida, "Nova versão" implantada) e que a tela consegue listar a pasta raiz sem erro
+
+## Ordem de execução recomendada
+1. ✅ Design System base
+2. ✅ Dashboard (visual aprovado — protótipo local, com Próximas Turmas conectado a dado real)
+3. ✅ Certificados (visual aprovado — protótipo local)
+4. ✅ Empresas (visual aprovado — protótipo local)
+5. ✅ Documentos (visual aprovado — protótipo local; oculto do cliente por enquanto)
+6. ✅ Agenda de Turmas (visual aprovado — protótipo local; virou tela de consulta)
+6.1 ✅ **Gerador de Turmas — aprovado, com fluxo Salvar/Gerar e impressão funcionando de ponta a ponta**
+7. ✅ **Validador Público — aprovado**, CPF mascarado + rate limiting client-side testados
+8. ✅ **Pacote do Cliente** (Dashboard + Certificados + Agenda) — aprovado
+9. ✅ Hub — aprovado
+10. 🔄 Deploy geral — arquivos prontos e empacotados, aguardando você fazer o upload real ← **estamos aqui**
+11. ⬜ Funcionalidades pendentes (alerta e-mail, backend do PDF no Drive, reserva real na Agenda via Firestore, auditoria, backup)
+
+**Nota de escopo:** o Portal hoje é operado só por você + eu (Claude) para todo o gerenciamento da SafeSeg — o objetivo é ser um "QG" único, direto e sem módulo supérfluo. Financeiro e Checklist foram cortados do escopo por esse motivo.
+</textarea>
+<script>
+  const raw = document.getElementById('mdSource').value;
+  document.getElementById('mdOutput').innerHTML = marked.parse(raw);
+</script>
+<script type="module">
+  import { esperarAuth } from 'assets/js/firebase-init.js';
+  await esperarAuth();
+  document.getElementById('topbarEl').classList.add('autenticado');
+  document.getElementById('wrapEl').classList.add('autenticado');
+</script>
+</body>
+</html>
