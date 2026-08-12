@@ -145,11 +145,11 @@
     <header class="topbar">
       <div>
         <h1>Empresas</h1>
-        <div class="sub">14 empresas cadastradas · 11 com acesso ao portal ativo</div>
+        <div class="sub" id="topbarSub">Carregando...</div>
       </div>
       <div class="flex gap-2">
-        <button class="btn btn--secondary">↓ Exportar</button>
-        <button class="btn btn--primary">+ Nova Empresa</button>
+        <button class="btn btn--secondary" onclick="exportarEmpresasCSV()">↓ Exportar</button>
+        <button class="btn btn--primary" onclick="abrirModalNovaEmpresa()">+ Nova Empresa</button>
       </div>
     </header>
 
@@ -158,7 +158,7 @@
       <div class="toolbar">
         <div class="search-box">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
-          <input type="text" placeholder="Buscar empresa ou CNPJ...">
+          <input type="text" id="buscaEmpresa" placeholder="Buscar empresa ou CNPJ..." oninput="renderEmpresasFiltradas()">
         </div>
       </div>
 
@@ -293,8 +293,17 @@
       const snap = await getDocs(collection(db, 'empresas'));
       if (snap.empty) {
         status.textContent = 'Nenhuma empresa cadastrada ainda. Clique em "Cadastrar nova empresa".';
+        document.getElementById('topbarSub').textContent = 'Nenhuma empresa cadastrada ainda';
         return;
       }
+
+      // busca todos os usuários de uma vez, pra saber quais empresas têm acesso ativo
+      const usuariosSnap = await getDocs(collection(db, 'usuarios'));
+      const empresasComAcesso = new Set();
+      usuariosSnap.forEach(u => {
+        const dt = u.data();
+        if (dt.role === 'cliente' && dt.empresaId) empresasComAcesso.add(dt.empresaId);
+      });
 
       const empresasComContagem = await Promise.all(snap.docs.map(async docSnap => {
         const d = docSnap.data();
@@ -303,33 +312,17 @@
           const certSnap = await getDocs(collection(db, 'empresas', docSnap.id, 'certificados'));
           totalCertificados = certSnap.size;
         } catch (e) { /* sem permissão ou subcoleção vazia */ }
-        return { id: docSnap.id, ...d, totalCertificados };
+        return { id: docSnap.id, ...d, totalCertificados, temAcesso: empresasComAcesso.has(docSnap.id) };
       }));
 
-      const cardsHtml = empresasComContagem.map(emp => `
-        <div class="empresa-card">
-          <div class="empresa-card__head">
-            <div class="empresa-avatar">${iniciais(emp.nome)}</div>
-            <div>
-              <div class="empresa-nome">${emp.nome || '(sem nome)'}</div>
-              <div class="empresa-cnpj">${emp.cnpj || '—'}</div>
-            </div>
-          </div>
-          ${emp.seg ? `<div class="empresa-setor">${emp.seg}</div>` : ''}
-          <div class="empresa-stats">
-            <div class="empresa-stat"><div class="empresa-stat__value">${emp.totalCertificados}</div><div class="empresa-stat__label">Certificados</div></div>
-          </div>
-          ${(emp.cidade || emp.resp) ? `<div style="font-size:12px; color:var(--graphite-600); display:flex; justify-content:space-between;">
-            ${emp.cidade ? `<span>📍 ${emp.cidade}</span>` : '<span></span>'}
-            ${emp.resp ? `<span>👤 ${emp.resp}</span>` : ''}
-          </div>` : ''}
-          <div class="empresa-card__footer">
-            <button class="btn btn--ghost" style="padding:6px 10px; font-size:12px; margin-left:auto;" onclick="abrirModalAcesso('${emp.id}', '${(emp.nome||'').replace(/'/g,"\\'")}')">Gerenciar acesso</button>
-          </div>
-        </div>
-      `);
+      window.__empresasData = empresasComContagem;
 
-      grid.querySelector('.new-empresa-card').insertAdjacentHTML('beforebegin', cardsHtml.join(''));
+      const comAcesso = empresasComContagem.filter(e => e.temAcesso).length;
+      document.getElementById('topbarSub').textContent =
+        `${empresasComContagem.length} empresa(s) cadastrada(s) · ${comAcesso} com acesso ao portal ativo`;
+
+      renderEmpresasFiltradas();
+
       status.textContent = `${snap.size} empresa(s) carregada(s).`;
       status.style.color = 'var(--status-ok)';
     } catch (err) {
@@ -338,6 +331,61 @@
       status.style.color = 'var(--status-danger)';
     }
   }
+
+  window.renderEmpresasFiltradas = function() {
+    const grid = document.getElementById('empresaGrid');
+    const todas = window.__empresasData || [];
+    const busca = (document.getElementById('buscaEmpresa').value || '').toLowerCase().trim();
+
+    const filtradas = busca
+      ? todas.filter(e => (e.nome||'').toLowerCase().includes(busca) || (e.cnpj||'').toLowerCase().includes(busca))
+      : todas;
+
+    grid.querySelectorAll('.empresa-card').forEach(el => el.remove());
+
+    const cardsHtml = filtradas.map(emp => `
+      <div class="empresa-card">
+        <div class="empresa-card__head">
+          <div class="empresa-avatar">${iniciais(emp.nome)}</div>
+          <div>
+            <div class="empresa-nome">${emp.nome || '(sem nome)'}</div>
+            <div class="empresa-cnpj">${emp.cnpj || '—'}</div>
+          </div>
+        </div>
+        ${emp.seg ? `<div class="empresa-setor">${emp.seg}</div>` : ''}
+        <div class="empresa-stats">
+          <div class="empresa-stat"><div class="empresa-stat__value">${emp.totalCertificados}</div><div class="empresa-stat__label">Certificados</div></div>
+        </div>
+        ${(emp.cidade || emp.resp) ? `<div style="font-size:12px; color:var(--graphite-600); display:flex; justify-content:space-between;">
+          ${emp.cidade ? `<span>📍 ${emp.cidade}</span>` : '<span></span>'}
+          ${emp.resp ? `<span>👤 ${emp.resp}</span>` : ''}
+        </div>` : ''}
+        <div class="empresa-card__footer" style="display:flex; align-items:center; gap:8px;">
+          <span class="selo selo--${emp.temAcesso ? 'ok' : 'pending'}">${emp.temAcesso ? 'Acesso ativo' : 'Sem acesso'}</span>
+          <button class="btn btn--ghost" style="padding:6px 10px; font-size:12px; margin-left:auto;" onclick="abrirModalAcesso('${emp.id}', '${(emp.nome||'').replace(/'/g,"\\'")}')">Gerenciar acesso</button>
+        </div>
+      </div>
+    `);
+
+    if (filtradas.length === 0) {
+      grid.querySelector('.new-empresa-card').insertAdjacentHTML('beforebegin', '<div class="text-muted" style="padding:20px;">Nenhuma empresa encontrada com essa busca.</div>');
+    } else {
+      grid.querySelector('.new-empresa-card').insertAdjacentHTML('beforebegin', cardsHtml.join(''));
+    }
+  };
+
+  window.exportarEmpresasCSV = function() {
+    const todas = window.__empresasData || [];
+    if (todas.length === 0) { alert('Nada pra exportar ainda.'); return; }
+    const linhas = [['Nome', 'CNPJ', 'Segmento', 'Cidade', 'Responsável', 'Certificados', 'Acesso ao Portal']];
+    todas.forEach(e => linhas.push([e.nome||'', e.cnpj||'', e.seg||'', e.cidade||'', e.resp||'', e.totalCertificados, e.temAcesso ? 'Ativo' : 'Sem acesso']));
+    const csv = linhas.map(l => l.map(v => `"${(v||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `safeseg-empresas-${new Date().toISOString().slice(0,10)}.csv`;
+    link.click();
+  };
 
   carregarEmpresas();
 

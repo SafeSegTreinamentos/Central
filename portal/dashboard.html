@@ -169,8 +169,8 @@
         <div class="sub">Visão geral — todas as empresas · atualizado hoje às 08:40</div>
       </div>
       <div class="flex gap-2">
-        <button class="btn btn--secondary">↓ Exportar CSV</button>
-        <button class="btn btn--primary">+ Nova Turma</button>
+        <button class="btn btn--secondary" onclick="exportarCSV()">↓ Exportar CSV</button>
+        <a href="gerador-turmas.html" class="btn btn--primary" style="text-decoration:none; display:inline-flex; align-items:center;">+ Nova Turma</a>
       </div>
     </header>
 
@@ -206,8 +206,8 @@
       <!-- KPIs SECUNDÁRIOS -->
       <section>
         <div class="kpi-grid kpi-grid--secondary">
-          <div class="kpi-card hazard-edge--pending">
-            <div class="kpi-card__label">Colaboradores com pendência</div>
+          <div class="kpi-card hazard-edge--pending" style="cursor:pointer;" onclick="abrirModalPendencias()" title="Clique pra ver quem são">
+            <div class="kpi-card__label">Colaboradores com pendência <span style="font-size:11px; font-weight:400; text-decoration:underline;">ver lista →</span></div>
             <div class="kpi-card__value" id="kpiPendencia">—</div>
             <div class="kpi-card__meta" id="kpiPendenciaMeta"></div>
           </div>
@@ -251,6 +251,17 @@
       </section>
 
     </div>
+  </div>
+</div>
+
+<!-- MODAL: LISTA DE COLABORADORES COM PENDÊNCIA -->
+<div id="modalPendenciasOverlay" style="display:none; position:fixed; inset:0; background:rgba(20,23,27,0.55); align-items:center; justify-content:center; z-index:60; padding:16px;">
+  <div style="background:#fff; border-radius:16px; width:100%; max-width:520px; max-height:80vh; display:flex; flex-direction:column; box-shadow:0 8px 24px rgba(0,0,0,0.2);">
+    <div style="padding:20px; border-bottom:1px solid var(--paper-200); display:flex; align-items:center; justify-content:space-between;">
+      <h3 style="font-family:var(--font-display); font-size:1.2rem; margin:0;">Colaboradores com Pendência</h3>
+      <button onclick="fecharModalPendencias()" style="background:none; border:none; font-size:20px; cursor:pointer; color:var(--graphite-600);">✕</button>
+    </div>
+    <div id="listaPendenciasBody" style="padding:12px 20px; overflow-y:auto; flex:1;"></div>
   </div>
 </div>
 
@@ -305,6 +316,7 @@
       const empresasSnap = await getDocs(collection(db, 'empresas'));
       const todosCertificados = []; // { colaborador, empresa, nr, data, status }
       const colaboradoresComPendencia = new Set();
+      const detalhesPendencia = []; // { colaborador, empresa, nr, data, status } — só os pendentes, pro modal
       const totalColaboradores = new Set();
       const statsPorEmpresa = {}; // nome -> { total, vencidos }
 
@@ -319,7 +331,14 @@
           const data = pick(c, 'validade', 'dataVencimento', 'vencimento', 'dataValidade');
           const st = statusPorData(data);
           totalColaboradores.add(colaborador);
-          if (st.cls === 'danger' || st.cls === 'warn' || st.cls === 'pending') colaboradoresComPendencia.add(colaborador);
+          if (st.cls === 'danger' || st.cls === 'warn' || st.cls === 'pending') {
+            colaboradoresComPendencia.add(colaborador);
+            detalhesPendencia.push({
+              colaborador, empresa: nomeEmp,
+              nr: pick(c, 'nr', 'norma', 'curso', 'treinamento') || '—',
+              data, status: st
+            });
+          }
           statsPorEmpresa[nomeEmp].total++;
           if (st.cls === 'danger') statsPorEmpresa[nomeEmp].vencidos++;
           todosCertificados.push({
@@ -342,6 +361,8 @@
 
       document.getElementById('kpiPendencia').textContent = colaboradoresComPendencia.size;
       document.getElementById('kpiPendenciaMeta').textContent = `de ${totalColaboradores.size} colaborador(es)`;
+      window.__detalhesPendencia = detalhesPendencia;
+      window.__todosCertificados = todosCertificados;
 
       // Ranking de empresas por % vencido
       const rankBox = document.getElementById('rankEmpresas');
@@ -414,6 +435,40 @@
   }
 
   carregarKPIs();
+
+  window.abrirModalPendencias = function() {
+    const lista = window.__detalhesPendencia || [];
+    const box = document.getElementById('listaPendenciasBody');
+    if (lista.length === 0) {
+      box.innerHTML = '<div class="text-muted" style="padding:16px 0;">Nenhuma pendência no momento 🎉</div>';
+    } else {
+      box.innerHTML = lista.map(p => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--paper-100);">
+          <div>
+            <div style="font-weight:600; font-size:13.5px;">${p.colaborador}</div>
+            <div style="font-size:12px; color:var(--graphite-600);">${p.empresa} · ${p.nr}</div>
+          </div>
+          <span class="selo selo--${p.status.cls}">${p.status.label}</span>
+        </div>`).join('');
+    }
+    document.getElementById('modalPendenciasOverlay').style.display = 'flex';
+  };
+  window.fecharModalPendencias = function() {
+    document.getElementById('modalPendenciasOverlay').style.display = 'none';
+  };
+
+  window.exportarCSV = function() {
+    const dados = window.__todosCertificados || [];
+    if (dados.length === 0) { alert('Nada pra exportar ainda — espera os dados carregarem.'); return; }
+    const linhas = [['Colaborador', 'Empresa', 'Treinamento', 'Vencimento', 'Status']];
+    dados.forEach(c => linhas.push([c.colaborador, c.empresa, c.nr, c.data || '', c.status.label]));
+    const csv = linhas.map(l => l.map(v => `"${(v||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `safeseg-dashboard-${new Date().toISOString().slice(0,10)}.csv`;
+    link.click();
+  };
   carregarTurmas30d();
 </script>
 

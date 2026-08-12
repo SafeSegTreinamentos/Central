@@ -97,7 +97,7 @@ h1,h2,h3{font-family:'Bebas Neue',Arial,sans-serif;letter-spacing:.5px;margin:0;
   // IMPORTANTE: tudo dentro de try/catch — se algo falhar (rede, permissão,
   // etc.), mostra um erro visível em vez de deixar a tela preta pra sempre.
   try {
-    const { obterMeuPerfil, auth, signOut } = await import('./assets/js/firebase-init.js');
+    const { obterMeuPerfil, auth, signOut, db, collection, getDocs } = await import('./assets/js/firebase-init.js');
     window.fazerLogout = async function() {
       if (!confirm('Sair da sua conta?')) return;
       await signOut(auth);
@@ -109,6 +109,7 @@ h1,h2,h3{font-family:'Bebas Neue',Arial,sans-serif;letter-spacing:.5px;margin:0;
       window.location.href = 'portal/dashboard-cliente.html';
     } else {
       document.querySelector('.wrap').classList.add('autenticado');
+      carregarPainelExecutivo(db, collection, getDocs);
     }
   } catch (err) {
     console.error('Erro ao verificar login:', err);
@@ -121,6 +122,43 @@ h1,h2,h3{font-family:'Bebas Neue',Arial,sans-serif;letter-spacing:.5px;margin:0;
           <button onclick="location.reload()" style="background:#F59E0B; color:#111; border:none; padding:10px 20px; border-radius:8px; font-weight:700; cursor:pointer;">Tentar de novo</button>
         </div>
       </div>`;
+  }
+
+  async function carregarPainelExecutivo(db, collection, getDocs) {
+    try {
+      const empresasSnap = await getDocs(collection(db, 'empresas'));
+      document.getElementById('statEmpresas').textContent = empresasSnap.size;
+
+      let totalValidos = 0;
+      let colaboradoresComPendencia = new Set();
+      await Promise.all(empresasSnap.docs.map(async empDoc => {
+        const certSnap = await getDocs(collection(db, 'empresas', empDoc.id, 'certificados'));
+        certSnap.forEach(certDoc => {
+          const c = certDoc.data();
+          const dataStr = c.validade || c.dataVencimento || c.vencimento || c.dataValidade;
+          const nome = c.colaborador || c.nome || c.aluno || c.funcionario || '(sem nome)';
+          if (!dataStr) { colaboradoresComPendencia.add(nome); return; }
+          const venc = new Date(dataStr.split('/').reverse().join('-'));
+          const dias = (venc - new Date()) / 86400000;
+          if (dias < 0 || dias <= 60) colaboradoresComPendencia.add(nome);
+          if (dias > 60) totalValidos++;
+        });
+      }));
+      document.getElementById('statCertificados').textContent = totalValidos;
+      document.getElementById('statPendencias').textContent = colaboradoresComPendencia.size;
+
+      const hojeISO = new Date().toISOString().slice(0,10);
+      const em30ISO = new Date(Date.now() + 30*86400000).toISOString().slice(0,10);
+      const agendaSnap = await getDocs(collection(db, 'agenda'));
+      let turmas30d = 0;
+      agendaSnap.forEach(d => {
+        const a = d.data();
+        if (a.data >= hojeISO && a.data <= em30ISO) turmas30d++;
+      });
+      document.getElementById('statTurmas30d').textContent = turmas30d;
+    } catch (err) {
+      console.error('Erro ao carregar painel executivo:', err);
+    }
   }
 </script>
 
@@ -137,10 +175,10 @@ h1,h2,h3{font-family:'Bebas Neue',Arial,sans-serif;letter-spacing:.5px;margin:0;
 
   <!-- PAINEL EXECUTIVO MINI -->
   <div class="exec-panel">
-    <div class="exec-item"><div class="val">2</div><div class="lbl">Turmas próx. 30d</div></div>
-    <div class="exec-item"><div class="val">6</div><div class="lbl">Pendências</div></div>
-    <div class="exec-item"><div class="val">14</div><div class="lbl">Empresas ativas</div></div>
-    <div class="exec-item"><div class="val">R$ 6k</div><div class="lbl">Receita no ano</div></div>
+    <div class="exec-item"><div class="val" id="statTurmas30d">—</div><div class="lbl">Turmas próx. 30d</div></div>
+    <div class="exec-item"><div class="val" id="statPendencias">—</div><div class="lbl">Colaboradores c/ pendência</div></div>
+    <div class="exec-item"><div class="val" id="statEmpresas">—</div><div class="lbl">Empresas cadastradas</div></div>
+    <div class="exec-item"><div class="val" id="statCertificados">—</div><div class="lbl">Certificados válidos</div></div>
   </div>
 
   <div class="search-row">

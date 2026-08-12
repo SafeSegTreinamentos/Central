@@ -323,7 +323,7 @@ function renderTurmaListReal(){
 async function iniciar(){
   const status = document.getElementById('connStatus');
   try {
-    const { obterMeuPerfil, db, collection, getDocs } = await import('assets/js/firebase-init.js');
+    const { obterMeuPerfil, db, collection, getDocs } = await import('../assets/js/firebase-init.js');
     const perfil = await obterMeuPerfil();
     if (perfil && perfil.role === 'cliente') {
       window.location.href = 'agenda-cliente.html';

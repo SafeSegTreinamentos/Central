@@ -159,7 +159,7 @@
         <div class="sub" id="topbarSub">Carregando...</div>
       </div>
       <div class="flex gap-2">
-        <button class="btn btn--secondary">↓ Exportar</button>
+        <button class="btn btn--secondary" onclick="exportarCertificadosCSV()">↓ Exportar</button>
         <button class="btn btn--secondary" onclick="document.getElementById('modelosSection').scrollIntoView({behavior:'smooth'})">🗂️ Modelos</button>
         <a href="gerador-turmas.html" class="btn btn--primary">+ Gerar Turma</a>
       </div>
@@ -171,9 +171,12 @@
         <div class="filter-tabs">
           <button class="filter-tab active">Todos <span class="count" id="countTodos"></span></button>
         </div>
+        <select id="filtroEmpresa" onchange="renderColaboradoresFiltrados()" style="border:1px solid var(--paper-200); border-radius:6px; padding:8px 12px; font-size:13px; background:#fff;">
+          <option value="">Todas as empresas</option>
+        </select>
         <div class="search-box">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
-          <input type="text" placeholder="Buscar colaborador ou empresa...">
+          <input type="text" id="buscaColaborador" placeholder="Buscar colaborador ou empresa..." oninput="renderColaboradoresFiltrados()">
         </div>
       </div>
 
@@ -271,59 +274,103 @@
       }));
 
       const colaboradores = Object.values(colaboradoresMap);
+      window.__colaboradoresCertificados = colaboradores; // guarda pra filtro/busca/exportar sem re-buscar
+
+      // popula o seletor de empresas com as que realmente têm colaborador
+      const empresasUnicas = [...new Set(colaboradores.map(c => c.empresa))].sort();
+      const selectEmpresa = document.getElementById('filtroEmpresa');
+      selectEmpresa.innerHTML = '<option value="">Todas as empresas</option>' +
+        empresasUnicas.map(e => `<option value="${e}">${e}</option>`).join('');
+
       if (colaboradores.length === 0) {
         status.textContent = 'Conectado — nenhum certificado encontrado ainda nas empresas cadastradas.';
         box.innerHTML = '';
         return;
       }
 
-      box.innerHTML = colaboradores.map((col, i) => {
-        const certsHtml = col.certificados.map(c => {
-          const st = statusPorData(c.data);
-          return `
-            <div class="cert-row">
-              <span class="cert-nr">${c.nr}</span>
-              <span class="cert-nome">${c.nome}</span>
-              <div class="cert-row__meta">
-                ${c.cont ? `<span class="cert-cont">CONT ${c.cont}</span>` : ''}
-                <span class="cert-data">${c.data || '—'}</span>
-                <span class="selo selo--${st.cls}">${st.label}</span>
-              </div>
-            </div>`;
-        }).join('');
-
-        // resumo: conta quantos de cada status
-        const counts = { danger: 0, warn: 0, ok: 0, pending: 0 };
-        col.certificados.forEach(c => counts[statusPorData(c.data).cls]++);
-        const resumoHtml = Object.entries(counts).filter(([,n]) => n > 0)
-          .map(([cls, n]) => `<span class="selo selo--${cls}">${n} ${cls==='ok'?'válido(s)':cls==='danger'?'vencido(s)':cls==='warn'?'atenção':'pendente(s)'}</span>`).join('');
-
-        return `
-          <div class="collab-card ${i === 0 ? 'open' : ''}">
-            <div class="collab-head" onclick="this.parentElement.classList.toggle('open')">
-              <div class="collab-avatar">${iniciais(col.nome)}</div>
-              <div class="collab-info">
-                <div class="collab-name">${col.nome}</div>
-                <div class="collab-empresa">${col.empresa}</div>
-              </div>
-              <div class="collab-summary">${resumoHtml}</div>
-              <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-            </div>
-            <div class="collab-body">${certsHtml}</div>
-          </div>`;
-      }).join('');
+      renderColaboradoresFiltrados();
 
       status.textContent = `${colaboradores.length} colaborador(es) carregado(s).`;
       status.style.color = 'var(--status-ok)';
       document.getElementById('topbarSub').textContent =
         `${empresasSnap.size} empresa(s) · ${colaboradores.length} colaborador(es) · ${colaboradores.reduce((s,c)=>s+c.certificados.length,0)} certificado(s)`;
-      document.getElementById('countTodos').textContent = colaboradores.length;
     } catch (err) {
       console.error('Erro ao carregar certificados:', err);
       status.textContent = `⚠️ Erro ao carregar: ${err.message}`;
       status.style.color = 'var(--status-danger)';
     }
   }
+
+  window.renderColaboradoresFiltrados = function() {
+    const box = document.getElementById('collabList');
+    const todos = window.__colaboradoresCertificados || [];
+    const empresaFiltro = document.getElementById('filtroEmpresa').value;
+    const busca = (document.getElementById('buscaColaborador').value || '').toLowerCase().trim();
+
+    const colaboradores = todos.filter(col => {
+      if (empresaFiltro && col.empresa !== empresaFiltro) return false;
+      if (busca && !col.nome.toLowerCase().includes(busca) && !col.empresa.toLowerCase().includes(busca)) return false;
+      return true;
+    });
+
+    document.getElementById('countTodos').textContent = colaboradores.length;
+
+    if (colaboradores.length === 0) {
+      box.innerHTML = '<div class="text-muted" style="text-align:center; padding:20px;">Nenhum colaborador encontrado com esse filtro.</div>';
+      return;
+    }
+
+    box.innerHTML = colaboradores.map((col, i) => {
+      const certsHtml = col.certificados.map(c => {
+        const st = statusPorData(c.data);
+        return `
+          <div class="cert-row">
+            <span class="cert-nr">${c.nr}</span>
+            <span class="cert-nome">${c.nome}</span>
+            <div class="cert-row__meta">
+              ${c.cont ? `<span class="cert-cont">CONT ${c.cont}</span>` : ''}
+              <span class="cert-data">${c.data || '—'}</span>
+              <span class="selo selo--${st.cls}">${st.label}</span>
+            </div>
+          </div>`;
+      }).join('');
+
+      const counts = { danger: 0, warn: 0, ok: 0, pending: 0 };
+      col.certificados.forEach(c => counts[statusPorData(c.data).cls]++);
+      const resumoHtml = Object.entries(counts).filter(([,n]) => n > 0)
+        .map(([cls, n]) => `<span class="selo selo--${cls}">${n} ${cls==='ok'?'válido(s)':cls==='danger'?'vencido(s)':cls==='warn'?'atenção':'pendente(s)'}</span>`).join('');
+
+      return `
+        <div class="collab-card ${i === 0 ? 'open' : ''}">
+          <div class="collab-head" onclick="this.parentElement.classList.toggle('open')">
+            <div class="collab-avatar">${iniciais(col.nome)}</div>
+            <div class="collab-info">
+              <div class="collab-name">${col.nome}</div>
+              <div class="collab-empresa">${col.empresa}</div>
+            </div>
+            <div class="collab-summary">${resumoHtml}</div>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div class="collab-body">${certsHtml}</div>
+        </div>`;
+    }).join('');
+  };
+
+  window.exportarCertificadosCSV = function() {
+    const todos = window.__colaboradoresCertificados || [];
+    if (todos.length === 0) { alert('Nada pra exportar ainda — espera os dados carregarem.'); return; }
+    const linhas = [['Colaborador', 'Empresa', 'Curso/NR', 'CONT', 'Data', 'Status']];
+    todos.forEach(col => col.certificados.forEach(c => {
+      const st = statusPorData(c.data);
+      linhas.push([col.nome, col.empresa, c.nr, c.cont || '', c.data || '', st.label]);
+    }));
+    const csv = linhas.map(l => l.map(v => `"${(v||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `safeseg-certificados-${new Date().toISOString().slice(0,10)}.csv`;
+    link.click();
+  };
 
   carregarCertificados();
 </script>

@@ -127,8 +127,8 @@
         <div class="sub">PGR · LTCAT · PCMSO · Laudos · Contratos — por empresa</div>
       </div>
       <div class="flex gap-2">
-        <button class="btn btn--secondary">↓ Exportar</button>
-        <button class="btn btn--primary">+ Novo Documento</button>
+        <button class="btn btn--secondary" onclick="exportarDocumentosCSV()">↓ Exportar</button>
+        <button class="btn btn--primary" onclick="abrirModalNovoDocumento()">+ Novo Documento</button>
       </div>
     </header>
 
@@ -136,16 +136,16 @@
 
       <div class="toolbar">
         <div class="filter-tabs">
-          <button class="filter-tab active">Todos</button>
-          <button class="filter-tab">PGR</button>
-          <button class="filter-tab">LTCAT</button>
-          <button class="filter-tab">PCMSO</button>
-          <button class="filter-tab">Laudos</button>
-          <button class="filter-tab">Contratos</button>
+          <button class="filter-tab active" onclick="filtrarCategoria('Todos', this)">Todos</button>
+          <button class="filter-tab" onclick="filtrarCategoria('PGR', this)">PGR</button>
+          <button class="filter-tab" onclick="filtrarCategoria('LTCAT', this)">LTCAT</button>
+          <button class="filter-tab" onclick="filtrarCategoria('PCMSO', this)">PCMSO</button>
+          <button class="filter-tab" onclick="filtrarCategoria('Laudo', this)">Laudos</button>
+          <button class="filter-tab" onclick="filtrarCategoria('Contrato', this)">Contratos</button>
         </div>
         <div class="search-box">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
-          <input type="text" placeholder="Buscar empresa ou documento...">
+          <input type="text" id="buscaDocumento" placeholder="Buscar empresa ou documento..." oninput="renderDocumentosFiltrados()">
         </div>
       </div>
 
@@ -157,8 +157,47 @@
   </div>
 </div>
 
+<!-- MODAL: NOVO DOCUMENTO -->
+<div id="modalNovoDocOverlay" style="display:none; position:fixed; inset:0; background:rgba(20,23,27,0.55); align-items:center; justify-content:center; z-index:60; padding:16px;">
+  <div style="background:#fff; border-radius:16px; width:100%; max-width:440px; box-shadow:0 8px 24px rgba(0,0,0,0.2);">
+    <div style="padding:20px; border-bottom:1px solid var(--paper-200); display:flex; align-items:center; justify-content:space-between;">
+      <h3 style="font-family:var(--font-display); font-size:1.2rem; margin:0;">Novo Documento</h3>
+      <button onclick="fecharModalNovoDocumento()" style="background:none; border:none; font-size:20px; cursor:pointer; color:var(--graphite-600);">✕</button>
+    </div>
+    <div style="padding:20px; display:flex; flex-direction:column; gap:12px;">
+      <div>
+        <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Empresa</label>
+        <select id="novoDocEmpresa" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;"></select>
+      </div>
+      <div>
+        <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Categoria</label>
+        <select id="novoDocCategoria" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+          <option value="PGR">PGR</option>
+          <option value="LTCAT">LTCAT</option>
+          <option value="PCMSO">PCMSO</option>
+          <option value="Laudo">Laudo</option>
+          <option value="Contrato">Contrato</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Nome do documento</label>
+        <input type="text" id="novoDocNome" placeholder="Ex: PGR 2026-2028" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+      </div>
+      <div>
+        <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Validade (opcional)</label>
+        <input type="date" id="novoDocValidade" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+      </div>
+      <div id="novoDocErro" style="color:var(--status-danger); font-size:13px; display:none;"></div>
+    </div>
+    <div style="padding:16px 20px; border-top:1px solid var(--paper-200); display:flex; justify-content:flex-end; gap:8px;">
+      <button class="btn btn--secondary" onclick="fecharModalNovoDocumento()">Cancelar</button>
+      <button class="btn btn--primary" onclick="salvarNovoDocumento()">Salvar documento</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
-  import { db, collection, getDocs, esperarAuth } from '../assets/js/firebase-init.js';
+  import { db, collection, getDocs, addDoc, esperarAuth } from '../assets/js/firebase-init.js';
 
   // Documentos vivem em: empresas/{id}/documentos (subcoleção criada do zero,
   // mesmo padrão de certificados — coleção não existia antes).
@@ -216,8 +255,16 @@
             data: pick(dt, 'validade', 'dataVencimento', 'vencimento')
           });
         });
-        return { nome: emp.nome || '(sem nome)', documentos };
+        return { id: empDoc.id, nome: emp.nome || '(sem nome)', documentos };
       }));
+
+      window.__empresasDocumentos = empresasComDocs;
+
+      // popula o seletor de empresa do modal "Novo Documento"
+      const selectModal = document.getElementById('novoDocEmpresa');
+      if (selectModal) {
+        selectModal.innerHTML = empresasComDocs.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
+      }
 
       const comDoc = empresasComDocs.filter(e => e.documentos.length > 0);
       if (comDoc.length === 0) {
@@ -225,31 +272,7 @@
         return;
       }
 
-      box.innerHTML = comDoc.map((emp, i) => {
-        const counts = { danger: 0, warn: 0, ok: 0, pending: 0 };
-        emp.documentos.forEach(d => counts[statusPorData(d.data).cls]++);
-        const resumoHtml = Object.entries(counts).filter(([,n]) => n > 0)
-          .map(([cls, n]) => `<span class="selo selo--${cls}">${n} ${cls==='ok'?'válido(s)':cls==='danger'?'vencido(s)':cls==='warn'?'atenção':'pendente(s)'}</span>`).join('');
-
-        const rowsHtml = emp.documentos.map(d => {
-          const st = statusPorData(d.data);
-          return `<div class="doc-row"><span class="doc-cat doc-cat--${catClass(d.categoria)}">${d.categoria}</span><span class="doc-nome">${d.nome}</span><div class="doc-row__meta"><span class="doc-data">${d.data || '—'}</span><span class="selo selo--${st.cls}">${st.label}</span></div></div>`;
-        }).join('');
-
-        return `
-          <div class="collab-card ${i === 0 ? 'open' : ''}">
-            <div class="collab-head" onclick="this.parentElement.classList.toggle('open')">
-              <div class="collab-avatar">${iniciais(emp.nome)}</div>
-              <div class="collab-info">
-                <div class="collab-name">${emp.nome}</div>
-                <div class="collab-empresa">${emp.documentos.length} documento(s) cadastrado(s)</div>
-              </div>
-              <div class="collab-summary">${resumoHtml}</div>
-              <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-            </div>
-            <div class="collab-body">${rowsHtml}</div>
-          </div>`;
-      }).join('');
+      renderDocumentosFiltrados();
 
       status.textContent = `${comDoc.length} empresa(s) com documento cadastrado.`;
       status.style.color = 'var(--status-ok)';
@@ -259,6 +282,116 @@
       status.style.color = 'var(--status-danger)';
     }
   }
+
+  let filtroCategoriaAtual = 'Todos';
+  window.filtrarCategoria = function(cat, btn) {
+    filtroCategoriaAtual = cat;
+    document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderDocumentosFiltrados();
+  };
+
+  window.renderDocumentosFiltrados = function() {
+    const box = document.getElementById('docList');
+    const todasEmpresas = window.__empresasDocumentos || [];
+    const busca = (document.getElementById('buscaDocumento').value || '').toLowerCase().trim();
+
+    const filtradas = todasEmpresas.map(emp => {
+      let documentos = filtroCategoriaAtual === 'Todos'
+        ? emp.documentos
+        : emp.documentos.filter(d => catClass(d.categoria) === catClass(filtroCategoriaAtual));
+      if (busca) {
+        documentos = documentos.filter(d =>
+          d.nome.toLowerCase().includes(busca) || emp.nome.toLowerCase().includes(busca));
+      }
+      return { ...emp, documentos };
+    }).filter(emp => emp.documentos.length > 0);
+
+    if (filtradas.length === 0) {
+      box.innerHTML = '<div class="text-muted" style="text-align:center; padding:20px;">Nenhum documento encontrado com esse filtro.</div>';
+      return;
+    }
+
+    box.innerHTML = filtradas.map((emp, i) => {
+      const counts = { danger: 0, warn: 0, ok: 0, pending: 0 };
+      emp.documentos.forEach(d => counts[statusPorData(d.data).cls]++);
+      const resumoHtml = Object.entries(counts).filter(([,n]) => n > 0)
+        .map(([cls, n]) => `<span class="selo selo--${cls}">${n} ${cls==='ok'?'válido(s)':cls==='danger'?'vencido(s)':cls==='warn'?'atenção':'pendente(s)'}</span>`).join('');
+
+      const rowsHtml = emp.documentos.map(d => {
+        const st = statusPorData(d.data);
+        return `<div class="doc-row"><span class="doc-cat doc-cat--${catClass(d.categoria)}">${d.categoria}</span><span class="doc-nome">${d.nome}</span><div class="doc-row__meta"><span class="doc-data">${d.data || '—'}</span><span class="selo selo--${st.cls}">${st.label}</span></div></div>`;
+      }).join('');
+
+      return `
+        <div class="collab-card ${i === 0 ? 'open' : ''}">
+          <div class="collab-head" onclick="this.parentElement.classList.toggle('open')">
+            <div class="collab-avatar">${iniciais(emp.nome)}</div>
+            <div class="collab-info">
+              <div class="collab-name">${emp.nome}</div>
+              <div class="collab-empresa">${emp.documentos.length} documento(s) cadastrado(s)</div>
+            </div>
+            <div class="collab-summary">${resumoHtml}</div>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div class="collab-body">${rowsHtml}</div>
+        </div>`;
+    }).join('');
+  };
+
+  window.exportarDocumentosCSV = function() {
+    const todasEmpresas = window.__empresasDocumentos || [];
+    const linhas = [['Empresa', 'Categoria', 'Documento', 'Validade', 'Status']];
+    todasEmpresas.forEach(emp => emp.documentos.forEach(d => {
+      const st = statusPorData(d.data);
+      linhas.push([emp.nome, d.categoria, d.nome, d.data || '', st.label]);
+    }));
+    if (linhas.length === 1) { alert('Nada pra exportar ainda.'); return; }
+    const csv = linhas.map(l => l.map(v => `"${(v||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `safeseg-documentos-${new Date().toISOString().slice(0,10)}.csv`;
+    link.click();
+  };
+
+  window.abrirModalNovoDocumento = function() {
+    document.getElementById('modalNovoDocOverlay').style.display = 'flex';
+  };
+  window.fecharModalNovoDocumento = function() {
+    document.getElementById('modalNovoDocOverlay').style.display = 'none';
+  };
+  window.salvarNovoDocumento = async function() {
+    const empresaId = document.getElementById('novoDocEmpresa').value;
+    const categoria = document.getElementById('novoDocCategoria').value;
+    const nome = document.getElementById('novoDocNome').value.trim();
+    const validade = document.getElementById('novoDocValidade').value;
+    const erroBox = document.getElementById('novoDocErro');
+    erroBox.style.display = 'none';
+
+    if (!empresaId || !nome) {
+      erroBox.textContent = 'Escolhe a empresa e digita o nome do documento.';
+      erroBox.style.display = 'block';
+      return;
+    }
+
+    // converte AAAA-MM-DD (input date) pra DD/MM/AAAA (formato usado no resto do sistema)
+    let validadeFmt = '';
+    if (validade) { const [y,m,d] = validade.split('-'); validadeFmt = `${d}/${m}/${y}`; }
+
+    try {
+      await addDoc(collection(db, 'empresas', empresaId, 'documentos'), {
+        categoria, nome, validade: validadeFmt
+      });
+      fecharModalNovoDocumento();
+      document.getElementById('novoDocNome').value = '';
+      document.getElementById('novoDocValidade').value = '';
+      carregarDocumentos();
+    } catch (err) {
+      erroBox.textContent = 'Erro ao salvar: ' + err.message;
+      erroBox.style.display = 'block';
+    }
+  };
 
   carregarDocumentos();
 </script>
