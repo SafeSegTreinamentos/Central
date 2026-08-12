@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal SafeSeg — Propostas</title>
+<link rel="stylesheet" href="../assets/css/safeseg-design-system.css">
+<style>
+  html, body { height: 100%; }
+  .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .topbar { background: #fff; border-bottom: 1px solid var(--paper-200); padding: var(--space-4) var(--space-6); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3); }
+  .topbar h1 { font-size: var(--text-xl); letter-spacing: 0.03em; }
+  .topbar .sub { font-size: var(--text-sm); color: var(--graphite-600); margin-top: 2px; }
+  .content { padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); max-width: 1000px; }
+  .card { background: #fff; border: 1px solid var(--paper-200); border-radius: var(--radius-md); box-shadow: var(--shadow-card); padding: var(--space-5); }
+  .aviso-futuro { background: #EAE6F7; border: 1px dashed #8B6FD9; border-radius: 8px; padding: 12px 16px; font-size: 13px; color: #5B3FA0; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 11px; text-transform: uppercase; color: var(--graphite-600); padding: 8px 10px; border-bottom: 2px solid var(--paper-200); letter-spacing: .03em; }
+  td { padding: 10px; border-bottom: 1px solid var(--paper-100); font-size: 13.5px; vertical-align: middle; }
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr !important; }
+    .content { padding: var(--space-4) !important; }
+    .topbar { padding: var(--space-3) var(--space-4) !important; }
+    table { display: block; overflow-x: auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <nav class="sidebar">
+    <div class="sidebar__logo">
+      <img src="../assets/img/logo-dark.png" alt="SafeSeg" style="background:var(--graphite-900); border-radius:8px; padding:4px; max-width:150px; display:block;">
+    </div>
+    <a class="nav-item" href="../index.html" style="background:var(--graphite-900); color:var(--gold-300); margin-bottom:4px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+      Central (Hub)
+    </a>
+    <a class="nav-item" href="dashboard.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      Dashboard
+    </a>
+    <div class="nav-section-label">Comercial (CRM)</div>
+    <a class="nav-item" href="leads.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+      Leads (Funil)
+    </a>
+    <a class="nav-item active" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15h6M9 11h3"/></svg>
+      Propostas
+    </a>
+    <a class="nav-item" href="empresas.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17"/><path d="M19 21V10a1 1 0 0 0-1-1h-3"/><path d="M8 7h2M8 11h2M8 15h2"/></svg>
+      Empresas (clientes)
+    </a>
+    <div class="nav-section-label">Financeiro</div>
+    <a class="nav-item" href="financeiro.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Financeiro
+    </a>
+    <button class="nav-item" style="width:100%; text-align:left; border:none; background:transparent; cursor:pointer; margin-top:auto; color:var(--status-danger);" onclick="fazerLogout()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      Sair
+    </button>
+  </nav>
+
+  <div class="main">
+    <div class="hazard-stripe"></div>
+    <header class="topbar">
+      <div>
+        <h1>Propostas</h1>
+        <div class="sub" id="topbarSub">Carregando...</div>
+      </div>
+      <button class="btn btn--primary" onclick="abrirModalProposta()">+ Nova Proposta</button>
+    </header>
+
+    <div class="content">
+      <div class="aviso-futuro">
+        📄 <strong>V1 simples — controle de status, sem geração de PDF ainda.</strong> Quando você reenviar seu sistema de propostas, eu integro a geração automática do documento aqui.
+      </div>
+      <div id="connStatus" class="text-muted" style="font-size:12px;">Conectando...</div>
+      <div class="card">
+        <div id="propostasList">Carregando...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PROPOSTA -->
+<div id="modalPropostaOverlay" style="display:none; position:fixed; inset:0; background:rgba(20,23,27,0.55); align-items:center; justify-content:center; z-index:60; padding:16px;">
+  <div style="background:#fff; border-radius:16px; width:100%; max-width:440px; box-shadow:0 8px 24px rgba(0,0,0,0.2);">
+    <div style="padding:20px; border-bottom:1px solid var(--paper-200); display:flex; align-items:center; justify-content:space-between;">
+      <h3 style="font-family:var(--font-display); font-size:1.2rem; margin:0;" id="modalPropTitulo">Nova Proposta</h3>
+      <button onclick="fecharModalProposta()" style="background:none; border:none; font-size:20px; cursor:pointer; color:var(--graphite-600);">✕</button>
+    </div>
+    <div style="padding:20px; display:flex; flex-direction:column; gap:12px;">
+      <div>
+        <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Cliente / Lead</label>
+        <input type="text" id="propCliente" placeholder="Nome do cliente ou lead" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+      </div>
+      <div>
+        <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Serviço / Curso</label>
+        <input type="text" id="propServico" placeholder="Ex: NR-35 para 20 colaboradores" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+      </div>
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Valor</label>
+          <input type="number" id="propValor" placeholder="0,00" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Status</label>
+          <select id="propStatus" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+            <option value="enviada">Enviada</option>
+            <option value="aceita">Aceita</option>
+            <option value="recusada">Recusada</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Link do documento (opcional)</label>
+        <input type="text" id="propLink" placeholder="Link do PDF/Drive/Docs" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+      </div>
+      <div id="propErro" style="color:var(--status-danger); font-size:13px; display:none;"></div>
+    </div>
+    <div style="padding:16px 20px; border-top:1px solid var(--paper-200); display:flex; justify-content:space-between; gap:8px;">
+      <button class="btn btn--danger" id="btnExcluirProp" style="display:none;" onclick="excluirProposta()">Excluir</button>
+      <div style="display:flex; gap:8px; margin-left:auto;">
+        <button class="btn btn--secondary" onclick="fecharModalProposta()">Cancelar</button>
+        <button class="btn btn--primary" onclick="salvarProposta()">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { db, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, esperarAuth } from '../assets/js/firebase-init.js';
+
+  let propostasCache = [];
+  let editandoId = null;
+
+  async function carregar() {
+    const status = document.getElementById('connStatus');
+    await esperarAuth();
+    try {
+      const snap = await getDocs(collection(db, 'propostas'));
+      propostasCache = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.criadoEm||'').localeCompare(a.criadoEm||''));
+      render();
+      status.textContent = `✅ ${propostasCache.length} proposta(s).`;
+      status.style.color = 'var(--status-ok)';
+    } catch (err) {
+      status.textContent = `⚠️ Erro: ${err.message}`;
+      status.style.color = 'var(--status-danger)';
+    }
+  }
+
+  function render() {
+    document.getElementById('topbarSub').textContent = `${propostasCache.length} proposta(s)`;
+    const box = document.getElementById('propostasList');
+    if (propostasCache.length === 0) {
+      box.innerHTML = '<div class="text-muted" style="text-align:center; padding:20px;">Nenhuma proposta ainda.</div>';
+      return;
+    }
+    const corStatus = { enviada: 'pending', aceita: 'ok', recusada: 'danger' };
+    const labelStatus = { enviada: 'Enviada', aceita: 'Aceita', recusada: 'Recusada' };
+    box.innerHTML = `
+      <table>
+        <thead><tr><th>Cliente</th><th>Serviço</th><th>Valor</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          ${propostasCache.map(p => `
+            <tr>
+              <td>${p.cliente}</td>
+              <td>${p.servico || '—'}</td>
+              <td>${p.valor ? 'R$ ' + Number(p.valor).toLocaleString('pt-BR') : '—'}</td>
+              <td><span class="selo selo--${corStatus[p.status]||'pending'}">${labelStatus[p.status]||p.status}</span></td>
+              <td>
+                <button class="btn btn--ghost" style="padding:5px 9px; font-size:11px;" onclick="abrirModalProposta('${p.id}')">Editar</button>
+                ${p.link ? `<a href="${p.link}" target="_blank" class="btn btn--secondary" style="padding:5px 9px; font-size:11px; text-decoration:none;">Abrir</a>` : ''}
+              </td>
+            </tr>`).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  window.abrirModalProposta = function(id) {
+    editandoId = id || null;
+    document.getElementById('propErro').style.display = 'none';
+    if (id) {
+      const p = propostasCache.find(x => x.id === id);
+      document.getElementById('modalPropTitulo').textContent = 'Editar Proposta';
+      document.getElementById('propCliente').value = p.cliente || '';
+      document.getElementById('propServico').value = p.servico || '';
+      document.getElementById('propValor').value = p.valor || '';
+      document.getElementById('propStatus').value = p.status || 'enviada';
+      document.getElementById('propLink').value = p.link || '';
+      document.getElementById('btnExcluirProp').style.display = 'inline-block';
+    } else {
+      document.getElementById('modalPropTitulo').textContent = 'Nova Proposta';
+      document.getElementById('propCliente').value = '';
+      document.getElementById('propServico').value = '';
+      document.getElementById('propValor').value = '';
+      document.getElementById('propStatus').value = 'enviada';
+      document.getElementById('propLink').value = '';
+      document.getElementById('btnExcluirProp').style.display = 'none';
+    }
+    document.getElementById('modalPropostaOverlay').style.display = 'flex';
+  };
+  window.fecharModalProposta = function() {
+    document.getElementById('modalPropostaOverlay').style.display = 'none';
+  };
+  window.salvarProposta = async function() {
+    const cliente = document.getElementById('propCliente').value.trim();
+    const erroBox = document.getElementById('propErro');
+    if (!cliente) { erroBox.textContent = 'Digite o cliente.'; erroBox.style.display = 'block'; return; }
+    const dados = {
+      cliente,
+      servico: document.getElementById('propServico').value.trim(),
+      valor: document.getElementById('propValor').value,
+      status: document.getElementById('propStatus').value,
+      link: document.getElementById('propLink').value.trim()
+    };
+    try {
+      if (editandoId) await updateDoc(doc(db, 'propostas', editandoId), dados);
+      else await addDoc(collection(db, 'propostas'), { ...dados, criadoEm: new Date().toISOString() });
+      fecharModalProposta();
+      carregar();
+    } catch (err) {
+      erroBox.textContent = 'Erro: ' + err.message;
+      erroBox.style.display = 'block';
+    }
+  };
+  window.excluirProposta = async function() {
+    if (!editandoId || !confirm('Excluir esta proposta?')) return;
+    try { await deleteDoc(doc(db, 'propostas', editandoId)); fecharModalProposta(); carregar(); }
+    catch (err) { alert('Erro: ' + err.message); }
+  };
+
+  carregar();
+</script>
+<script type="module">
+  import { auth, signOut } from "../assets/js/firebase-init.js";
+  window.fazerLogout = async function() {
+    if (!confirm("Sair da sua conta?")) return;
+    await signOut(auth);
+    location.reload();
+  };
+</script>
+
+</body>
+</html>

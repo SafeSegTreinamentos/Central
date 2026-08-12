@@ -133,6 +133,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 16c0-5 4-9 9-9s9 4 9 9"/><path d="M2 16h20"/><path d="M9 7V4"/></svg>
       Certificados
     </a>
+    <a class="nav-item" href="modelos.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v4H4zM4 12h16v8H4z"/><path d="M8 16h8"/></svg>
+      Modelos
+    </a>
     <a class="nav-item" href="documentos.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/></svg>
       Documentos
@@ -160,7 +164,7 @@
       </div>
       <div class="flex gap-2">
         <button class="btn btn--secondary" onclick="exportarCertificadosCSV()">↓ Exportar</button>
-        <button class="btn btn--secondary" onclick="document.getElementById('modelosSection').scrollIntoView({behavior:'smooth'})">🗂️ Modelos</button>
+        <a href="modelos.html" class="btn btn--secondary" style="text-decoration:none;">🗂️ Modelos</a>
         <a href="gerador-turmas.html" class="btn btn--primary">+ Gerar Turma</a>
       </div>
     </header>
@@ -186,22 +190,6 @@
       <div class="collab-list" id="collabList"></div>
 
       <!-- TABELA DE MODELOS -->
-      <section class="card" id="modelosSection">
-        <div class="section-title">
-          🗂️ Modelos por curso
-          <button class="btn btn--primary" style="padding:8px 14px; font-size:13px;" onclick="adicionarModelo()">+ Adicionar modelo</button>
-        </div>
-        <div class="text-muted" style="font-size:12px; margin:-8px 0 12px;">Salvo neste navegador por enquanto — dá pra evoluir depois pra sincronizar em nuvem, igual o Gerador de Turmas.</div>
-        <div class="modelos-table-wrap">
-        <table>
-          <thead>
-            <tr><th>Curso</th><th>Instrutor</th><th>Link do Modelo (Google Slides)</th><th>Validade (anos)</th><th></th></tr>
-          </thead>
-          <tbody id="modelosBody"></tbody>
-        </table>
-        </div>
-      </section>
-
     </div>
   </div>
 </div>
@@ -375,123 +363,6 @@
   carregarCertificados();
 </script>
 
-<!-- Script separado: Modelos fala direto com o Apps Script (mesma planilha
-     que já gera os certificados de verdade — Config_Modelos) -->
-<script>
-  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz55Li88oyroPtFH1iTOV2nR58-xbuUAMkGcyb6GRzM3S6KQNARj7Sxvi1mZShhPg-WRg/exec';
-
-  // Cada item: { curso, instrutor, modeloId, validade, salvo: true/false }
-  // salvo=false = ainda não existe na planilha (linha nova, adicionada mas não salva ainda)
-  // Guarda também cursoOriginal/instrutorOriginal pra saber qual linha atualizar/excluir na planilha
-  let modelosState = [];
-
-  async function chamarAppsScript(payload) {
-    const res = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // evita preflight CORS
-      body: JSON.stringify(payload)
-    });
-    return await res.json();
-  }
-
-  async function carregarModelosReais() {
-    const tbody = document.getElementById('modelosBody');
-    tbody.innerHTML = `<tr><td colspan="5" class="text-muted" style="text-align:center; padding:20px;">Carregando da planilha...</td></tr>`;
-    try {
-      const resultado = await chamarAppsScript({ acao: 'listarModelos' });
-      if (!resultado.sucesso) throw new Error(resultado.erro || 'Erro desconhecido');
-      modelosState = resultado.modelos.map(m => ({
-        curso: m.curso, instrutor: m.instrutor, modeloId: m.fileId, validade: m.anos,
-        cursoOriginal: m.curso, instrutorOriginal: m.instrutor, salvo: true
-      }));
-      renderModelos();
-    } catch (err) {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--status-danger);">Erro ao carregar: ${err.message}</td></tr>`;
-    }
-  }
-
-  function renderModelos() {
-    const tbody = document.getElementById('modelosBody');
-    if (modelosState.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5" class="text-muted" style="text-align:center; padding:20px;">Nenhum modelo cadastrado ainda. Clique em "+ Adicionar modelo" pra começar.</td></tr>`;
-      return;
-    }
-    tbody.innerHTML = modelosState.map((m, i) => `
-      <tr>
-        <td class="edit-cell"><input type="text" value="${m.curso || ''}" placeholder="Ex: NR-35 - Trabalho em Altura" class="mono" style="width:170px;" onchange="modelosState[${i}].curso=this.value"></td>
-        <td class="edit-cell">
-          <select onchange="modelosState[${i}].instrutor=this.value">
-            <option ${m.instrutor === 'Deverson' ? 'selected' : ''}>Deverson</option>
-            <option ${m.instrutor === 'Everton' ? 'selected' : ''}>Everton</option>
-          </select>
-        </td>
-        <td class="edit-cell"><input type="text" value="${m.modeloId || ''}" placeholder="Cola o link do Google Slides aqui" style="width:220px;" onchange="modelosState[${i}].modeloId=this.value"></td>
-        <td class="edit-cell"><input type="number" value="${m.validade || ''}" placeholder="2" style="width:60px;" onchange="modelosState[${i}].validade=this.value"></td>
-        <td style="white-space:nowrap;">
-          <button class="btn btn--secondary" style="padding:6px 10px; font-size:12px;" onclick="salvarLinhaModelo(${i})">Salvar</button>
-          <button class="btn btn--danger" style="padding:6px 10px; font-size:12px;" onclick="excluirLinhaModelo(${i})">Excluir</button>
-        </td>
-      </tr>
-    `).join('');
-  }
-
-  function adicionarModelo() {
-    modelosState.push({ curso: '', instrutor: 'Deverson', modeloId: '', validade: '', salvo: false });
-    renderModelos();
-  }
-
-  async function salvarLinhaModelo(i) {
-    const m = modelosState[i];
-    if (!m.curso || !m.modeloId) {
-      alert('Preenche pelo menos o curso e o link do modelo antes de salvar.');
-      return;
-    }
-    try {
-      let resultado;
-      if (m.salvo) {
-        resultado = await chamarAppsScript({
-          acao: 'atualizarModelo',
-          cursoOriginal: m.cursoOriginal, instrutorOriginal: m.instrutorOriginal,
-          cursoNovo: m.curso, instrutorNovo: m.instrutor,
-          linkModelo: m.modeloId, anos: m.validade
-        });
-      } else {
-        resultado = await chamarAppsScript({
-          acao: 'salvarModelo',
-          curso: m.curso, instrutor: m.instrutor, linkModelo: m.modeloId, anos: m.validade
-        });
-      }
-      if (!resultado.sucesso) { alert('Erro ao salvar: ' + resultado.erro); return; }
-      m.salvo = true;
-      m.cursoOriginal = m.curso;
-      m.instrutorOriginal = m.instrutor;
-      alert('Modelo salvo na planilha ✅');
-    } catch (err) {
-      alert('Erro ao salvar: ' + err.message);
-    }
-  }
-
-  async function excluirLinhaModelo(i) {
-    const m = modelosState[i];
-    if (!confirm('Excluir este modelo?')) return;
-    if (!m.salvo) {
-      // ainda nem foi salvo na planilha, só remove da tela
-      modelosState.splice(i, 1);
-      renderModelos();
-      return;
-    }
-    try {
-      const resultado = await chamarAppsScript({ acao: 'excluirModelo', curso: m.cursoOriginal, instrutor: m.instrutorOriginal });
-      if (!resultado.sucesso) { alert('Erro ao excluir: ' + resultado.erro); return; }
-      modelosState.splice(i, 1);
-      renderModelos();
-    } catch (err) {
-      alert('Erro ao excluir: ' + err.message);
-    }
-  }
-
-  carregarModelosReais();
-</script>
 <!-- Script de logout — independente, funciona mesmo se o resto da página falhar -->
 <script type="module">
   import { auth, signOut } from "../assets/js/firebase-init.js";

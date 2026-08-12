@@ -59,7 +59,7 @@
       <img src="../assets/img/logo-dark.png" alt="SafeSeg" style="background:var(--graphite-900); border-radius:8px; padding:4px; max-width:150px; display:block;">
     </div>
 
-    <a class="nav-item" href="../index.html" style="background:var(--graphite-900); color:var(--gold-300); margin-bottom:4px;">
+    <a class="nav-item" href="hub.html" style="background:var(--graphite-900); color:var(--gold-300); margin-bottom:4px;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
       Central (Hub)
     </a>
@@ -93,7 +93,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="3" width="12" height="7" rx="2"/><path d="M9 10v4M15 10v4M6 14h12v7H6z"/></svg>
       Agenda de Turmas
     </a>
-    <a class="nav-item" href="../validador/">
+    <a class="nav-item" href="validador.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
       Validador Público
     </a>
@@ -350,6 +350,32 @@
     document.getElementById('funcErro').style.display = 'none';
     document.getElementById('modalFuncOverlay').style.display = 'flex';
   };
+  // Validação matemática de CPF (dígito verificador) — evita erro de
+  // digitação tipo 111.111.111-11. Não confirma se a pessoa existe de
+  // verdade, só se o número é matematicamente possível.
+  function validarCPF(cpf) {
+    cpf = (cpf || '').replace(/\D/g, '');
+    if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+    let soma = 0;
+    for (let i = 0; i < 9; i++) soma += parseInt(cpf[i]) * (10 - i);
+    let resto = (soma * 10) % 11;
+    if (resto === 10 || resto === 11) resto = 0;
+    if (resto !== parseInt(cpf[9])) return false;
+    soma = 0;
+    for (let i = 0; i < 10; i++) soma += parseInt(cpf[i]) * (11 - i);
+    resto = (soma * 10) % 11;
+    if (resto === 10 || resto === 11) resto = 0;
+    return resto === parseInt(cpf[10]);
+  }
+
+  document.getElementById('funcCpf').addEventListener('input', (e) => {
+    let v = e.target.value.replace(/\D/g, '').slice(0, 11);
+    if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+    else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+    else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+    e.target.value = v;
+  });
+
   window.salvarFuncionario = async function() {
     const nome = document.getElementById('funcNome').value.trim();
     const cpf = document.getElementById('funcCpf').value.trim();
@@ -358,6 +384,7 @@
     const admissao = document.getElementById('funcAdmissao').value;
     const erroBox = document.getElementById('funcErro');
     if (!nome) { erroBox.textContent = 'Digite o nome do funcionário.'; erroBox.style.display = 'block'; return; }
+    if (cpf && !validarCPF(cpf)) { erroBox.textContent = 'Esse CPF não é válido — confere se digitou certo.'; erroBox.style.display = 'block'; return; }
 
     const btn = document.getElementById('btnSalvarFunc');
     btn.disabled = true; btn.textContent = 'Salvando...';
@@ -393,7 +420,7 @@
 </script>
 <!-- Script de logout — independente -->
 <script type="module">
-  import { auth, signOut } from "../assets/js/firebase-init.js";
+  import { auth, signOut } from "assets/js/firebase-init.js";
   window.fazerLogout = async function() {
     if (!confirm("Sair da sua conta?")) return;
     await signOut(auth);

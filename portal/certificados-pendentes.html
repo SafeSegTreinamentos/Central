@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal SafeSeg — Certificados Pendentes</title>
+<link rel="stylesheet" href="../assets/css/safeseg-design-system.css">
+<style>
+  html, body { height: 100%; }
+  .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .topbar { background: #fff; border-bottom: 1px solid var(--paper-200); padding: var(--space-4) var(--space-6); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3); }
+  .topbar h1 { font-size: var(--text-xl); letter-spacing: 0.03em; }
+  .topbar .sub { font-size: var(--text-sm); color: var(--graphite-600); margin-top: 2px; }
+  .content { padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); max-width: 1000px; }
+  .card { background: #fff; border: 1px solid var(--paper-200); border-radius: var(--radius-md); box-shadow: var(--shadow-card); padding: var(--space-5); }
+  .aviso-futuro { background: #EAE6F7; border: 1px dashed #8B6FD9; border-radius: 8px; padding: 12px 16px; font-size: 13px; color: #5B3FA0; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 11px; text-transform: uppercase; color: var(--graphite-600); padding: 8px 10px; border-bottom: 2px solid var(--paper-200); letter-spacing: .03em; }
+  td { padding: 10px; border-bottom: 1px solid var(--paper-100); font-size: 13.5px; vertical-align: middle; }
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr !important; }
+    .content { padding: var(--space-4) !important; }
+    .topbar { padding: var(--space-3) var(--space-4) !important; }
+    table { display: block; overflow-x: auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <nav class="sidebar">
+    <div class="sidebar__logo">
+      <img src="../assets/img/logo-dark.png" alt="SafeSeg" style="background:var(--graphite-900); border-radius:8px; padding:4px; max-width:150px; display:block;">
+    </div>
+    <a class="nav-item" href="../index.html" style="background:var(--graphite-900); color:var(--gold-300); margin-bottom:4px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+      Central (Hub)
+    </a>
+    <a class="nav-item" href="dashboard.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      Dashboard
+    </a>
+    <div class="nav-section-label">Documentos &amp; Certificação</div>
+    <a class="nav-item" href="certificados.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 16c0-5 4-9 9-9s9 4 9 9"/><path d="M2 16h20"/><path d="M9 7V4"/></svg>
+      Certificados
+    </a>
+    <a class="nav-item active" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+      Pendentes de Emissão
+    </a>
+    <a class="nav-item" href="modelos.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v4H4zM4 12h16v8H4z"/><path d="M8 16h8"/></svg>
+      Modelos
+    </a>
+    <a class="nav-item" href="turmas.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 10v6M2 10l10-5 10 5-10 5-10-5z"/><path d="M6 12v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/></svg>
+      Turmas
+    </a>
+    <button class="nav-item" style="width:100%; text-align:left; border:none; background:transparent; cursor:pointer; margin-top:auto; color:var(--status-danger);" onclick="fazerLogout()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      Sair
+    </button>
+  </nav>
+
+  <div class="main">
+    <div class="hazard-stripe"></div>
+    <header class="topbar">
+      <div>
+        <h1>Certificados Pendentes de Emissão</h1>
+        <div class="sub" id="topbarSub">Alunos aprovados numa turma, mas que ainda não têm certificado emitido</div>
+      </div>
+    </header>
+
+    <div class="content">
+      <div class="aviso-futuro">
+        ✍️ <strong>Planejado (ainda não construído):</strong> assinatura automática do certificado via Assinafy, direto quando emitir daqui.
+      </div>
+
+      <div id="connStatus" class="text-muted" style="font-size:12px;">Conectando...</div>
+
+      <div class="card">
+        <div id="pendentesList">Carregando...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  try {
+    const { esperarAuth } = await import('../assets/js/firebase-init.js');
+    await esperarAuth();
+  } catch (err) {
+    document.body.innerHTML = `<div style="padding:40px;text-align:center;font-family:sans-serif;">⚠️ ${err.message}</div>`;
+  }
+</script>
+
+<script type="module">
+  import { db, collection, getDocs, esperarAuth } from '../assets/js/firebase-init.js';
+
+  const LS_TURMAS = 'safeseg_turmas_v1';
+  function loadTurmas(){ try{ return JSON.parse(localStorage.getItem(LS_TURMAS)||'[]'); }catch(e){ return []; } }
+
+  function normaliza(s) { return (s||'').toLowerCase().trim().replace(/\s+/g,' '); }
+
+  async function carregar() {
+    const status = document.getElementById('connStatus');
+    await esperarAuth();
+
+    try {
+      // 1) Junta todos os alunos aprovados de todas as turmas salvas
+      const turmas = loadTurmas();
+      const aprovadosPorTurma = [];
+      turmas.forEach(t => {
+        (t.alunos || []).forEach(a => {
+          if (a.aprovado) aprovadosPorTurma.push({ nome: a.nome, cpf: a.cpf, curso: t.curso, empresa: t.empresa, turmaCodigo: t.codigo });
+        });
+      });
+
+      if (aprovadosPorTurma.length === 0) {
+        document.getElementById('pendentesList').innerHTML = '<div class="text-muted" style="text-align:center; padding:20px;">Nenhum aluno aprovado em turma nenhuma ainda. Aprova alunos na aba <a href="turmas.html">Turmas</a> primeiro.</div>';
+        status.textContent = '✅ Carregado.';
+        status.style.color = 'var(--status-ok)';
+        return;
+      }
+
+      // 2) Busca todos os certificados já emitidos (em todas as empresas) pra comparar
+      const empresasSnap = await getDocs(collection(db, 'empresas'));
+      const certificadosExistentes = new Set(); // chave: nome+curso normalizado
+      await Promise.all(empresasSnap.docs.map(async empDoc => {
+        const certSnap = await getDocs(collection(db, 'empresas', empDoc.id, 'certificados'));
+        certSnap.forEach(certDoc => {
+          const c = certDoc.data();
+          const nome = c.colaborador || c.nome || c.aluno || c.funcionario || '';
+          const curso = c.nr || c.norma || c.curso || c.treinamento || '';
+          certificadosExistentes.add(normaliza(nome) + '||' + normaliza(curso));
+        });
+      }));
+
+      // 3) Filtra: quem tá aprovado mas ainda não tem certificado com esse curso
+      const pendentes = aprovadosPorTurma.filter(a => {
+        const chave = normaliza(a.nome) + '||' + normaliza(a.curso);
+        return !certificadosExistentes.has(chave);
+      });
+
+      document.getElementById('topbarSub').textContent = `${pendentes.length} pendente(s) de emissão`;
+
+      const box = document.getElementById('pendentesList');
+      if (pendentes.length === 0) {
+        box.innerHTML = '<div class="text-muted" style="text-align:center; padding:20px;">Tudo em dia — nenhum aprovado sem certificado 🎉</div>';
+      } else {
+        box.innerHTML = `
+          <table>
+            <thead><tr><th>Nome</th><th>Curso</th><th>Empresa</th><th>Turma</th><th></th></tr></thead>
+            <tbody>
+              ${pendentes.map(p => `
+                <tr>
+                  <td>${p.nome}</td>
+                  <td>${p.curso}</td>
+                  <td>${p.empresa || 'CT SafeSeg'}</td>
+                  <td class="mono" style="font-family:var(--font-data); font-size:12px;">${p.turmaCodigo || '—'}</td>
+                  <td><a href="gerador-turmas.html" class="btn btn--secondary" style="padding:6px 10px; font-size:12px; text-decoration:none;">Emitir no Gerador →</a></td>
+                </tr>`).join('')}
+            </tbody>
+          </table>`;
+      }
+
+      status.textContent = '✅ Carregado.';
+      status.style.color = 'var(--status-ok)';
+    } catch (err) {
+      console.error(err);
+      status.textContent = `⚠️ Erro: ${err.message}`;
+      status.style.color = 'var(--status-danger)';
+    }
+  }
+
+  carregar();
+</script>
+<script type="module">
+  import { auth, signOut } from "../assets/js/firebase-init.js";
+  window.fazerLogout = async function() {
+    if (!confirm("Sair da sua conta?")) return;
+    await signOut(auth);
+    location.reload();
+  };
+</script>
+
+</body>
+</html>

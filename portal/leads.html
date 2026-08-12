@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal SafeSeg — CRM (Leads)</title>
+<link rel="stylesheet" href="../assets/css/safeseg-design-system.css">
+<style>
+  html, body { height: 100%; }
+  .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .topbar { background: #fff; border-bottom: 1px solid var(--paper-200); padding: var(--space-4) var(--space-6); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3); }
+  .topbar h1 { font-size: var(--text-xl); letter-spacing: 0.03em; }
+  .topbar .sub { font-size: var(--text-sm); color: var(--graphite-600); margin-top: 2px; }
+  .content { padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); max-width: 1200px; }
+
+  .funil { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  .funil-col { background: var(--paper-100); border-radius: 10px; padding: 10px; min-height: 200px; }
+  .funil-col-title { font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--graphite-600); letter-spacing: .03em; margin-bottom: 10px; display: flex; justify-content: space-between; }
+  .lead-card { background: #fff; border: 1px solid var(--paper-200); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; box-shadow: var(--shadow-card); cursor: pointer; }
+  .lead-card:hover { border-color: var(--gold-400); }
+  .lead-card .nome { font-weight: 700; font-size: 13px; }
+  .lead-card .empresa { font-size: 11.5px; color: var(--graphite-600); }
+  .lead-card .valor { font-size: 12px; color: var(--status-ok); font-weight: 600; margin-top: 4px; }
+
+  @media (max-width: 1100px) {
+    .funil { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr !important; }
+    .content { padding: var(--space-4) !important; }
+    .topbar { padding: var(--space-3) var(--space-4) !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <nav class="sidebar">
+    <div class="sidebar__logo">
+      <img src="../assets/img/logo-dark.png" alt="SafeSeg" style="background:var(--graphite-900); border-radius:8px; padding:4px; max-width:150px; display:block;">
+    </div>
+    <a class="nav-item" href="../index.html" style="background:var(--graphite-900); color:var(--gold-300); margin-bottom:4px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+      Central (Hub)
+    </a>
+    <a class="nav-item" href="dashboard.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      Dashboard
+    </a>
+    <div class="nav-section-label">Comercial (CRM)</div>
+    <a class="nav-item active" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+      Leads (Funil)
+    </a>
+    <a class="nav-item" href="propostas.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15h6M9 11h3"/></svg>
+      Propostas
+    </a>
+    <a class="nav-item" href="empresas.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17"/><path d="M19 21V10a1 1 0 0 0-1-1h-3"/><path d="M8 7h2M8 11h2M8 15h2"/></svg>
+      Empresas (clientes)
+    </a>
+    <div class="nav-section-label">Financeiro</div>
+    <a class="nav-item" href="financeiro.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Financeiro
+    </a>
+    <button class="nav-item" style="width:100%; text-align:left; border:none; background:transparent; cursor:pointer; margin-top:auto; color:var(--status-danger);" onclick="fazerLogout()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      Sair
+    </button>
+  </nav>
+
+  <div class="main">
+    <div class="hazard-stripe"></div>
+    <header class="topbar">
+      <div>
+        <h1>Leads — Funil de Vendas</h1>
+        <div class="sub" id="topbarSub">Carregando...</div>
+      </div>
+      <button class="btn btn--primary" onclick="abrirModalLead()">+ Novo Lead</button>
+    </header>
+
+    <div class="content">
+      <div id="connStatus" class="text-muted" style="font-size:12px;">Conectando...</div>
+      <div class="funil" id="funilBox">
+        <div class="funil-col"><div class="funil-col-title">Prospecção</div><div id="col-prospeccao"></div></div>
+        <div class="funil-col"><div class="funil-col-title">Proposta Enviada</div><div id="col-proposta"></div></div>
+        <div class="funil-col"><div class="funil-col-title">Negociação</div><div id="col-negociacao"></div></div>
+        <div class="funil-col"><div class="funil-col-title">Fechado</div><div id="col-fechado"></div></div>
+        <div class="funil-col"><div class="funil-col-title">Perdido</div><div id="col-perdido"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL LEAD -->
+<div id="modalLeadOverlay" style="display:none; position:fixed; inset:0; background:rgba(20,23,27,0.55); align-items:center; justify-content:center; z-index:60; padding:16px;">
+  <div style="background:#fff; border-radius:16px; width:100%; max-width:460px; max-height:85vh; overflow-y:auto; box-shadow:0 8px 24px rgba(0,0,0,0.2);">
+    <div style="padding:20px; border-bottom:1px solid var(--paper-200); display:flex; align-items:center; justify-content:space-between;">
+      <h3 style="font-family:var(--font-display); font-size:1.2rem; margin:0;" id="modalLeadTitulo">Novo Lead</h3>
+      <button onclick="fecharModalLead()" style="background:none; border:none; font-size:20px; cursor:pointer; color:var(--graphite-600);">✕</button>
+    </div>
+    <div style="padding:20px; display:flex; flex-direction:column; gap:12px;">
+      <div>
+        <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Nome / Empresa</label>
+        <input type="text" id="leadNome" placeholder="Nome do contato ou empresa" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+      </div>
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Telefone</label>
+          <input type="text" id="leadTelefone" placeholder="(46) 99999-9999" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">E-mail</label>
+          <input type="email" id="leadEmail" placeholder="contato@empresa.com" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+        </div>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Origem</label>
+          <select id="leadOrigem" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+            <option>Indicação</option><option>Instagram</option><option>Site</option><option>Prospecção ativa</option><option>Outro</option>
+          </select>
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Valor estimado</label>
+          <input type="number" id="leadValor" placeholder="0,00" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+        </div>
+      </div>
+      <div>
+        <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Estágio</label>
+        <select id="leadEstagio" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+          <option value="prospeccao">Prospecção</option>
+          <option value="proposta">Proposta Enviada</option>
+          <option value="negociacao">Negociação</option>
+          <option value="fechado">Fechado</option>
+          <option value="perdido">Perdido</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Observações</label>
+        <textarea id="leadObs" rows="3" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px; font-family:inherit; resize:vertical;"></textarea>
+      </div>
+      <div id="leadErro" style="color:var(--status-danger); font-size:13px; display:none;"></div>
+    </div>
+    <div style="padding:16px 20px; border-top:1px solid var(--paper-200); display:flex; justify-content:space-between; gap:8px;">
+      <button class="btn btn--danger" id="btnExcluirLead" style="display:none;" onclick="excluirLead()">Excluir</button>
+      <div style="display:flex; gap:8px; margin-left:auto;">
+        <button class="btn btn--secondary" onclick="fecharModalLead()">Cancelar</button>
+        <button class="btn btn--primary" id="btnSalvarLead" onclick="salvarLead()">Salvar</button>
+      </div>
+    </div>
+    <div id="converterBox" style="display:none; padding:0 20px 20px;">
+      <button class="btn btn--primary" style="width:100%; background:var(--status-ok); border-color:var(--status-ok);" onclick="converterEmEmpresa()">✅ Converter em Empresa (cliente fechado)</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { db, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, esperarAuth } from '../assets/js/firebase-init.js';
+
+  let leadsCache = [];
+  let editandoId = null;
+
+  const ESTAGIOS = ['prospeccao','proposta','negociacao','fechado','perdido'];
+
+  function renderFunil() {
+    ESTAGIOS.forEach(e => { document.getElementById(`col-${e === 'prospeccao' ? 'prospeccao' : e}`).innerHTML = ''; });
+    const cols = { prospeccao: 'col-prospeccao', proposta: 'col-proposta', negociacao: 'col-negociacao', fechado: 'col-fechado', perdido: 'col-perdido' };
+    Object.values(cols).forEach(id => document.getElementById(id).innerHTML = '');
+
+    leadsCache.forEach(l => {
+      const colId = cols[l.estagio] || cols.prospeccao;
+      const el = document.createElement('div');
+      el.className = 'lead-card';
+      el.onclick = () => abrirModalLead(l.id);
+      el.innerHTML = `
+        <div class="nome">${l.nome}</div>
+        ${l.telefone ? `<div class="empresa">${l.telefone}</div>` : ''}
+        ${l.valor ? `<div class="valor">R$ ${Number(l.valor).toLocaleString('pt-BR')}</div>` : ''}
+      `;
+      document.getElementById(colId).appendChild(el);
+    });
+
+    document.getElementById('topbarSub').textContent = `${leadsCache.length} lead(s) no funil`;
+  }
+
+  async function carregarLeads() {
+    const status = document.getElementById('connStatus');
+    await esperarAuth();
+    try {
+      const snap = await getDocs(collection(db, 'leads'));
+      leadsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderFunil();
+      status.textContent = `✅ ${leadsCache.length} lead(s) carregado(s).`;
+      status.style.color = 'var(--status-ok)';
+    } catch (err) {
+      console.error(err);
+      status.textContent = `⚠️ Erro: ${err.message}`;
+      status.style.color = 'var(--status-danger)';
+    }
+  }
+
+  window.abrirModalLead = function(id) {
+    editandoId = id || null;
+    const erroBox = document.getElementById('leadErro');
+    erroBox.style.display = 'none';
+    if (id) {
+      const l = leadsCache.find(x => x.id === id);
+      document.getElementById('modalLeadTitulo').textContent = 'Editar Lead';
+      document.getElementById('leadNome').value = l.nome || '';
+      document.getElementById('leadTelefone').value = l.telefone || '';
+      document.getElementById('leadEmail').value = l.email || '';
+      document.getElementById('leadOrigem').value = l.origem || 'Indicação';
+      document.getElementById('leadValor').value = l.valor || '';
+      document.getElementById('leadEstagio').value = l.estagio || 'prospeccao';
+      document.getElementById('leadObs').value = l.obs || '';
+      document.getElementById('btnExcluirLead').style.display = 'inline-block';
+      document.getElementById('converterBox').style.display = l.estagio === 'fechado' ? 'block' : 'none';
+    } else {
+      document.getElementById('modalLeadTitulo').textContent = 'Novo Lead';
+      document.getElementById('leadNome').value = '';
+      document.getElementById('leadTelefone').value = '';
+      document.getElementById('leadEmail').value = '';
+      document.getElementById('leadOrigem').value = 'Indicação';
+      document.getElementById('leadValor').value = '';
+      document.getElementById('leadEstagio').value = 'prospeccao';
+      document.getElementById('leadObs').value = '';
+      document.getElementById('btnExcluirLead').style.display = 'none';
+      document.getElementById('converterBox').style.display = 'none';
+    }
+    document.getElementById('modalLeadOverlay').style.display = 'flex';
+  };
+  window.fecharModalLead = function() {
+    document.getElementById('modalLeadOverlay').style.display = 'none';
+  };
+
+  window.salvarLead = async function() {
+    const nome = document.getElementById('leadNome').value.trim();
+    const erroBox = document.getElementById('leadErro');
+    if (!nome) { erroBox.textContent = 'Digite o nome.'; erroBox.style.display = 'block'; return; }
+
+    const dados = {
+      nome,
+      telefone: document.getElementById('leadTelefone').value.trim(),
+      email: document.getElementById('leadEmail').value.trim(),
+      origem: document.getElementById('leadOrigem').value,
+      valor: document.getElementById('leadValor').value,
+      estagio: document.getElementById('leadEstagio').value,
+      obs: document.getElementById('leadObs').value.trim()
+    };
+
+    try {
+      if (editandoId) {
+        await updateDoc(doc(db, 'leads', editandoId), dados);
+      } else {
+        await addDoc(collection(db, 'leads'), { ...dados, criadoEm: new Date().toISOString() });
+      }
+      fecharModalLead();
+      carregarLeads();
+    } catch (err) {
+      erroBox.textContent = 'Erro: ' + err.message;
+      erroBox.style.display = 'block';
+    }
+  };
+
+  window.excluirLead = async function() {
+    if (!editandoId) return;
+    if (!confirm('Excluir este lead?')) return;
+    try {
+      await deleteDoc(doc(db, 'leads', editandoId));
+      fecharModalLead();
+      carregarLeads();
+    } catch (err) {
+      alert('Erro: ' + err.message);
+    }
+  };
+
+  window.converterEmEmpresa = async function() {
+    if (!editandoId) return;
+    const l = leadsCache.find(x => x.id === editandoId);
+    if (!confirm(`Converter "${l.nome}" numa Empresa (cliente fechado)? O lead continua no histórico, mas agora vira empresa de verdade.`)) return;
+    try {
+      await addDoc(collection(db, 'empresas'), {
+        nome: l.nome, telefone: l.telefone || '', email: l.email || '', resp: l.nome
+      });
+      alert('Empresa criada ✅ — agora edita os detalhes dela na aba Empresas.');
+      fecharModalLead();
+    } catch (err) {
+      alert('Erro: ' + err.message);
+    }
+  };
+
+  carregarLeads();
+</script>
+<script type="module">
+  import { auth, signOut } from "../assets/js/firebase-init.js";
+  window.fazerLogout = async function() {
+    if (!confirm("Sair da sua conta?")) return;
+    await signOut(auth);
+    location.reload();
+  };
+</script>
+
+</body>
+</html>

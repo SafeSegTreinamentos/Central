@@ -358,6 +358,14 @@
       }
     }
   })();
+
+  // IMPORTANTE: esse script é type="module", então funções declaradas aqui
+  // dentro não ficam visíveis pros onclick="..." do HTML (são escopos
+  // diferentes). Precisa expor cada uma explicitamente no window — sem isso,
+  // o clique no botão falha silenciosamente (sem erro visível na tela).
+  window.setTab = setTab;
+  window.buscarCPF = buscarCPF;
+  window.simularLeituraQR = simularLeituraQR;
 </script>
 
 </body>

@@ -131,16 +131,25 @@ h1,h2,h3{font-family:'Bebas Neue',Arial,sans-serif;letter-spacing:.5px;margin:0;
 
       let totalValidos = 0;
       let colaboradoresComPendencia = new Set();
+      const detalhesPendencia = []; // { nome, empresa, status, dias }
       await Promise.all(empresasSnap.docs.map(async empDoc => {
+        const nomeEmp = empDoc.data().nome || '(sem nome)';
         const certSnap = await getDocs(collection(db, 'empresas', empDoc.id, 'certificados'));
         certSnap.forEach(certDoc => {
           const c = certDoc.data();
           const dataStr = c.validade || c.dataVencimento || c.vencimento || c.dataValidade;
           const nome = c.colaborador || c.nome || c.aluno || c.funcionario || '(sem nome)';
-          if (!dataStr) { colaboradoresComPendencia.add(nome); return; }
+          if (!dataStr) {
+            if (!colaboradoresComPendencia.has(nome)) detalhesPendencia.push({ nome, empresa: nomeEmp, status: 'Pendente', dias: null });
+            colaboradoresComPendencia.add(nome);
+            return;
+          }
           const venc = new Date(dataStr.split('/').reverse().join('-'));
-          const dias = (venc - new Date()) / 86400000;
-          if (dias < 0 || dias <= 60) colaboradoresComPendencia.add(nome);
+          const dias = Math.round((venc - new Date()) / 86400000);
+          if (dias < 0 || dias <= 60) {
+            if (!colaboradoresComPendencia.has(nome)) detalhesPendencia.push({ nome, empresa: nomeEmp, status: dias < 0 ? 'Vencido' : 'Vencendo', dias });
+            colaboradoresComPendencia.add(nome);
+          }
           if (dias > 60) totalValidos++;
         });
       }));
@@ -149,17 +158,71 @@ h1,h2,h3{font-family:'Bebas Neue',Arial,sans-serif;letter-spacing:.5px;margin:0;
 
       const hojeISO = new Date().toISOString().slice(0,10);
       const em30ISO = new Date(Date.now() + 30*86400000).toISOString().slice(0,10);
+      const em7ISO = new Date(Date.now() + 7*86400000).toISOString().slice(0,10);
       const agendaSnap = await getDocs(collection(db, 'agenda'));
       let turmas30d = 0;
+      const turmasProximas = []; // pra notificação: só as de 7 dias
       agendaSnap.forEach(d => {
         const a = d.data();
         if (a.data >= hojeISO && a.data <= em30ISO) turmas30d++;
+        if (a.data >= hojeISO && a.data <= em7ISO) turmasProximas.push(a);
       });
       document.getElementById('statTurmas30d').textContent = turmas30d;
+
+      window.__notificacoes = { detalhesPendencia, turmasProximas };
+      atualizarSinoContagem();
     } catch (err) {
       console.error('Erro ao carregar painel executivo:', err);
     }
   }
+
+  function atualizarSinoContagem() {
+    const dados = window.__notificacoes;
+    if (!dados) return;
+    const total = dados.detalhesPendencia.length + dados.turmasProximas.length;
+    const badge = document.getElementById('sinoContagem');
+    if (total > 0) {
+      badge.textContent = total;
+      badge.style.display = 'inline-block';
+    }
+  }
+
+  window.alternarPainelNotificacoes = function() {
+    const painel = document.getElementById('painelNotificacoes');
+    const abrindo = painel.style.display === 'none';
+    painel.style.display = abrindo ? 'block' : 'none';
+    if (!abrindo) return;
+
+    const dados = window.__notificacoes;
+    const box = document.getElementById('notificacoesLista');
+    if (!dados || (dados.detalhesPendencia.length === 0 && dados.turmasProximas.length === 0)) {
+      box.innerHTML = '<div style="text-align:center; padding:12px;">Nada pendente no momento 🎉</div>';
+      return;
+    }
+
+    let html = '';
+    if (dados.turmasProximas.length > 0) {
+      html += `<div style="font-weight:700; color:#fff; margin-bottom:6px;">📅 Turmas nos próximos 7 dias</div>`;
+      html += dados.turmasProximas.map(t => `
+        <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--line);">
+          <span>${t.curso || 'Treinamento'}</span>
+          <span style="color:var(--muted);">${t.data ? t.data.split('-').reverse().join('/') : ''}</span>
+        </div>`).join('');
+      html += `<div style="height:12px;"></div>`;
+    }
+    if (dados.detalhesPendencia.length > 0) {
+      html += `<div style="font-weight:700; color:#fff; margin-bottom:6px;">⚠️ Certificados vencidos/vencendo</div>`;
+      html += dados.detalhesPendencia.slice(0, 15).map(p => `
+        <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--line);">
+          <span>${p.nome} <span style="color:var(--muted);">— ${p.empresa}</span></span>
+          <span style="color:${p.status==='Vencido' ? '#F87171' : '#F5A623'};">${p.status}</span>
+        </div>`).join('');
+      if (dados.detalhesPendencia.length > 15) {
+        html += `<div style="text-align:center; padding-top:8px; color:var(--muted);">+ ${dados.detalhesPendencia.length - 15} outro(s) — <a href="portal/dashboard.html" style="color:var(--amber);">ver tudo no Dashboard</a></div>`;
+      }
+    }
+    box.innerHTML = html;
+  };
 </script>
 
 <div class="hazard"></div>
@@ -167,10 +230,18 @@ h1,h2,h3{font-family:'Bebas Neue',Arial,sans-serif;letter-spacing:.5px;margin:0;
 <div class="wrap">
 
   <div class="header" style="position:relative;">
+    <button id="btnSino" onclick="alternarPainelNotificacoes()" style="position:absolute; top:0; left:0; background:var(--graphite2); border:1px solid var(--line); color:var(--amber); padding:7px 12px; border-radius:20px; font-size:14px; cursor:pointer; display:flex; align-items:center; gap:5px;">
+      🔔 <span id="sinoContagem" style="display:none; background:#F87171; color:#111; font-size:10px; font-weight:700; padding:1px 6px; border-radius:10px;">0</span>
+    </button>
     <button onclick="fazerLogout()" style="position:absolute; top:0; right:0; background:var(--graphite2); border:1px solid var(--line); color:#F87171; padding:7px 14px; border-radius:20px; font-size:12px; cursor:pointer;">Sair</button>
     <img src="assets/img/logo-dark.png" alt="SafeSeg">
     <h1>QG SAFESEG</h1>
     <div class="sub">Central de gestão — tudo em um só lugar</div>
+  </div>
+
+  <!-- PAINEL DE NOTIFICAÇÕES (escondido até clicar no sino) -->
+  <div id="painelNotificacoes" style="display:none; background:var(--graphite2); border:1px solid var(--line); border-radius:10px; padding:16px 20px; margin-top:12px; max-height:320px; overflow-y:auto;">
+    <div id="notificacoesLista" style="font-size:13px; color:var(--muted);">Carregando...</div>
   </div>
 
   <!-- PAINEL EXECUTIVO MINI -->
@@ -209,6 +280,18 @@ h1,h2,h3{font-family:'Bebas Neue',Arial,sans-serif;letter-spacing:.5px;margin:0;
         <div class="sys-name">Certificados</div>
         <div class="sys-desc">Emissão e controle de validade por colaborador</div>
       </a>
+      <a class="sys-card" href="portal/modelos.html" data-name="modelos certificados">
+        <span class="sys-badge ativo">Ativo</span>
+        <div class="sys-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v4H4zM4 12h16v8H4z"/><path d="M8 16h8"/></svg></div>
+        <div class="sys-name">Modelos</div>
+        <div class="sys-desc">Cadastro dos modelos de certificado por curso</div>
+      </a>
+      <a class="sys-card" href="portal/certificados-pendentes.html" data-name="certificados pendentes emissao">
+        <span class="sys-badge ativo">Ativo</span>
+        <div class="sys-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+        <div class="sys-name">Pendentes de Emissão</div>
+        <div class="sys-desc">Alunos aprovados que ainda não têm certificado emitido</div>
+      </a>
       <a class="sys-card" href="portal/empresas.html" data-name="empresas">
         <span class="sys-badge ativo">Ativo</span>
         <div class="sys-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17"/><path d="M19 21V10a1 1 0 0 0-1-1h-3"/><path d="M8 7h2M8 11h2M8 15h2"/></svg></div>
@@ -232,6 +315,31 @@ h1,h2,h3{font-family:'Bebas Neue',Arial,sans-serif;letter-spacing:.5px;margin:0;
         <div class="sys-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.2"/><path d="M4 20c0-4 3.5-6 8-6s8 2 8 6"/></svg></div>
         <div class="sys-name">Portal do Cliente</div>
         <div class="sys-desc">Acesso restrito que cada empresa-cliente usa</div>
+      </a>
+    </div>
+  </div>
+
+  <!-- COMERCIAL & FINANCEIRO (novo) -->
+  <div class="cat-section" data-section="comercial">
+    <div class="cat-title">Comercial &amp; Financeiro</div>
+    <div class="grid">
+      <a class="sys-card" href="portal/leads.html" data-name="crm leads funil vendas">
+        <span class="sys-badge ativo">Ativo</span>
+        <div class="sys-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg></div>
+        <div class="sys-name">CRM — Leads</div>
+        <div class="sys-desc">Funil de vendas: prospecção até fechamento</div>
+      </a>
+      <a class="sys-card" href="portal/propostas.html" data-name="propostas">
+        <span class="sys-badge ativo">Ativo</span>
+        <div class="sys-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15h6M9 11h3"/></svg></div>
+        <div class="sys-name">Propostas</div>
+        <div class="sys-desc">Controle de status — v1, sem geração de PDF ainda</div>
+      </a>
+      <a class="sys-card" href="portal/financeiro.html" data-name="financeiro contas pagar receber">
+        <span class="sys-badge ativo">Ativo</span>
+        <div class="sys-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+        <div class="sys-name">Financeiro</div>
+        <div class="sys-desc">Contas a pagar/receber, faturamento por cliente</div>
       </a>
     </div>
   </div>

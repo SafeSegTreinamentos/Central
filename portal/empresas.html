@@ -96,7 +96,7 @@
       <img src="../assets/img/logo-dark.png" alt="SafeSeg" style="background:var(--graphite-900); border-radius:8px; padding:4px; max-width:150px; display:block;">
     </div>
     
-    <a class="nav-item" href="../index.html" style="background:var(--graphite-900); color:var(--gold-300); margin-bottom:4px;">
+    <a class="nav-item" href="hub.html" style="background:var(--graphite-900); color:var(--gold-300); margin-bottom:4px;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
       Central (Hub)
     </a>
@@ -122,6 +122,11 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 16c0-5 4-9 9-9s9 4 9 9"/><path d="M2 16h20"/><path d="M9 7V4"/></svg>
       Certificados
     </a>
+    <a class="nav-item" href="modelos.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v4H4zM4 12h16v8H4z"/><path d="M8 16h8"/></svg>
+      Modelos
+    </a>
+
     <a class="nav-item" href="documentos.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/></svg>
       Documentos
@@ -130,7 +135,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="3" width="12" height="7" rx="2"/><path d="M9 10v4M15 10v4M6 14h12v7H6z"/></svg>
       Agenda de Turmas
     </a>
-    <a class="nav-item" href="../validador/">
+    <a class="nav-item" href="validador.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
       Validador Público
     </a>
@@ -180,12 +185,16 @@
           </div>
           <div style="padding:20px; display:flex; flex-direction:column; gap:12px;">
             <div>
-              <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Nome / Razão Social</label>
-              <input type="text" id="novaEmpresaNome" placeholder="Ex: Metalúrgica Trentin Ltda" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+              <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">CNPJ</label>
+              <div style="display:flex; gap:8px;">
+                <input type="text" id="novaEmpresaCnpj" placeholder="00.000.000/0000-00" style="flex:1; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+                <button type="button" class="btn btn--secondary" style="padding:9px 14px; font-size:13px; white-space:nowrap;" onclick="buscarCNPJ()">🔍 Buscar</button>
+              </div>
+              <div id="cnpjStatus" style="font-size:12px; margin-top:4px; display:none;"></div>
             </div>
             <div>
-              <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">CNPJ</label>
-              <input type="text" id="novaEmpresaCnpj" placeholder="00.000.000/0000-00" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+              <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Nome / Razão Social</label>
+              <input type="text" id="novaEmpresaNome" placeholder="Ex: Metalúrgica Trentin Ltda" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
             </div>
             <div style="display:flex; gap:10px;">
               <div style="flex:1;">
@@ -414,6 +423,54 @@
   carregarEmpresas();
 
   // ---------- Modal Nova Empresa ----------
+  document.getElementById('novaEmpresaCnpj').addEventListener('input', (e) => {
+    let v = e.target.value.replace(/\D/g, '').slice(0, 14);
+    if (v.length > 12) v = v.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{1,2})/, '$1.$2.$3/$4-$5');
+    else if (v.length > 8) v = v.replace(/(\d{2})(\d{3})(\d{3})(\d{1,4})/, '$1.$2.$3/$4');
+    else if (v.length > 5) v = v.replace(/(\d{2})(\d{3})(\d{1,3})/, '$1.$2.$3');
+    else if (v.length > 2) v = v.replace(/(\d{2})(\d{1,3})/, '$1.$2');
+    e.target.value = v;
+  });
+
+  window.buscarCNPJ = async function() {
+    const cnpjDigits = document.getElementById('novaEmpresaCnpj').value.replace(/\D/g, '');
+    const statusBox = document.getElementById('cnpjStatus');
+    statusBox.style.display = 'block';
+
+    if (cnpjDigits.length !== 14) {
+      statusBox.textContent = 'CNPJ precisa ter 14 dígitos.';
+      statusBox.style.color = 'var(--status-warn)';
+      return;
+    }
+
+    statusBox.textContent = 'Buscando...';
+    statusBox.style.color = 'var(--graphite-600)';
+
+    try {
+      // BrasilAPI — pública, gratuita, sem chave de acesso
+      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpjDigits}`);
+      if (!res.ok) throw new Error('CNPJ não encontrado na Receita Federal.');
+      const dados = await res.json();
+
+      document.getElementById('novaEmpresaNome').value = dados.razao_social || dados.nome_fantasia || '';
+      document.getElementById('novaEmpresaCidade').value = dados.municipio || '';
+      const endereco = [dados.logradouro, dados.numero, dados.bairro].filter(Boolean).join(', ');
+      const campoEndereco = document.getElementById('novaEmpresaEndereco');
+      if (campoEndereco) campoEndereco.value = endereco;
+      const campoTelefone = document.getElementById('novaEmpresaTelefone');
+      if (campoTelefone && dados.ddd_telefone_1) campoTelefone.value = dados.ddd_telefone_1;
+      const campoEmail = document.getElementById('novaEmpresaEmail');
+      if (campoEmail && dados.email) campoEmail.value = dados.email;
+      if (dados.cnae_fiscal_descricao) document.getElementById('novaEmpresaSeg').value = dados.cnae_fiscal_descricao;
+
+      statusBox.textContent = '✅ Preenchido automaticamente — confere e ajusta se precisar.';
+      statusBox.style.color = 'var(--status-ok)';
+    } catch (err) {
+      statusBox.textContent = `⚠️ ${err.message}`;
+      statusBox.style.color = 'var(--status-danger)';
+    }
+  };
+
   window.abrirModalNovaEmpresa = function() {
     document.getElementById('modalOverlay').style.display = 'flex';
   };
@@ -572,7 +629,7 @@
 </script>
 <!-- Script de logout — independente, funciona mesmo se o resto da página falhar -->
 <script type="module">
-  import { auth, signOut } from "../assets/js/firebase-init.js";
+  import { auth, signOut } from "assets/js/firebase-init.js";
   window.fazerLogout = async function() {
     if (!confirm("Sair da sua conta?")) return;
     await signOut(auth);
