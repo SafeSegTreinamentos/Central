@@ -194,6 +194,11 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
       } catch (e) { console.error('Erro ao carregar empresas:', e); }
     })();
 
+    // Expõe o Firestore pro script de baixo (não-module) conseguir usar —
+    // scripts type="module" não compartilham escopo com <script> normal,
+    // então isso precisa ficar disponível via window.
+    window.__firestore = { db, collection, getDocs };
+
     // Grava/atualiza a Agenda real no Firestore — uma turma com N dias vira
     // N documentos na coleção 'agenda' (mesmo schema que o resto do sistema já usa)
     window.sincronizarAgendaFirestore = async function(turma) {
@@ -399,6 +404,18 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
         <button class="btn ghost small" id="btnClearAlunos">Limpar todos</button>
       </div>
       <div class="small-note">A planilha pode ter colunas "Nome" e "CPF" (com cabeçalho) em qualquer ordem, ou simplesmente Nome na coluna A e CPF na coluna B. Formatos aceitos: .xlsx, .csv, .tsv.</div>
+
+      <div class="field" style="max-width:420px; margin-top:8px;">
+        <label>Adicionar da lista de funcionários da empresa</label>
+        <div style="display:flex; gap:8px;">
+          <select id="fSelectFuncionario" style="flex:1;">
+            <option value="">Escolhe a empresa acima primeiro...</option>
+          </select>
+          <button class="btn secondary small" id="btnAddFuncionarioSelecionado">+ Adicionar</button>
+        </div>
+        <div class="small-note">Puxa os funcionários já cadastrados na empresa escolhida no passo 1. Continua podendo digitar qualquer nome manualmente também.</div>
+      </div>
+
       <div class="import-box" id="importBox">
         <label>Cole aqui — uma linha por aluno, formato "Nome, CPF" ou "Nome [TAB] CPF"</label>
         <textarea id="importText" placeholder="Rodrigo da Costa, 022.696.989-40&#10;Maria Silva, 123.456.789-00"></textarea>
@@ -695,6 +712,47 @@ function renderAlunos(){
   document.getElementById('alunoCount').textContent = `${alunos.length} aluno(s) na turma`;
 }
 function removeAluno(i){ alunos.splice(i,1); renderAlunos(); }
+
+// Carrega funcionários da empresa escolhida, pro seletor "Adicionar da lista"
+// (usa window.__firestore, exposto pelo script type="module" lá em cima,
+// já que scripts normais não compartilham escopo com scripts de módulo)
+async function carregarFuncionariosDaEmpresa() {
+  const empresaId = document.getElementById('fEmpresa').value;
+  const selectFunc = document.getElementById('fSelectFuncionario');
+  if (!empresaId) {
+    selectFunc.innerHTML = '<option value="">Escolhe a empresa acima primeiro...</option>';
+    return;
+  }
+  if (!window.__firestore) { selectFunc.innerHTML = '<option value="">Aguarda a página carregar...</option>'; return; }
+  const { db, collection, getDocs } = window.__firestore;
+  selectFunc.innerHTML = '<option value="">Carregando...</option>';
+  try {
+    const snap = await getDocs(collection(db, 'empresas', empresaId, 'funcionarios'));
+    const ativos = snap.docs.map(d => d.data()).filter(f => f.status !== 'inativo');
+    if (ativos.length === 0) {
+      selectFunc.innerHTML = '<option value="">Nenhum funcionário cadastrado nessa empresa ainda</option>';
+      return;
+    }
+    selectFunc.innerHTML = '<option value="">Escolhe um funcionário...</option>' +
+      ativos.map(f => `<option value="${(f.cpf||'').replace(/"/g,'')}|${f.nome.replace(/"/g,'')}">${f.nome}${f.cargo ? ' — ' + f.cargo : ''}</option>`).join('');
+  } catch (e) {
+    selectFunc.innerHTML = '<option value="">Erro ao carregar funcionários</option>';
+    console.error(e);
+  }
+}
+document.getElementById('fEmpresa').addEventListener('change', carregarFuncionariosDaEmpresa);
+
+document.getElementById('btnAddFuncionarioSelecionado').addEventListener('click', () => {
+  const selectFunc = document.getElementById('fSelectFuncionario');
+  const valor = selectFunc.value;
+  if (!valor) { toast('Escolhe um funcionário na lista primeiro'); return; }
+  const [cpf, nome] = valor.split('|');
+  if (alunos.some(a => a.nome === nome)) { toast(`${nome} já está na lista`); return; }
+  alunos.push({ nome, cpf: cpf || '' });
+  renderAlunos();
+  toast(`${nome} adicionado(a)`);
+});
+
 document.getElementById('btnAddAluno').addEventListener('click',()=>{
   alunos.push({nome:'',cpf:''}); renderAlunos();
 });
@@ -1112,6 +1170,7 @@ document.getElementById('btnNovaTurmaBranco').addEventListener('click',()=>{
 function limparFormulario(){
   document.getElementById('fCarga').value='';
   document.getElementById('fEmpresa').value='';
+  document.getElementById('fSelectFuncionario').innerHTML = '<option value="">Escolhe a empresa acima primeiro...</option>';
   document.getElementById('fCnpj').value='';
   document.getElementById('fConteudo').value='';
   document.getElementById('fObs').value='';
@@ -1139,6 +1198,7 @@ function editarTurma(id){
   document.getElementById('fTipo').value = t.tipo||'Formação';
   document.getElementById('fCarga').value = t.carga||'';
   document.getElementById('fEmpresa').value = t.empresaId||'';
+  carregarFuncionariosDaEmpresa();
   document.getElementById('fCnpj').value = t.cnpj||'';
   document.getElementById('fInstrutor').value = t.instrutor||'Deverson R. F. Pomerenk';
   document.getElementById('fConteudo').value = t.conteudo||'';

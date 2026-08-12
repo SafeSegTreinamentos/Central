@@ -116,7 +116,7 @@
     </div>
 
     
-        <a class="nav-item" href="../index.html" style="background:var(--graphite-900); color:var(--gold-300); margin-bottom:4px;">
+        <a class="nav-item" href="hub.html" style="background:var(--graphite-900); color:var(--gold-300); margin-bottom:4px;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
       Central (Hub)
     </a>
@@ -150,7 +150,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="3" width="12" height="7" rx="2"/><path d="M9 10v4M15 10v4M6 14h12v7H6z"/></svg>
       Agenda de Turmas
     </a>
-    <a class="nav-item" href="../validador/">
+    <a class="nav-item" href="validador.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
       Validador Público
     </a>
@@ -223,6 +223,14 @@
       <section class="card">
         <div class="section-title">Empresas com maior % vencido</div>
         <div class="rank-list" id="rankEmpresas">
+          <div class="text-muted" style="font-size:13px;">Carregando...</div>
+        </div>
+      </section>
+
+      <!-- PREVISÃO DE VENCIMENTOS — próximos 6 meses (dado real) -->
+      <section class="card">
+        <div class="section-title">Previsão de vencimentos <span class="text-muted" style="font-family:var(--font-body); font-size:12px; font-weight:500;">próximos 6 meses — planeja as turmas com antecedência</span></div>
+        <div id="previsaoVencimentos" style="display:flex; gap:12px; align-items:flex-end; height:140px; padding-top:16px;">
           <div class="text-muted" style="font-size:13px;">Carregando...</div>
         </div>
       </section>
@@ -363,6 +371,7 @@
       document.getElementById('kpiPendenciaMeta').textContent = `de ${totalColaboradores.size} colaborador(es)`;
       window.__detalhesPendencia = detalhesPendencia;
       window.__todosCertificados = todosCertificados;
+      renderPrevisaoVencimentos(todosCertificados);
 
       // Ranking de empresas por % vencido
       const rankBox = document.getElementById('rankEmpresas');
@@ -457,6 +466,47 @@
     document.getElementById('modalPendenciasOverlay').style.display = 'none';
   };
 
+  // ---------- Previsão de vencimentos (próximos 6 meses) ----------
+  function renderPrevisaoVencimentos(certificados) {
+    const box = document.getElementById('previsaoVencimentos');
+    const hoje = new Date();
+    const MESES_ABREV = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+    // conta quantos certificados vencem em cada um dos próximos 6 meses
+    const contagem = [];
+    for (let i = 0; i < 6; i++) {
+      const ref = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
+      contagem.push({ ano: ref.getFullYear(), mes: ref.getMonth(), label: MESES_ABREV[ref.getMonth()] + (i===0?' (atual)':''), total: 0 });
+    }
+
+    certificados.forEach(c => {
+      if (!c.data) return;
+      const venc = new Date(c.data.split('/').reverse().join('-'));
+      if (isNaN(venc)) return;
+      const alvo = contagem.find(m => m.ano === venc.getFullYear() && m.mes === venc.getMonth());
+      if (alvo) alvo.total++;
+    });
+
+    const maior = Math.max(1, ...contagem.map(m => m.total));
+    const totalGeral = contagem.reduce((s, m) => s + m.total, 0);
+
+    if (totalGeral === 0) {
+      box.innerHTML = '<div class="text-muted" style="font-size:13px;">Nenhum vencimento previsto nos próximos 6 meses — tudo tranquilo por aqui 🎉</div>';
+      return;
+    }
+
+    box.innerHTML = contagem.map(m => {
+      const alturaPct = Math.round((m.total / maior) * 100);
+      const cor = m.total === 0 ? 'var(--paper-300)' : (m.total >= maior * 0.7 ? 'var(--status-danger)' : m.total >= maior * 0.35 ? 'var(--status-warn)' : 'var(--status-ok)');
+      return `
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end;">
+          <div style="font-family:var(--font-display); font-size:1.1rem;">${m.total || ''}</div>
+          <div style="width:70%; background:${cor}; border-radius:4px 4px 0 0; height:${Math.max(alturaPct, m.total>0?6:0)}%; min-height:${m.total>0?'4px':'0'}; transition:height .3s;"></div>
+          <div style="font-size:11px; color:var(--graphite-600); font-weight:600;">${m.label}</div>
+        </div>`;
+    }).join('');
+  }
+
   window.exportarCSV = function() {
     const dados = window.__todosCertificados || [];
     if (dados.length === 0) { alert('Nada pra exportar ainda — espera os dados carregarem.'); return; }
@@ -521,7 +571,7 @@
 </script>
 <!-- Script de logout — independente, funciona mesmo se o resto da página falhar -->
 <script type="module">
-  import { auth, signOut } from "../assets/js/firebase-init.js";
+  import { auth, signOut } from "assets/js/firebase-init.js";
   window.fazerLogout = async function() {
     if (!confirm("Sair da sua conta?")) return;
     await signOut(auth);
