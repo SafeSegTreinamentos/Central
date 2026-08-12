@@ -297,7 +297,12 @@
     try {
       // O doGet do Apps Script já devolve exatamente isso quando recebe ?cpf=:
       // { sucesso, encontrado, nome, treinamentos: [{ curso, instrutor, dataFim, cont, validade }] }
-      const res = await fetch(`${VALIDADOR_APPS_SCRIPT_URL}?cpf=${digits}`);
+      const res = await fetch(`${VALIDADOR_APPS_SCRIPT_URL}?cpf=${digits}`, {
+        method: 'GET',
+        redirect: 'follow',
+        mode: 'cors'
+      });
+      if (!res.ok) throw new Error(`Servidor respondeu ${res.status} (${res.statusText})`);
       const data = await res.json();
 
       if (!data || !data.sucesso || !data.encontrado) {
@@ -329,7 +334,11 @@
       note.textContent = '';
     } catch (err) {
       console.error('Erro ao validar CPF:', err);
-      note.textContent = `⚠️ Não foi possível consultar agora (${err.message}). Tente novamente em instantes.`;
+      // Mensagem mais clara na tela — CORS/rede costuma vir como "Failed to fetch"
+      const dica = err.message.includes('Failed to fetch')
+        ? ' (parece bloqueio de rede/CORS — me manda esse erro completo)'
+        : '';
+      note.textContent = `⚠️ Não foi possível consultar agora: ${err.name} — ${err.message}${dica}`;
       note.className = 'attempts-note locked';
     }
   }
