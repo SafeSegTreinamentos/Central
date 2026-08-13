@@ -462,8 +462,12 @@
             <div style="font-weight:600; font-size:13.5px;">${p.colaborador}</div>
             <div style="font-size:12px; color:var(--graphite-600);">${p.empresa} · ${p.nr}</div>
           </div>
-          <span class="selo selo--${p.status.cls}">${p.status.label}</span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="selo selo--${p.status.cls}">${p.status.label}</span>
+            <a href="certificados.html" class="btn btn--ghost" style="padding:4px 9px; font-size:11px; text-decoration:none;">✏️ Corrigir</a>
+          </div>
         </div>`).join('');
+      box.insertAdjacentHTML('afterbegin', '<div class="text-muted" style="font-size:11.5px; margin-bottom:8px;">Clica em "Corrigir" pra ajustar a data de validade direto na tela de Certificados.</div>');
     }
     document.getElementById('modalPendenciasOverlay').style.display = 'flex';
   };
