@@ -1447,16 +1447,9 @@ async function loadTurmaFromLink(id){
   }
   if(!turma){ turma = loadTurmas().find(t=>String(t.id)===String(id)); }
   if(!turma){ toast('Turma não encontrada — o link pode estar incorreto ou a turma foi excluída.'); return; }
-  if(turma.status==='rascunho'){
-    // rascunho: abre em modo de edição, pronto para adicionar mais alunos
-    editarTurma(turma.id);
-  } else {
-    // já gerada: só mostra/reimprime
-    renderPrintDoc(turma);
-    document.getElementById('printRoot').style.display='block';
-    document.getElementById('printRoot').scrollIntoView({behavior:'smooth'});
-    toast('Turma '+turma.codigo+' carregada via link direto');
-  }
+  // Sempre abre em modo de edição, independente do status (rascunho ou já gerada) —
+  // antes, turma já "gerada" só mostrava reimpressão, sem deixar editar de verdade.
+  editarTurma(turma.id);
 }
 
 populateCursoSelect();

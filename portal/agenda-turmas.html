@@ -311,14 +311,16 @@ function renderTurmaListReal(){
   box.innerHTML = itens.map(t => {
     const aberta = t.tipo === 'aberto';
     const nomeEmpresa = aberta ? 'CT SafeSeg' : (empresasNomes[t.empresaId] || '(empresa)');
+    const linkEdicao = t.turmaId ? `gerador-turmas.html?turma=${t.turmaId}` : 'gerador-turmas.html';
     return `
-      <div class="turma-item">
+      <a href="${linkEdicao}" class="turma-item" style="text-decoration:none; color:inherit; display:block; cursor:pointer; transition:border-color .15s;" onmouseover="this.style.borderColor='var(--gold-400)'" onmouseout="this.style.borderColor='var(--paper-200)'">
         <div class="turma-item__top">
           <span class="turma-curso">${t.curso || 'Treinamento'}</span>
           <span class="tipo-tag tipo-tag--${aberta ? 'aberto' : 'privado'}">${aberta ? 'Aberto' : 'Privado'}</span>
         </div>
         <div class="turma-data">${formatDateBR(t.data)} · ${nomeEmpresa}</div>
-      </div>`;
+        <div style="font-size:11px; color:var(--gold-600); font-weight:600; margin-top:4px;">✏️ Clique pra editar no Gerador de Turmas</div>
+      </a>`;
   }).join('');
 }
 

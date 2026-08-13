@@ -57,6 +57,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15h6M9 11h3"/></svg>
       Propostas
     </a>
+    <a class="nav-item" href="mensagens.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Central de Mensagens
+    </a>
     <a class="nav-item" href="empresas.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17"/><path d="M19 21V10a1 1 0 0 0-1-1h-3"/><path d="M8 7h2M8 11h2M8 15h2"/></svg>
       Empresas (clientes)
@@ -144,6 +148,7 @@
         <textarea id="leadObs" rows="3" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px; font-family:inherit; resize:vertical;"></textarea>
       </div>
       <div id="leadErro" style="color:var(--status-danger); font-size:13px; display:none;"></div>
+      <a id="btnEnviarMensagem" href="#" target="_blank" class="btn btn--secondary" style="text-decoration:none; text-align:center; display:none;">💬 Enviar Mensagem (Central de Mensagens)</a>
     </div>
     <div style="padding:16px 20px; border-top:1px solid var(--paper-200); display:flex; justify-content:space-between; gap:8px;">
       <button class="btn btn--danger" id="btnExcluirLead" style="display:none;" onclick="excluirLead()">Excluir</button>
@@ -219,6 +224,9 @@
       document.getElementById('leadObs').value = l.obs || '';
       document.getElementById('btnExcluirLead').style.display = 'inline-block';
       document.getElementById('converterBox').style.display = l.estagio === 'fechado' ? 'block' : 'none';
+      const btnMsg = document.getElementById('btnEnviarMensagem');
+      btnMsg.style.display = 'block';
+      btnMsg.href = `mensagens.html?nome=${encodeURIComponent(l.nome||'')}&telefone=${encodeURIComponent((l.telefone||'').replace(/\D/g,''))}`;
     } else {
       document.getElementById('modalLeadTitulo').textContent = 'Novo Lead';
       document.getElementById('leadNome').value = '';
@@ -229,6 +237,7 @@
       document.getElementById('leadEstagio').value = 'prospeccao';
       document.getElementById('leadObs').value = '';
       document.getElementById('btnExcluirLead').style.display = 'none';
+      document.getElementById('btnEnviarMensagem').style.display = 'none';
       document.getElementById('converterBox').style.display = 'none';
     }
     document.getElementById('modalLeadOverlay').style.display = 'flex';
