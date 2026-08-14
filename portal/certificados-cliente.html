@@ -197,7 +197,7 @@
               <div class="cert-row__meta">
                 <span class="cert-data">${c.data || '—'}</span>
                 <span class="selo selo--${st.cls}">${st.label}</span>
-                ${c.pdfUrl ? `<a href="${c.pdfUrl}" target="_blank" class="btn btn--secondary" style="padding:6px 12px; font-size:12px; text-decoration:none;">⬇️ Baixar${c.assinado ? ' (assinado)' : ''}</a>` : ''}
+                ${c.pdfUrl ? `<button class="btn btn--secondary" style="padding:6px 12px; font-size:12px;" onclick="baixarCertificadoSeguro('${c.pdfUrl}', this)">⬇️ Baixar${c.assinado ? ' (assinado)' : ''}</button>` : ''}
               </div>
             </div>`;
         }).join('');
@@ -231,6 +231,40 @@
   }
 
   carregarCertificados();
+
+  // ---------- Download seguro (sem link público no Drive) ----------
+  const CERT_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz55Li88oyroPtFH1iTOV2nR58-xbuUAMkGcyb6GRzM3S6KQNARj7Sxvi1mZShhPg-WRg/exec';
+
+  window.baixarCertificadoSeguro = async function(urlOuId, btn) {
+    const textoOriginal = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Baixando...';
+    try {
+      const res = await fetch(CERT_APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ acao: 'baixarCertificado', urlOuId })
+      });
+      const resultado = await res.json();
+      if (!resultado.sucesso) throw new Error(resultado.erro || 'Erro ao baixar.');
+
+      // converte o base64 recebido num arquivo de verdade e dispara o download
+      const bytes = atob(resultado.base64);
+      const array = new Uint8Array(bytes.length);
+      for (let i = 0; i < bytes.length; i++) array[i] = bytes.charCodeAt(i);
+      const blob = new Blob([array], { type: resultado.mimeType || 'application/pdf' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = resultado.nomeArquivo || 'certificado.pdf';
+      link.click();
+      URL.revokeObjectURL(link.href);
+    } catch (err) {
+      alert('Não foi possível baixar: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = textoOriginal;
+    }
+  };
 </script>
 <!-- Script de logout — independente, funciona mesmo se o resto da página falhar -->
 <script type="module">
