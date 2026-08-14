@@ -172,7 +172,7 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
   // Também busca as empresas reais do Firestore pro seletor, e prepara a
   // função que grava a Agenda no lugar certo (Firestore, não localStorage).
   try {
-    const { obterMeuPerfil, db, collection, getDocs, addDoc, query, where, deleteDoc } = await import('../assets/js/firebase-init.js');
+    const { obterMeuPerfil, db, collection, getDocs, addDoc, doc, updateDoc, query, where, deleteDoc } = await import('../assets/js/firebase-init.js');
     const perfil = await obterMeuPerfil();
     if (perfil && perfil.role === 'cliente') {
       window.location.href = 'dashboard-cliente.html';
@@ -197,7 +197,7 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
     // Expõe o Firestore pro script de baixo (não-module) conseguir usar —
     // scripts type="module" não compartilham escopo com <script> normal,
     // então isso precisa ficar disponível via window.
-    window.__firestore = { db, collection, getDocs, addDoc };
+    window.__firestore = { db, collection, getDocs, addDoc, doc, updateDoc };
 
     // Grava/atualiza a Agenda real no Firestore — uma turma com N dias vira
     // N documentos na coleção 'agenda' (mesmo schema que o resto do sistema já usa)
@@ -1342,7 +1342,29 @@ async function emitirCertificadosDaTurma(id){
       });
       if(resultado && resultado.sucesso){
         sucesso++;
-        emitidos.push({ nome: aluno.nome, url: resultado.url, instrutor: t.instrutor });
+        const item = { nome: aluno.nome, cpf: aluno.cpf, url: resultado.url, instrutor: t.instrutor };
+        emitidos.push(item);
+
+        // grava no Firestore JÁ na emissão (não só depois de assinado) — é isso
+        // que deixa a empresa ver/baixar qualquer certificado no Portal dela,
+        // assinado ou não
+        if (t.empresaId && window.__firestore) {
+          try {
+            const { db, collection, addDoc } = window.__firestore;
+            const docRef = await addDoc(collection(db, 'empresas', t.empresaId, 'certificados'), {
+              colaborador: aluno.nome,
+              cpf: aluno.cpf || '',
+              nr: t.curso || '',
+              validade: '',
+              pdfUrl: resultado.url,
+              assinadoAssinafy: false,
+              criadoEm: new Date().toISOString()
+            });
+            item.firestoreDocId = docRef.id; // guarda pra "Verificar assinaturas" atualizar em vez de duplicar
+          } catch (errFs) {
+            console.error('Erro ao sincronizar certificado com Firestore:', errFs);
+          }
+        }
       }
       else{ falhas.push(`${aluno.nome}: ${resultado ? resultado.erro : 'sem resposta'}`); }
     }catch(err){
@@ -1399,19 +1421,28 @@ async function verificarAssinaturasClick(turmaId) {
         item.urlAssinado = resultado.urlDriveAssinado;
         assinados++;
 
-        // sincroniza com o Firestore, se a turma tiver empresa vinculada —
-        // é isso que deixa a empresa ver/baixar o certificado assinado no Portal dela
+        // Atualiza o MESMO registro criado na emissão (não cria duplicado) —
+        // troca o pdfUrl pro PDF assinado e marca como confirmado
         if (t && t.empresaId && window.__firestore) {
           try {
-            const { db, collection, addDoc } = window.__firestore;
-            await addDoc(collection(db, 'empresas', t.empresaId, 'certificados'), {
-              colaborador: item.nome,
-              nr: t.curso || '',
-              validade: '', // o Gerador não sabe a validade aqui — fica igual já era, sem essa info
-              pdfUrl: item.urlAssinado,
-              assinadoAssinafy: true,
-              criadoEm: new Date().toISOString()
-            });
+            const { db, collection, addDoc, doc, updateDoc } = window.__firestore;
+            if (item.firestoreDocId) {
+              await updateDoc(doc(db, 'empresas', t.empresaId, 'certificados', item.firestoreDocId), {
+                pdfUrl: item.urlAssinado,
+                assinadoAssinafy: true
+              });
+            } else {
+              // não tinha registro prévio (ex: turma antiga, emitida antes dessa
+              // atualização) — cria um novo pra não perder o certificado assinado
+              await addDoc(collection(db, 'empresas', t.empresaId, 'certificados'), {
+                colaborador: item.nome,
+                nr: t.curso || '',
+                validade: '',
+                pdfUrl: item.urlAssinado,
+                assinadoAssinafy: true,
+                criadoEm: new Date().toISOString()
+              });
+            }
           } catch (errFs) {
             console.error('Erro ao sincronizar com Firestore:', errFs);
           }
