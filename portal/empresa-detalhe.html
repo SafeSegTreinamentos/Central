@@ -93,7 +93,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="3" width="12" height="7" rx="2"/><path d="M9 10v4M15 10v4M6 14h12v7H6z"/></svg>
       Agenda de Turmas
     </a>
-    <a class="nav-item" href="../validador/">
+    <a class="nav-item" href="validador.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
       Validador Público
     </a>
@@ -197,8 +197,30 @@
   </div>
 </div>
 
+<!-- MODAL: MOVER FUNCIONÁRIO PRA OUTRA EMPRESA -->
+<div id="modalMoverOverlay" style="display:none; position:fixed; inset:0; background:rgba(20,23,27,0.55); align-items:center; justify-content:center; z-index:60; padding:16px;">
+  <div style="background:#fff; border-radius:16px; width:100%; max-width:420px; box-shadow:0 8px 24px rgba(0,0,0,0.2);">
+    <div style="padding:20px; border-bottom:1px solid var(--paper-200); display:flex; align-items:center; justify-content:space-between;">
+      <h3 style="font-family:var(--font-display); font-size:1.1rem; margin:0;" id="moverTitulo">Mover Funcionário</h3>
+      <button onclick="fecharModalMover()" style="background:none; border:none; font-size:20px; cursor:pointer; color:var(--graphite-600);">✕</button>
+    </div>
+    <div style="padding:20px; display:flex; flex-direction:column; gap:12px;">
+      <div>
+        <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Empresa destino</label>
+        <select id="moverEmpresaDestino" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;"></select>
+      </div>
+      <div class="text-muted" style="font-size:11.5px;">Isso apaga o funcionário daqui e recria ele na empresa escolhida, com os mesmos dados (nome, CPF, cargo, etc.).</div>
+      <div id="moverErro" style="color:var(--status-danger); font-size:13px; display:none;"></div>
+    </div>
+    <div style="padding:16px 20px; border-top:1px solid var(--paper-200); display:flex; justify-content:flex-end; gap:8px;">
+      <button class="btn btn--secondary" onclick="fecharModalMover()">Cancelar</button>
+      <button class="btn btn--primary" onclick="confirmarMover()">Mover</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
-  import { db, doc, getDoc, updateDoc, collection, getDocs, addDoc, esperarAuth } from '../assets/js/firebase-init.js';
+  import { db, doc, getDoc, updateDoc, deleteDoc, collection, getDocs, addDoc, esperarAuth } from '../assets/js/firebase-init.js';
 
   const params = new URLSearchParams(location.search);
   const empresaId = params.get('id');
@@ -286,6 +308,7 @@
         <td><span class="selo selo--${f.status === 'inativo' ? 'danger' : 'ok'}">${f.status === 'inativo' ? 'Inativo' : 'Ativo'}</span></td>
         <td style="white-space:nowrap;">
           <button class="btn btn--ghost" style="padding:5px 9px; font-size:11px;" onclick="editarFuncionario('${f.id}')">Editar</button>
+          <button class="btn btn--secondary" style="padding:5px 9px; font-size:11px;" onclick="abrirModalMover('${f.id}', '${(f.nome||'').replace(/'/g,"\\'")}')">↔️ Mover</button>
           <button class="btn ${f.status === 'inativo' ? 'btn--secondary' : 'btn--danger'}" style="padding:5px 9px; font-size:11px;" onclick="alternarStatusFuncionario('${f.id}')">${f.status === 'inativo' ? 'Reativar' : 'Inativar'}</button>
         </td>
       </tr>`).join('');
@@ -413,6 +436,48 @@
       carregarTudo();
     } catch (err) {
       alert('Erro: ' + err.message);
+    }
+  };
+
+  // ---------- Mover funcionário pra outra empresa ----------
+  let funcionarioParaMoverId = null;
+  window.abrirModalMover = async function(id, nome) {
+    funcionarioParaMoverId = id;
+    document.getElementById('moverTitulo').textContent = `Mover "${nome}" pra outra empresa`;
+    const select = document.getElementById('moverEmpresaDestino');
+    select.innerHTML = '<option value="">Carregando empresas...</option>';
+    document.getElementById('modalMoverOverlay').style.display = 'flex';
+
+    const snap = await getDocs(collection(db, 'empresas'));
+    const opcoes = snap.docs
+      .filter(d => d.id !== empresaId) // não mostra a empresa atual
+      .map(d => `<option value="${d.id}">${d.data().nome || '(sem nome)'}</option>`)
+      .sort((a,b) => a.localeCompare(b));
+    select.innerHTML = '<option value="">Escolhe a empresa destino...</option>' + opcoes.join('');
+  };
+  window.fecharModalMover = function() {
+    document.getElementById('modalMoverOverlay').style.display = 'none';
+    funcionarioParaMoverId = null;
+  };
+  window.confirmarMover = async function() {
+    const destinoId = document.getElementById('moverEmpresaDestino').value;
+    const erroBox = document.getElementById('moverErro');
+    if (!destinoId) { erroBox.textContent = 'Escolhe a empresa destino.'; erroBox.style.display = 'block'; return; }
+
+    const f = funcionariosCache.find(x => x.id === funcionarioParaMoverId);
+    if (!f) return;
+
+    try {
+      // cria no destino (sem o campo id, que é interno) e apaga da origem
+      const { id, ...dadosFuncionario } = f;
+      await addDoc(collection(db, 'empresas', destinoId, 'funcionarios'), dadosFuncionario);
+      await deleteDoc(doc(db, 'empresas', empresaId, 'funcionarios', funcionarioParaMoverId));
+      fecharModalMover();
+      carregarTudo();
+      alert(`${f.nome} movido(a) com sucesso ✅`);
+    } catch (err) {
+      erroBox.textContent = 'Erro: ' + err.message;
+      erroBox.style.display = 'block';
     }
   };
 

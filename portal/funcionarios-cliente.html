@@ -289,7 +289,7 @@
   carregarTudo();
 </script>
 <script type="module">
-  import { auth, signOut } from "assets/js/firebase-init.js";
+  import { auth, signOut } from "../assets/js/firebase-init.js";
   window.fazerLogout = async function() {
     if (!confirm("Sair da sua conta?")) return;
     await signOut(auth);
