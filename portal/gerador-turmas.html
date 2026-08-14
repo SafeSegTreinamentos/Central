@@ -283,7 +283,7 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="3" width="12" height="7" rx="2"/><path d="M9 10v4M15 10v4M6 14h12v7H6z"/></svg>
       Agenda de Turmas
     </a>
-    <a class="ssnav-item" href="../validador/">
+    <a class="ssnav-item" href="validador.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
       Validador Público
     </a>
@@ -1321,7 +1321,7 @@ async function emitirCertificadosDaTurma(id){
   const dataInicioISO = t.dias && t.dias[0] ? t.dias[0].date : '';
   const dataFimISO = t.dias && t.dias.length ? t.dias[t.dias.length-1].date : dataInicioISO;
 
-  let sucesso = 0, falhas = [];
+  let sucesso = 0, falhas = [], emitidos = [];
   for (let i=0; i<aprovados.length; i++){
     const aluno = aprovados[i];
     statusBox.innerHTML = `Emitindo ${i+1}/${aprovados.length} — ${aluno.nome}...`;
@@ -1336,7 +1336,10 @@ async function emitirCertificadosDaTurma(id){
         carga: t.carga,
         empresa: t.empresa
       });
-      if(resultado && resultado.sucesso){ sucesso++; }
+      if(resultado && resultado.sucesso){
+        sucesso++;
+        emitidos.push({ nome: aluno.nome, url: resultado.url, instrutor: t.instrutor });
+      }
       else{ falhas.push(`${aluno.nome}: ${resultado ? resultado.erro : 'sem resposta'}`); }
     }catch(err){
       falhas.push(`${aluno.nome}: ${err.message}`);
@@ -1344,11 +1347,53 @@ async function emitirCertificadosDaTurma(id){
   }
 
   const naoAprovados = t.alunos.length - aprovados.length;
+  const listaAssinaturaHtml = emitidos.length ? `
+    <div style="margin-top:10px; padding-top:10px; border-top:1px solid #333;">
+      <div class="muted" style="margin-bottom:6px;">✍️ Mandar pra assinatura do instrutor (Sandbox — teste):</div>
+      ${emitidos.map((e,i) => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 0;">
+          <span>${e.nome}</span>
+          <button class="btn secondary small" id="btnAssinar-${id}-${i}" onclick="enviarParaAssinaturaClick('${id}', ${i})">Enviar pra assinar</button>
+        </div>`).join('')}
+    </div>` : '';
+
   statusBox.innerHTML = `✅ ${sucesso} certificado(s) gerado(s) com sucesso.` +
     (naoAprovados > 0 ? `<br><span class="muted">${naoAprovados} aluno(s) não aprovado(s) ainda foram pulados.</span>` : '') +
     (falhas.length ? `<br>⚠️ ${falhas.length} falha(s):<br>` + falhas.join('<br>') : '') +
-    `<br><span class="muted">Os PDFs já estão na pasta Certificados-PDF do Drive.</span>`;
+    `<br><span class="muted">Os PDFs já estão na pasta Certificados-PDF do Drive.</span>` +
+    listaAssinaturaHtml;
+
+  window[`__emitidos_${id}`] = emitidos; // guarda pra o clique do botão achar o link certo
   toast(`Emissão concluída: ${sucesso} de ${aprovados.length} aprovado(s)`);
+}
+
+async function enviarParaAssinaturaClick(turmaId, indice) {
+  const emitidos = window[`__emitidos_${turmaId}`];
+  if (!emitidos || !emitidos[indice]) return;
+  const item = emitidos[indice];
+  const btn = document.getElementById(`btnAssinar-${turmaId}-${indice}`);
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+
+  try {
+    const resultado = await chamarScriptCertificados({
+      acao: 'assinafyEnviarParaAssinatura',
+      certificadoUrl: item.url,
+      instrutor: item.instrutor
+    });
+    if (resultado && resultado.sucesso) {
+      btn.textContent = '✅ Enviado pra assinar';
+      btn.classList.remove('secondary');
+    } else {
+      btn.textContent = '⚠️ Erro — tenta de novo';
+      btn.disabled = false;
+      toast('Erro ao enviar pra assinatura: ' + (resultado ? resultado.erro : 'sem resposta'));
+    }
+  } catch (err) {
+    btn.textContent = '⚠️ Erro — tenta de novo';
+    btn.disabled = false;
+    toast('Erro: ' + err.message);
+  }
 }
 
 function reprintTurma(id){
