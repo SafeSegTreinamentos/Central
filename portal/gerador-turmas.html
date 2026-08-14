@@ -1349,7 +1349,11 @@ async function emitirCertificadosDaTurma(id){
   const naoAprovados = t.alunos.length - aprovados.length;
   const listaAssinaturaHtml = emitidos.length ? `
     <div style="margin-top:10px; padding-top:10px; border-top:1px solid #333;">
-      <div class="muted" style="margin-bottom:6px;">✍️ Mandar pra assinatura do instrutor (Sandbox — teste):</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <span class="muted">✍️ Mandar pra assinatura do instrutor (Sandbox — teste):</span>
+        <button class="btn small" id="btnAssinarTodos-${id}" onclick="enviarTodosParaAssinaturaClick('${id}')">✍️ Enviar todos (${emitidos.length})</button>
+      </div>
+      <div id="assinaturaLoteStatus-${id}" style="display:none; font-size:12px; margin-bottom:8px;"></div>
       ${emitidos.map((e,i) => `
         <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 0;">
           <span>${e.nome}</span>
@@ -1394,6 +1398,44 @@ async function enviarParaAssinaturaClick(turmaId, indice) {
     btn.disabled = false;
     toast('Erro: ' + err.message);
   }
+}
+
+async function enviarTodosParaAssinaturaClick(turmaId) {
+  const emitidos = window[`__emitidos_${turmaId}`];
+  if (!emitidos || emitidos.length === 0) return;
+  if (!confirm(`Mandar os ${emitidos.length} certificado(s) pra assinatura de uma vez? O instrutor vai poder assinar todos juntos, sem precisar abrir um por um.`)) return;
+
+  const btnTodos = document.getElementById(`btnAssinarTodos-${turmaId}`);
+  const statusLote = document.getElementById(`assinaturaLoteStatus-${turmaId}`);
+  btnTodos.disabled = true;
+  statusLote.style.display = 'block';
+
+  let sucesso = 0, falhas = [];
+  for (let i = 0; i < emitidos.length; i++) {
+    statusLote.textContent = `Enviando ${i+1}/${emitidos.length} — ${emitidos[i].nome}...`;
+    const btnIndividual = document.getElementById(`btnAssinar-${turmaId}-${i}`);
+    try {
+      const resultado = await chamarScriptCertificados({
+        acao: 'assinafyEnviarParaAssinatura',
+        certificadoUrl: emitidos[i].url,
+        instrutor: emitidos[i].instrutor
+      });
+      if (resultado && resultado.sucesso) {
+        sucesso++;
+        if (btnIndividual) { btnIndividual.textContent = '✅ Enviado pra assinar'; btnIndividual.disabled = true; btnIndividual.classList.remove('secondary'); }
+      } else {
+        falhas.push(`${emitidos[i].nome}: ${resultado ? resultado.erro : 'sem resposta'}`);
+      }
+    } catch (err) {
+      falhas.push(`${emitidos[i].nome}: ${err.message}`);
+    }
+  }
+
+  statusLote.innerHTML = `✅ ${sucesso} de ${emitidos.length} enviado(s) pra assinatura.` +
+    (falhas.length ? `<br>⚠️ ${falhas.length} falha(s): ${falhas.join(', ')}` : '') +
+    `<br><span class="muted">O instrutor vai ver todos juntos no painel da Assinafy e pode assinar em lote de lá.</span>`;
+  btnTodos.textContent = `✅ Enviados (${sucesso}/${emitidos.length})`;
+  toast(`Enviados pra assinatura: ${sucesso} de ${emitidos.length}`);
 }
 
 function reprintTurma(id){
