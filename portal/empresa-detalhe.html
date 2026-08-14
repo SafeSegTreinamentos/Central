@@ -93,7 +93,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="3" width="12" height="7" rx="2"/><path d="M9 10v4M15 10v4M6 14h12v7H6z"/></svg>
       Agenda de Turmas
     </a>
-    <a class="nav-item" href="validador.html">
+    <a class="nav-item" href="../validador/">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
       Validador Público
     </a>
@@ -310,6 +310,7 @@
           <button class="btn btn--ghost" style="padding:5px 9px; font-size:11px;" onclick="editarFuncionario('${f.id}')">Editar</button>
           <button class="btn btn--secondary" style="padding:5px 9px; font-size:11px;" onclick="abrirModalMover('${f.id}', '${(f.nome||'').replace(/'/g,"\\'")}')">↔️ Mover</button>
           <button class="btn ${f.status === 'inativo' ? 'btn--secondary' : 'btn--danger'}" style="padding:5px 9px; font-size:11px;" onclick="alternarStatusFuncionario('${f.id}')">${f.status === 'inativo' ? 'Reativar' : 'Inativar'}</button>
+          <button class="btn btn--danger" style="padding:5px 9px; font-size:11px;" onclick="excluirFuncionarioDeVez('${f.id}', '${(f.nome||'').replace(/'/g,"\\'")}')">🗑️ Excluir</button>
         </td>
       </tr>`).join('');
   }
@@ -433,6 +434,16 @@
     if (!confirm(`${novoStatus === 'inativo' ? 'Inativar' : 'Reativar'} ${f.nome}?`)) return;
     try {
       await updateDoc(doc(db, 'empresas', empresaId, 'funcionarios', id), { status: novoStatus });
+      carregarTudo();
+    } catch (err) {
+      alert('Erro: ' + err.message);
+    }
+  };
+
+  window.excluirFuncionarioDeVez = async function(id, nome) {
+    if (!confirm(`Excluir "${nome}" de vez? Isso NÃO pode ser desfeito (diferente de "Inativar", que só esconde). Use isso só pra apagar duplicata.`)) return;
+    try {
+      await deleteDoc(doc(db, 'empresas', empresaId, 'funcionarios', id));
       carregarTudo();
     } catch (err) {
       alert('Erro: ' + err.message);

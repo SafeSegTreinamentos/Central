@@ -151,9 +151,21 @@
       planoAcoes = alunosPlanilha.map(aluno => {
         const nomeNorm = normaliza(aluno.nome);
         let empresaDestino = empresas.find(e => e.nomesCertificados.has(nomeNorm));
-        let destino = empresaDestino ? { id: empresaDestino.id, nome: empresaDestino.nome } : { id: null, nome: '⚠️ Não Alocados (nova)' };
 
-        const funcExistente = empresaDestino ? empresaDestino.funcionariosExistentes[nomeNorm] : null;
+        let destino, funcExistente;
+        if (empresaDestino) {
+          destino = { id: empresaDestino.id, nome: empresaDestino.nome };
+          funcExistente = empresaDestino.funcionariosExistentes[nomeNorm];
+        } else if (naoAlocadosEmpresa) {
+          // já existe uma empresa "Não Alocados" de uma rodada anterior — confere
+          // se essa pessoa já está lá, pra não duplicar de novo
+          destino = { id: naoAlocadosEmpresa.id, nome: naoAlocadosEmpresa.nome };
+          funcExistente = naoAlocadosEmpresa.funcionariosExistentes[nomeNorm];
+        } else {
+          destino = { id: null, nome: '⚠️ Não Alocados (nova)' };
+          funcExistente = null;
+        }
+
         let acao;
         if (funcExistente && funcExistente.cpf === aluno.cpf) acao = 'ja-ok';
         else if (funcExistente) acao = 'atualizar-cpf';
