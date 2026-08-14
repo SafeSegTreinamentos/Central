@@ -213,7 +213,8 @@
     for (let i = 0; i < planoAcoes.length; i++) {
       const p = planoAcoes[i];
       status.textContent = `Processando ${i+1}/${planoAcoes.length} — ${p.nome}...`;
-      if (p.acao === 'ja-ok') continue;
+      // (removido o "pular se já está OK" daqui — precisamos continuar até
+      // embaixo pra completar o link do PDF de quem já existe também)
 
       try {
         let empresaId = p.empresaDestinoId;
@@ -247,7 +248,8 @@
         // da planilha) — sem isso, a pessoa aparece como funcionário mas o
         // filtro de Certificados não mostra nada, porque não tinha nenhum
         // certificado gravado no Firestore ainda pra essa empresa
-        if (empresaId === naoAlocadosId && p.cursos && p.cursos.length > 0) {
+        // (só na primeira vez — "já está OK" não recria, só completa pdfUrl embaixo)
+        if (p.acao !== 'ja-ok' && empresaId === naoAlocadosId && p.cursos && p.cursos.length > 0) {
           for (const curso of p.cursos) {
             const dataValidadeISOparaBR = curso.validade || ''; // já vem formatado dd/MM/yyyy do Apps Script
             await addDoc(collection(db, 'empresas', empresaId, 'certificados'), {
@@ -256,8 +258,29 @@
               nr: curso.curso || '',
               cont: curso.cont || '',
               validade: dataValidadeISOparaBR,
+              pdfUrl: curso.pdfUrl || '',
               origemSincronizacao: true
             });
+          }
+        }
+
+        // Mesmo quando o funcionário já existia ("já está OK"), confere se os
+        // certificados dele em Não Alocados estão sem o link do PDF (rodadas
+        // anteriores a essa correção não capturavam isso) — completa se faltar
+        if (p.acao === 'ja-ok' && empresaId === naoAlocadosId && p.cursos && p.cursos.length > 0) {
+          try {
+            const certSnap = await getDocs(collection(db, 'empresas', empresaId, 'certificados'));
+            for (const certDoc of certSnap.docs) {
+              const certData = certDoc.data();
+              if (normaliza(certData.colaborador) !== normaliza(p.nome)) continue;
+              if (certData.pdfUrl) continue; // já tem, não mexe
+              const cursoCorrespondente = p.cursos.find(c => normaliza(c.curso) === normaliza(certData.nr));
+              if (cursoCorrespondente && cursoCorrespondente.pdfUrl) {
+                await updateDoc(doc(db, 'empresas', empresaId, 'certificados', certDoc.id), { pdfUrl: cursoCorrespondente.pdfUrl });
+              }
+            }
+          } catch (errCompletar) {
+            console.error('Erro ao completar link do PDF:', errCompletar);
           }
         }
       } catch (err) {
