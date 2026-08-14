@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal SafeSeg — Gerador de Provas</title>
+<link rel="stylesheet" href="../assets/css/safeseg-design-system.css">
+<style>
+  html, body { height: 100%; }
+  .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .topbar { background: #fff; border-bottom: 1px solid var(--paper-200); padding: var(--space-4) var(--space-6); }
+  .topbar h1 { font-size: var(--text-xl); letter-spacing: 0.03em; }
+  .content { padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); max-width: 1000px; }
+  .card { background: #fff; border: 1px solid var(--paper-200); border-radius: var(--radius-md); box-shadow: var(--shadow-card); padding: var(--space-5); }
+  .field label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--graphite-600); display: block; margin-bottom: 4px; }
+  .field input, .field select { width: 100%; border: 1px solid var(--paper-200); border-radius: 6px; padding: 8px 10px; font-size: 13.5px; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .row .field { flex: 1; min-width: 160px; }
+  .pergunta-check { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--paper-100); }
+  .pergunta-check input { margin-top: 3px; }
+  .pergunta-check .texto { font-size: 13.5px; }
+  .pergunta-check .meta { font-size: 11.5px; color: var(--graphite-600); margin-top: 2px; }
+
+  /* Área de impressão — só isso aparece quando imprimir */
+  #areaProva { display: none; }
+  @media print {
+    .sidebar, .topbar, .no-print { display: none !important; }
+    .app { display: block !important; }
+    #areaProva { display: block !important; }
+    .content > *:not(#areaProva) { display: none !important; }
+    body { background: #fff !important; }
+  }
+  .prova-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 20px; }
+  .prova-header h1 { font-family: var(--font-display); font-size: 1.8rem; margin: 0; }
+  .prova-campos { display: flex; justify-content: space-between; font-size: 13px; margin-top: 10px; flex-wrap: wrap; gap: 10px; }
+  .prova-questao { margin-bottom: 20px; page-break-inside: avoid; }
+  .prova-questao .num { font-weight: 700; }
+  .prova-resp-linha { border-bottom: 1px solid #999; height: 22px; margin-top: 8px; }
+  .gabarito-box { margin-top: 40px; border: 2px dashed #999; padding: 16px; page-break-before: always; }
+
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr !important; }
+    .content { padding: var(--space-4) !important; }
+    .topbar { padding: var(--space-3) var(--space-4) !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <nav class="sidebar">
+    <div class="sidebar__logo">
+      <img src="../assets/img/logo-dark.png" alt="SafeSeg" style="background:var(--graphite-900); border-radius:8px; padding:4px; max-width:150px; display:block;">
+    </div>
+    <a class="nav-item" href="../index.html" style="background:var(--graphite-900); color:var(--gold-300); margin-bottom:4px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+      Central (Hub)
+    </a>
+    <a class="nav-item" href="dashboard.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      Dashboard
+    </a>
+    <div class="nav-section-label">Gestão Interna</div>
+    <a class="nav-item" href="tecnica.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9.5 2a2.5 2.5 0 0 0-2.5 2.5V6H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-2V4.5A2.5 2.5 0 0 0 14.5 2z"/><path d="M9 12h6M9 16h4"/></svg>
+      Central Técnica
+    </a>
+    <a class="nav-item active" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      Gerador de Provas
+    </a>
+    <button class="nav-item" style="width:100%; text-align:left; border:none; background:transparent; cursor:pointer; margin-top:auto; color:var(--status-danger);" onclick="fazerLogout()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      Sair
+    </button>
+  </nav>
+
+  <div class="main">
+    <div class="hazard-stripe no-print"></div>
+    <header class="topbar no-print">
+      <h1>Gerador de Provas</h1>
+      <div class="sub" style="font-size:13px; color:var(--graphite-600);">Monta a prova a partir do banco de perguntas da Central Técnica — v1 pra imprimir</div>
+    </header>
+
+    <div class="content">
+      <div class="card no-print">
+        <div class="row">
+          <div class="field">
+            <label>Norma (NR)</label>
+            <select id="fNR" onchange="renderPerguntasDisponiveis()">
+              <option value="">Todas</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Curso / Treinamento</label>
+            <input type="text" id="fCurso" placeholder="Ex: NR-35 — Trabalho em Altura">
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Só perguntas "prontas" (não revisar)</label>
+            <select id="fSoProntas">
+              <option value="nao">Mostrar todas</option>
+              <option value="sim">Só as prontas</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card no-print">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <strong>Escolhe as perguntas <span id="contadorSelecionadas" class="text-muted" style="font-weight:400; font-size:12px;"></span></strong>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn--secondary" style="padding:6px 12px; font-size:12px;" onclick="marcarTodas(true)">Marcar todas</button>
+            <button class="btn btn--secondary" style="padding:6px 12px; font-size:12px;" onclick="marcarTodas(false)">Desmarcar todas</button>
+          </div>
+        </div>
+        <div id="perguntasDisponiveis">Carregando...</div>
+      </div>
+
+      <div class="no-print" style="display:flex; justify-content:flex-end; gap:10px;">
+        <button class="btn btn--primary" onclick="gerarProva()">🖨️ Gerar e Imprimir Prova</button>
+      </div>
+
+      <!-- ÁREA DE IMPRESSÃO -->
+      <div id="areaProva">
+        <div class="prova-header">
+          <h1>SafeSeg — Segurança do Trabalho</h1>
+          <div style="font-size:14px; margin-top:6px;" id="provaTituloCurso">Avaliação</div>
+        </div>
+        <div class="prova-campos">
+          <span>Nome: _______________________________</span>
+          <span>Data: ___/___/______</span>
+        </div>
+        <div class="prova-campos">
+          <span>Empresa: ___________________________</span>
+          <span>Nota: _______</span>
+        </div>
+        <div style="margin-top:24px;" id="provaQuestoes"></div>
+
+        <div class="gabarito-box">
+          <strong>GABARITO — SÓ PRO INSTRUTOR</strong>
+          <div id="provaGabarito" style="margin-top:12px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  try {
+    const { esperarAuth } = await import('../assets/js/firebase-init.js');
+    await esperarAuth();
+  } catch (err) {
+    document.body.innerHTML = `<div style="padding:40px;text-align:center;font-family:sans-serif;">⚠️ ${err.message}</div>`;
+  }
+</script>
+
+<script>
+  const LS_PERGUNTAS = 'safeseg_perguntas_v1';
+  function loadPerguntas() { try { return JSON.parse(localStorage.getItem(LS_PERGUNTAS)||'[]'); } catch(e) { return []; } }
+
+  function popularNRs() {
+    const perguntas = loadPerguntas();
+    const nrs = [...new Set(perguntas.map(p => p.nr))].sort();
+    const select = document.getElementById('fNR');
+    select.innerHTML = '<option value="">Todas</option>' + nrs.map(nr => `<option value="${nr}">${nr}</option>`).join('');
+  }
+
+  function renderPerguntasDisponiveis() {
+    const perguntas = loadPerguntas();
+    const nrFiltro = document.getElementById('fNR').value;
+    const soProntas = document.getElementById('fSoProntas').value === 'sim';
+
+    const filtradas = perguntas.filter(p => {
+      if (nrFiltro && p.nr !== nrFiltro) return false;
+      if (soProntas && p.status !== 'ok') return false;
+      return true;
+    });
+
+    const box = document.getElementById('perguntasDisponiveis');
+    if (filtradas.length === 0) {
+      box.innerHTML = `<div class="text-muted" style="text-align:center; padding:20px;">Nenhuma pergunta cadastrada ainda com esse filtro. Cadastra na <a href="tecnica.html">Central Técnica</a>.</div>`;
+      atualizarContador();
+      return;
+    }
+    box.innerHTML = filtradas.map(p => `
+      <label class="pergunta-check">
+        <input type="checkbox" class="chkPergunta" value="${p.id}" onchange="atualizarContador()">
+        <div>
+          <div class="texto">${p.texto}</div>
+          <div class="meta">${p.nr} ${p.status !== 'ok' ? '· ⚠️ precisa revisar' : ''}</div>
+        </div>
+      </label>
+    `).join('');
+    atualizarContador();
+  }
+
+  window.marcarTodas = function(valor) {
+    document.querySelectorAll('.chkPergunta').forEach(chk => chk.checked = valor);
+    atualizarContador();
+  };
+  window.atualizarContador = function() {
+    const total = document.querySelectorAll('.chkPergunta:checked').length;
+    document.getElementById('contadorSelecionadas').textContent = total > 0 ? `(${total} selecionada(s))` : '';
+  };
+
+  window.gerarProva = function() {
+    const selecionadas = [...document.querySelectorAll('.chkPergunta:checked')].map(chk => chk.value);
+    if (selecionadas.length === 0) { alert('Escolhe pelo menos uma pergunta.'); return; }
+
+    const perguntas = loadPerguntas();
+    const questoes = selecionadas.map(id => perguntas.find(p => p.id === id)).filter(Boolean);
+
+    const curso = document.getElementById('fCurso').value.trim();
+    document.getElementById('provaTituloCurso').textContent = curso ? `Avaliação — ${curso}` : 'Avaliação de Treinamento';
+
+    document.getElementById('provaQuestoes').innerHTML = questoes.map((q, i) => `
+      <div class="prova-questao">
+        <div class="num">${i+1}. ${q.texto}</div>
+        <div class="prova-resp-linha"></div>
+      </div>`).join('');
+
+    document.getElementById('provaGabarito').innerHTML = questoes.map((q, i) => `
+      <div style="margin-bottom:8px; font-size:13px;"><strong>${i+1}.</strong> ${q.resposta || '(sem gabarito cadastrado)'}</div>`).join('');
+
+    window.print();
+  };
+
+  popularNRs();
+  renderPerguntasDisponiveis();
+</script>
+<script type="module">
+  import { auth, signOut } from "../assets/js/firebase-init.js";
+  window.fazerLogout = async function() {
+    if (!confirm("Sair da sua conta?")) return;
+    await signOut(auth);
+    location.reload();
+  };
+</script>
+
+</body>
+</html>
