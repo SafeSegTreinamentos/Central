@@ -85,7 +85,7 @@
           <strong>Prévia — o que vai acontecer</strong>
           <div style="overflow-x:auto; margin-top:10px;">
           <table>
-            <thead><tr><th>Nome</th><th>CPF (da planilha)</th><th>Empresa destino</th><th>Ação</th></tr></thead>
+            <thead><tr><th>Nome</th><th>CPF (da planilha)</th><th>Empresa destino</th><th>Ação</th><th>Cursos</th></tr></thead>
             <tbody id="previaBody"></tbody>
           </table>
           </div>
@@ -171,7 +171,7 @@
         else if (funcExistente) acao = 'atualizar-cpf';
         else acao = 'criar';
 
-        return { nome: aluno.nome, cpf: aluno.cpf, empresaDestinoId: destino.id, empresaDestinoNome: destino.nome, acao, funcionarioId: funcExistente ? funcExistente.id : null };
+        return { nome: aluno.nome, cpf: aluno.cpf, empresaDestinoId: destino.id, empresaDestinoNome: destino.nome, acao, funcionarioId: funcExistente ? funcExistente.id : null, cursos: aluno.cursos || [] };
       });
 
       // 4) Mostra o relatório
@@ -191,6 +191,7 @@
           <td style="font-family:var(--font-data); font-size:12px;">${p.cpf || '—'}</td>
           <td>${p.empresaDestinoNome}</td>
           <td>${labelAcao[p.acao]}</td>
+          <td>${p.cursos && p.cursos.length ? `${p.cursos.length} curso(s)${!p.empresaDestinoId ? ' — vai gravar também' : ''}` : '—'}</td>
         </tr>`).join('');
 
       document.getElementById('resultadoBox').style.display = 'block';
@@ -240,6 +241,24 @@
         } else if (p.acao === 'atualizar-cpf') {
           await updateDoc(doc(db, 'empresas', empresaId, 'funcionarios', p.funcionarioId), { cpf: p.cpf || '' });
           atualizados++;
+        }
+
+        // Se caiu em "Não Alocados", também grava os certificados dela (puxados
+        // da planilha) — sem isso, a pessoa aparece como funcionário mas o
+        // filtro de Certificados não mostra nada, porque não tinha nenhum
+        // certificado gravado no Firestore ainda pra essa empresa
+        if (empresaId === naoAlocadosId && p.cursos && p.cursos.length > 0) {
+          for (const curso of p.cursos) {
+            const dataValidadeISOparaBR = curso.validade || ''; // já vem formatado dd/MM/yyyy do Apps Script
+            await addDoc(collection(db, 'empresas', empresaId, 'certificados'), {
+              colaborador: p.nome,
+              cpf: p.cpf || '',
+              nr: curso.curso || '',
+              cont: curso.cont || '',
+              validade: dataValidadeISOparaBR,
+              origemSincronizacao: true
+            });
+          }
         }
       } catch (err) {
         erros++;

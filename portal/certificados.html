@@ -145,7 +145,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="3" width="12" height="7" rx="2"/><path d="M9 10v4M15 10v4M6 14h12v7H6z"/></svg>
       Agenda de Turmas
     </a>
-    <a class="nav-item" href="../validador/">
+    <a class="nav-item" href="validador.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
       Validador Público
     </a>
@@ -202,6 +202,10 @@
       <button onclick="fecharModalEditarCert()" style="background:none; border:none; font-size:20px; cursor:pointer; color:var(--graphite-600);">✕</button>
     </div>
     <div style="padding:20px; display:flex; flex-direction:column; gap:12px;">
+      <div>
+        <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Número de Controle (CONT)</label>
+        <input type="text" id="editCertCont" placeholder="Ex: 1072" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+      </div>
       <div>
         <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Data de Validade</label>
         <input type="date" id="editCertData" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
@@ -394,17 +398,21 @@
     document.getElementById('editCertEmpresaId').value = empresaId;
     document.getElementById('editCertCampo').value = campoData;
     document.getElementById('editCertTitulo').textContent = `${nomeColaborador} — ${nr}`;
-    // acha o valor atual pra preencher o campo de data (input type=date precisa AAAA-MM-DD)
+    // acha o valor atual pra preencher os campos (input type=date precisa AAAA-MM-DD)
     const todos = window.__colaboradoresCertificados || [];
-    let valorAtual = '';
+    let valorAtual = '', contAtual = '';
     for (const col of todos) {
       const cert = col.certificados.find(c => c.id === certId);
-      if (cert && cert.data) {
-        const [d,m,a] = cert.data.split('/');
-        if (d && m && a) valorAtual = `${a}-${m}-${d}`;
+      if (cert) {
+        if (cert.data) {
+          const [d,m,a] = cert.data.split('/');
+          if (d && m && a) valorAtual = `${a}-${m}-${d}`;
+        }
+        contAtual = cert.cont || '';
       }
     }
     document.getElementById('editCertData').value = valorAtual;
+    document.getElementById('editCertCont').value = contAtual;
     document.getElementById('editCertErro').style.display = 'none';
     document.getElementById('modalEditarCertOverlay').style.display = 'flex';
   };
@@ -416,14 +424,18 @@
     const empresaId = document.getElementById('editCertEmpresaId').value;
     const campo = document.getElementById('editCertCampo').value;
     const dataISO = document.getElementById('editCertData').value;
+    const cont = document.getElementById('editCertCont').value.trim();
     const erroBox = document.getElementById('editCertErro');
     if (!dataISO) { erroBox.textContent = 'Escolhe uma data de validade.'; erroBox.style.display = 'block'; return; }
 
     const [ano, mes, dia] = dataISO.split('-');
     const dataBR = `${dia}/${mes}/${ano}`;
 
+    const dadosParaSalvar = { [campo]: dataBR };
+    if (cont) dadosParaSalvar.cont = cont;
+
     try {
-      await updateDoc(doc(db, 'empresas', empresaId, 'certificados', certId), { [campo]: dataBR });
+      await updateDoc(doc(db, 'empresas', empresaId, 'certificados', certId), dadosParaSalvar);
       fecharModalEditarCert();
       carregarCertificados();
     } catch (err) {
