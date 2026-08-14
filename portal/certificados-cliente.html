@@ -171,7 +171,9 @@
         colaboradoresMap[colaborador].certificados.push({
           nr: pick(c, 'nr', 'norma', 'curso', 'treinamento') || '—',
           nome: pick(c, 'nomeCurso', 'descricao', 'tituloCurso') || '',
-          data: pick(c, 'validade', 'dataVencimento', 'vencimento', 'dataValidade')
+          data: pick(c, 'validade', 'dataVencimento', 'vencimento', 'dataValidade'),
+          pdfUrl: pick(c, 'pdfUrl', 'linkPdf', 'certificadoUrl', 'url'),
+          assinado: !!c.assinadoAssinafy
         });
       });
 
@@ -195,6 +197,7 @@
               <div class="cert-row__meta">
                 <span class="cert-data">${c.data || '—'}</span>
                 <span class="selo selo--${st.cls}">${st.label}</span>
+                ${c.pdfUrl ? `<a href="${c.pdfUrl}" target="_blank" class="btn btn--secondary" style="padding:6px 12px; font-size:12px; text-decoration:none;">⬇️ Baixar${c.assinado ? ' (assinado)' : ''}</a>` : ''}
               </div>
             </div>`;
         }).join('');

@@ -197,7 +197,7 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
     // Expõe o Firestore pro script de baixo (não-module) conseguir usar —
     // scripts type="module" não compartilham escopo com <script> normal,
     // então isso precisa ficar disponível via window.
-    window.__firestore = { db, collection, getDocs };
+    window.__firestore = { db, collection, getDocs, addDoc };
 
     // Grava/atualiza a Agenda real no Firestore — uma turma com N dias vira
     // N documentos na coleção 'agenda' (mesmo schema que o resto do sistema já usa)
@@ -368,8 +368,12 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
           <input id="fCnpj" placeholder="00.000.000/0000-00">
         </div>
         <div class="field">
-          <label>Instrutor</label>
-          <input id="fInstrutor" value="Deverson R. F. Pomerenk">
+          <label>Instrutor / Responsável pela assinatura</label>
+          <select id="fInstrutor">
+            <option value="Deverson R. F. Pomerenk">Deverson R. F. Pomerenk</option>
+            <option value="Everton">Everton</option>
+          </select>
+          <div class="small-note">Essa é a mesma lista usada pra escolher quem assina depois da emissão. Pra adicionar um novo instrutor aqui, precisa também adicionar ele no <code>ASSINAFY_INSTRUTORES</code> do Apps Script.</div>
         </div>
       </div>
     </div>
@@ -1371,6 +1375,64 @@ async function emitirCertificadosDaTurma(id){
   toast(`Emissão concluída: ${sucesso} de ${aprovados.length} aprovado(s)`);
 }
 
+async function verificarAssinaturasClick(turmaId) {
+  const emitidos = window[`__emitidos_${turmaId}`];
+  const t = loadTurmas().find(x => x.id === turmaId);
+  if (!emitidos || emitidos.length === 0) return;
+
+  const pendentesComId = emitidos.filter(e => e.documentoId && !e.assinado);
+  if (pendentesComId.length === 0) { toast('Nada pra verificar — envia pra assinatura primeiro.'); return; }
+
+  const statusLote = document.getElementById(`assinaturaLoteStatus-${turmaId}`);
+  let assinados = 0, aindaPendente = 0, erros = 0;
+
+  for (const item of pendentesComId) {
+    statusLote.textContent = `Verificando ${item.nome}...`;
+    try {
+      const resultado = await chamarScriptCertificados({
+        acao: 'assinafyVerificarESalvar',
+        documentoId: item.documentoId,
+        nomeArquivo: `Certificado - ${item.nome}`
+      });
+      if (resultado && resultado.sucesso && resultado.assinado) {
+        item.assinado = true;
+        item.urlAssinado = resultado.urlDriveAssinado;
+        assinados++;
+
+        // sincroniza com o Firestore, se a turma tiver empresa vinculada —
+        // é isso que deixa a empresa ver/baixar o certificado assinado no Portal dela
+        if (t && t.empresaId && window.__firestore) {
+          try {
+            const { db, collection, addDoc } = window.__firestore;
+            await addDoc(collection(db, 'empresas', t.empresaId, 'certificados'), {
+              colaborador: item.nome,
+              nr: t.curso || '',
+              validade: '', // o Gerador não sabe a validade aqui — fica igual já era, sem essa info
+              pdfUrl: item.urlAssinado,
+              assinadoAssinafy: true,
+              criadoEm: new Date().toISOString()
+            });
+          } catch (errFs) {
+            console.error('Erro ao sincronizar com Firestore:', errFs);
+          }
+        }
+      } else if (resultado && resultado.sucesso && !resultado.assinado) {
+        aindaPendente++;
+      } else {
+        erros++;
+      }
+    } catch (err) {
+      erros++;
+    }
+  }
+
+  statusLote.innerHTML = `✅ ${assinados} assinado(s) e salvo(s) no Drive.` +
+    (aindaPendente > 0 ? `<br>⏳ ${aindaPendente} ainda aguardando o instrutor assinar.` : '') +
+    (erros > 0 ? `<br>⚠️ ${erros} erro(s) — tenta de novo.` : '') +
+    (assinados > 0 ? `<br><span class="muted">${assinados} já sincronizado(s) com o Firestore — a empresa já consegue ver/baixar no Portal dela.</span>` : '') +
+    `<br><button class="btn secondary small" style="margin-top:8px;" onclick="verificarAssinaturasClick('${turmaId}')">🔄 Verificar de novo</button>`;
+}
+
 async function enviarParaAssinaturaClick(turmaId, indice) {
   const emitidos = window[`__emitidos_${turmaId}`];
   if (!emitidos || !emitidos[indice]) return;
@@ -1383,9 +1445,11 @@ async function enviarParaAssinaturaClick(turmaId, indice) {
     const resultado = await chamarScriptCertificados({
       acao: 'assinafyEnviarParaAssinatura',
       certificadoUrl: item.url,
-      instrutor: item.instrutor
+      instrutor: item.instrutor,
+      nomeAluno: item.nome
     });
     if (resultado && resultado.sucesso) {
+      item.documentoId = resultado.documentoId; // guarda pra depois "Verificar assinaturas"
       btn.textContent = '✅ Enviado pra assinar';
       btn.classList.remove('secondary');
     } else {
@@ -1418,9 +1482,11 @@ async function enviarTodosParaAssinaturaClick(turmaId) {
       const resultado = await chamarScriptCertificados({
         acao: 'assinafyEnviarParaAssinatura',
         certificadoUrl: emitidos[i].url,
-        instrutor: emitidos[i].instrutor
+        instrutor: emitidos[i].instrutor,
+        nomeAluno: emitidos[i].nome
       });
       if (resultado && resultado.sucesso) {
+        emitidos[i].documentoId = resultado.documentoId; // guarda pra depois "Verificar assinaturas"
         sucesso++;
         if (btnIndividual) { btnIndividual.textContent = '✅ Enviado pra assinar'; btnIndividual.disabled = true; btnIndividual.classList.remove('secondary'); }
       } else {
@@ -1433,7 +1499,8 @@ async function enviarTodosParaAssinaturaClick(turmaId) {
 
   statusLote.innerHTML = `✅ ${sucesso} de ${emitidos.length} enviado(s) pra assinatura.` +
     (falhas.length ? `<br>⚠️ ${falhas.length} falha(s): ${falhas.join(', ')}` : '') +
-    `<br><span class="muted">O instrutor vai ver todos juntos no painel da Assinafy e pode assinar em lote de lá.</span>`;
+    `<br><span class="muted">O instrutor vai ver todos juntos no painel da Assinafy e pode assinar em lote de lá.</span>` +
+    `<br><button class="btn secondary small" style="margin-top:8px;" onclick="verificarAssinaturasClick('${turmaId}')">🔄 Verificar assinaturas</button>`;
   btnTodos.textContent = `✅ Enviados (${sucesso}/${emitidos.length})`;
   toast(`Enviados pra assinatura: ${sucesso} de ${emitidos.length}`);
 }
