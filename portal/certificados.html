@@ -223,6 +223,61 @@
   </div>
 </div>
 
+<!-- MODAL: REGENERAR CERTIFICADO SEM TURMA (pra quem não tem turma cadastrada no Gerador) -->
+<div id="modalRegenerarOverlay" style="display:none; position:fixed; inset:0; background:rgba(20,23,27,0.55); align-items:center; justify-content:center; z-index:60; padding:16px;">
+  <div style="background:#fff; border-radius:16px; width:100%; max-width:440px; box-shadow:0 8px 24px rgba(0,0,0,0.2);">
+    <div style="padding:20px; border-bottom:1px solid var(--paper-200); display:flex; align-items:center; justify-content:space-between;">
+      <h3 style="font-family:var(--font-display); font-size:1.15rem; margin:0;">Regenerar Certificado</h3>
+      <button onclick="fecharModalRegenerar()" style="background:none; border:none; font-size:20px; cursor:pointer; color:var(--graphite-600);">✕</button>
+    </div>
+    <div style="padding:20px; display:flex; flex-direction:column; gap:12px;">
+      <div class="text-muted" style="font-size:12px; background:var(--paper-50); border-radius:8px; padding:10px 12px;">
+        Pra quem não tem turma cadastrada no Gerador. Cria um PDF novo, reaproveitando o mesmo número de controle (CONT) já existente pra esse curso.
+      </div>
+      <div class="row" style="display:flex; gap:10px;">
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Colaborador</label>
+          <input type="text" id="regenNome" disabled style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px; background:var(--paper-50);">
+        </div>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">CPF</label>
+          <input type="text" id="regenCpf" placeholder="000.000.000-00" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+          <div class="text-muted" style="font-size:11px; margin-top:3px;">Confere se está certo — é usado pra achar o certificado antigo.</div>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Curso / NR</label>
+        <input type="text" id="regenCurso" disabled style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px; background:var(--paper-50);">
+      </div>
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Instrutor</label>
+          <select id="regenInstrutor" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+            <option value="Deverson R. F. Pomerenk">Deverson R. F. Pomerenk</option>
+            <option value="Everton">Everton</option>
+          </select>
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Carga Horária</label>
+          <input type="text" id="regenCarga" placeholder="Ex: 08 Horas" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+        </div>
+      </div>
+      <div>
+        <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Data de Conclusão</label>
+        <input type="date" id="regenData" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+      </div>
+      <div id="regenErro" style="color:var(--status-danger); font-size:13px; display:none;"></div>
+      <input type="hidden" id="regenEmpresa">
+    </div>
+    <div style="padding:16px 20px; border-top:1px solid var(--paper-200); display:flex; justify-content:flex-end; gap:8px;">
+      <button class="btn btn--secondary" onclick="fecharModalRegenerar()">Cancelar</button>
+      <button class="btn btn--primary" id="btnRegenerarSalvar" onclick="confirmarRegenerar()">Gerar certificado</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
   import { db, collection, getDocs, doc, updateDoc, esperarAuth } from '../assets/js/firebase-init.js';
 
@@ -284,6 +339,7 @@
           colaboradoresMap[key].certificados.push({
             id: certDoc.id,
             empresaId: empDoc.id,
+            cpf: pick(c, 'cpf', 'CPF') || '',
             nr: pick(c, 'nr', 'norma', 'curso', 'treinamento') || '—',
             nome: pick(c, 'nomeCurso', 'descricao', 'tituloCurso') || '',
             cont: pick(c, 'cont', 'CONT', 'controle'),
@@ -352,6 +408,7 @@
               <span class="cert-data">${c.data || '—'}</span>
               <span class="selo selo--${st.cls}">${st.label}</span>
               <button class="btn btn--ghost" style="padding:4px 9px; font-size:11px;" onclick="abrirModalEditarCert('${c.id}', '${c.empresaId}', '${c.campoData}', '${(c.nr||'').replace(/'/g,"\\'")}', '${col.nome.replace(/'/g,"\\'")}')">✏️ Editar</button>
+              <button class="btn btn--ghost" style="padding:4px 9px; font-size:11px;" onclick="abrirModalRegenerar('${(col.nome||'').replace(/'/g,"\\'")}', '${(c.cpf||'').replace(/'/g,"\\'")}', '${(c.nr||'').replace(/'/g,"\\'")}', '${(col.empresa||'').replace(/'/g,"\\'")}')">🔄 Regenerar</button>
             </div>
           </div>`;
       }).join('');
@@ -441,6 +498,75 @@
     } catch (err) {
       erroBox.textContent = 'Erro ao salvar: ' + err.message;
       erroBox.style.display = 'block';
+    }
+  };
+
+  // ---------- Regenerar certificado sem depender de turma cadastrada ----------
+  const CERT_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz55Li88oyroPtFH1iTOV2nR58-xbuUAMkGcyb6GRzM3S6KQNARj7Sxvi1mZShhPg-WRg/exec';
+
+  window.abrirModalRegenerar = function(nome, cpf, curso, empresa) {
+    document.getElementById('regenNome').value = nome;
+    document.getElementById('regenCpf').value = cpf || '';
+    document.getElementById('regenCurso').value = curso;
+    document.getElementById('regenEmpresa').value = empresa || '';
+    document.getElementById('regenInstrutor').value = 'Deverson R. F. Pomerenk';
+    document.getElementById('regenCarga').value = '';
+    document.getElementById('regenData').value = '';
+    document.getElementById('regenErro').style.display = 'none';
+    document.getElementById('modalRegenerarOverlay').style.display = 'flex';
+  };
+  window.fecharModalRegenerar = function() {
+    document.getElementById('modalRegenerarOverlay').style.display = 'none';
+  };
+  window.confirmarRegenerar = async function() {
+    const nome = document.getElementById('regenNome').value;
+    const cpf = document.getElementById('regenCpf').value.trim();
+    const curso = document.getElementById('regenCurso').value;
+    const empresa = document.getElementById('regenEmpresa').value;
+    const instrutor = document.getElementById('regenInstrutor').value;
+    const carga = document.getElementById('regenCarga').value.trim();
+    const dataISO = document.getElementById('regenData').value;
+    const erroBox = document.getElementById('regenErro');
+
+    if (!cpf || !carga || !dataISO) {
+      erroBox.textContent = 'Preenche CPF, carga horária e data de conclusão.';
+      erroBox.style.display = 'block';
+      return;
+    }
+
+    if (!confirm(`Gerar um certificado novo pra ${nome}, reaproveitando o número de controle já existente pra "${curso}"?`)) return;
+
+    const btn = document.getElementById('btnRegenerarSalvar');
+    const textoOriginal = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Gerando...';
+
+    try {
+      const res = await fetch(CERT_APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          acao: 'gerarCertificado',
+          nome, cpf, curso, instrutor, carga, empresa,
+          dataInicioISO: dataISO, dataFimISO: dataISO,
+          reaproveitarNumero: true
+        })
+      });
+      const resultado = await res.json();
+      if (resultado && resultado.sucesso) {
+        alert(`✅ Certificado gerado — CONT ${resultado.numero}`);
+        fecharModalRegenerar();
+        carregarCertificados();
+      } else {
+        erroBox.textContent = 'Erro: ' + (resultado ? resultado.erro : 'sem resposta do servidor');
+        erroBox.style.display = 'block';
+      }
+    } catch (err) {
+      erroBox.textContent = 'Erro: ' + err.message;
+      erroBox.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = textoOriginal;
     }
   };
 

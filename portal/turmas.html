@@ -97,7 +97,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="3" width="12" height="7" rx="2"/><path d="M9 10v4M15 10v4M6 14h12v7H6z"/></svg>
       Agenda de Turmas
     </a>
-    <a class="nav-item" href="../validador/">
+    <a class="nav-item" href="validador.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
       Validador Público
     </a>
@@ -177,6 +177,9 @@
               ${a.aprovado ? '<span class="selo selo--ok">Aprovado</span>' : '<span class="selo selo--pending">Pendente</span>'}
             </label>
           </td>
+          <td>
+            <button class="btn btn--secondary" id="btnRegen-${t.id}-${ai}" style="padding:5px 10px; font-size:11.5px;" onclick="regenerarCertificado('${t.id}', ${ai})" title="Gera um certificado novo só pra essa pessoa, sem mexer nos outros">🔄 Regenerar certificado</button>
+          </td>
         </tr>`).join('');
 
       return `
@@ -191,7 +194,7 @@
           <div class="turma-body">
             ${alunos.length === 0 ? '<div class="text-muted" style="padding:10px 0;">Essa turma não tem aluno cadastrado.</div>' : `
             <table class="aluno-table">
-              <thead><tr><th>Nome</th><th>CPF</th><th>Nota</th><th>Aprovação</th></tr></thead>
+              <thead><tr><th>Nome</th><th>CPF</th><th>Nota</th><th>Aprovação</th><th></th></tr></thead>
               <tbody>${linhas}</tbody>
             </table>`}
             <div style="margin-top:14px; display:flex; justify-content:flex-end; gap:8px;">
@@ -212,6 +215,60 @@
     // reabre a turma que estava aberta antes de re-renderizar
     const el = document.getElementById(`turma-${turmaId}`);
     if (el) el.classList.add('open');
+  };
+
+  // ---------- Regenerar certificado de UM aluno, sem mexer nos outros ----------
+  const CERT_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz55Li88oyroPtFH1iTOV2nR58-xbuUAMkGcyb6GRzM3S6KQNARj7Sxvi1mZShhPg-WRg/exec';
+
+  async function chamarScriptCertificados(payload) {
+    const res = await fetch(CERT_APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // evita preflight CORS
+      body: JSON.stringify(payload)
+    });
+    return await res.json();
+  }
+
+  window.regenerarCertificado = async function(turmaId, alunoIndex) {
+    const turma = loadTurmas().find(t => t.id === turmaId);
+    if (!turma || !turma.alunos || !turma.alunos[alunoIndex]) return;
+    const aluno = turma.alunos[alunoIndex];
+
+    if (!confirm(`Gerar um certificado NOVO pra ${aluno.nome}, reaproveitando o número de controle (CONT) que já existe pra esse curso? O PDF antigo é substituído por esse.`)) return;
+
+    const btn = document.getElementById(`btnRegen-${turmaId}-${alunoIndex}`);
+    const textoOriginal = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Gerando...';
+
+    const dataInicioISO = turma.dias && turma.dias[0] ? turma.dias[0].date : '';
+    const dataFimISO = turma.dias && turma.dias.length ? turma.dias[turma.dias.length-1].date : dataInicioISO;
+
+    try {
+      const resultado = await chamarScriptCertificados({
+        acao: 'gerarCertificado',
+        nome: aluno.nome,
+        cpf: aluno.cpf,
+        curso: turma.curso,
+        instrutor: turma.instrutor,
+        dataInicioISO, dataFimISO,
+        carga: turma.carga,
+        empresa: turma.empresa,
+        reaproveitarNumero: true // reutiliza o mesmo CONT já existente, em vez de criar um novo
+      });
+      if (resultado && resultado.sucesso) {
+        btn.textContent = '✅ Gerado (CONT ' + resultado.numero + ')';
+        setTimeout(() => { btn.disabled = false; btn.textContent = textoOriginal; }, 4000);
+      } else {
+        alert('Erro ao gerar: ' + (resultado ? resultado.erro : 'sem resposta do servidor'));
+        btn.disabled = false;
+        btn.textContent = textoOriginal;
+      }
+    } catch (err) {
+      alert('Erro: ' + err.message);
+      btn.disabled = false;
+      btn.textContent = textoOriginal;
+    }
   };
 
   renderTurmas();
