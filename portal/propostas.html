@@ -104,7 +104,10 @@
           <div class="row">
             <div class="field">
               <label>Cliente / Lead</label>
-              <input type="text" id="pCliente" placeholder="Nome do cliente" oninput="atualizarNumero()">
+              <div style="display:flex; gap:8px;">
+                <input type="text" id="pCliente" placeholder="Nome do cliente" oninput="atualizarNumero()" style="flex:1;">
+                <button type="button" class="btn btn--secondary" style="padding:9px 12px; font-size:13px; white-space:nowrap;" onclick="abrirBuscaCliente()">🔍 Buscar</button>
+              </div>
             </div>
             <div class="field">
               <label>CNPJ/CPF (opcional)</label>
@@ -166,6 +169,14 @@
           <div class="total-box">Total: <span id="totalDisplay" style="color:var(--gold-700);">R$ 0,00</span></div>
         </div>
 
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <strong>Condições comerciais</strong>
+            <span class="text-muted" style="font-size:12px;">Escolhe quais cláusulas entram no PDF — as básicas já vêm marcadas</span>
+          </div>
+          <div id="clausulasBox"></div>
+        </div>
+
         <div style="display:flex; gap:10px; justify-content:flex-end;">
           <button class="btn btn--secondary" onclick="limparFormulario()">Limpar</button>
           <button class="btn btn--secondary" onclick="salvarProposta()">💾 Salvar</button>
@@ -180,6 +191,20 @@
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- MODAL: BUSCA DE CLIENTE (Empresas + Leads reais) -->
+<div id="modalBuscaClienteOverlay" style="display:none; position:fixed; inset:0; background:rgba(20,23,27,0.55); align-items:center; justify-content:center; z-index:60; padding:16px;">
+  <div style="background:#fff; border-radius:16px; width:100%; max-width:600px; max-height:80vh; display:flex; flex-direction:column; box-shadow:0 8px 24px rgba(0,0,0,0.2);">
+    <div style="padding:20px; border-bottom:1px solid var(--paper-200); display:flex; align-items:center; justify-content:space-between;">
+      <h3 style="font-family:var(--font-display); font-size:1.2rem; margin:0;">Buscar Cliente</h3>
+      <button onclick="fecharBuscaCliente()" style="background:none; border:none; font-size:20px; cursor:pointer;">✕</button>
+    </div>
+    <div style="padding:16px 20px;">
+      <input type="text" id="buscaClienteInput" placeholder="Digita o nome..." style="width:100%; border:1px solid var(--paper-200); border-radius:8px; padding:10px 14px; font-size:14px;" oninput="filtrarBuscaCliente(this.value)">
+    </div>
+    <div id="buscaClienteResultados" style="overflow-y:auto; padding:0 20px 20px; flex:1;">Carregando empresas e leads...</div>
   </div>
 </div>
 
@@ -872,6 +897,75 @@ const DEFAULT_COURSES = [
 ];
 
 const EMPRESA = { nome: "SafeSeg Segurança do Trabalho", tel: "(46) 99920-3945", email: "safesegseguranca@gmail.com" };
+
+// Cláusulas comerciais reais, extraídas do sistema de propostas original —
+// as "base" vêm marcadas por padrão (valem pra qualquer proposta), as outras
+// são específicas por tipo de serviço e ficam desmarcadas até você escolher.
+const COND_CLAUSULAS = [
+  { key:'validade', grupo:'base', on:true, titulo:'Validade da proposta',
+    texto:'Este orçamento é válido por 15 (quinze) dias corridos a contar da data de emissão. Após esse prazo, valores e condições estão sujeitos a reanálise.' },
+  { key:'impostos', grupo:'base', on:true, titulo:'Valores e impostos',
+    texto:'Os valores apresentados são líquidos e já contemplam os tributos aplicáveis à atividade. Eventuais retenções legais (ISS, INSS, IRRF e demais) seguem a legislação vigente conforme o enquadramento da contratante.' },
+  { key:'custos', grupo:'base', on:true, titulo:'Custos inclusos',
+    texto:'Salvo indicação em contrário nesta proposta, estão inclusos no valor: honorários técnicos, deslocamento do profissional dentro da região de atuação, emissão de certificados/documentos e material técnico-didático necessário à execução.' },
+  { key:'pagamento', grupo:'base', on:true, titulo:'Condições de pagamento',
+    texto:'Conforme acordado entre as partes — à vista (PIX/transferência) ou parcelado mediante aprovação. Para serviços continuados ou de maior porte, poderá ser solicitado sinal de entrada. Atrasos no pagamento sujeitam-se a correção e juros legais.' },
+  { key:'agendamento', grupo:'base', on:true, titulo:'Agendamento e execução',
+    texto:'As datas de execução serão definidas em comum acordo após o aceite formal desta proposta, respeitando antecedência mínima de 05 (cinco) dias úteis. Reagendamentos solicitados pela contratante com menos de 48h de antecedência poderão gerar custos adicionais.' },
+  { key:'responsab_contratante', grupo:'base', on:true, titulo:'Responsabilidades da contratante',
+    texto:'Disponibilizar as informações, documentos, acessos e infraestrutura necessários à execução do serviço, bem como local adequado e seguro quando a atividade for presencial (In Company).' },
+  { key:'entrega', grupo:'base', on:true, titulo:'Entrega de documentos',
+    texto:'Certificados, laudos, relatórios e demais documentos serão entregues preferencialmente em formato digital (PDF), dentro dos prazos técnicos informados após a conclusão do serviço. Versões impressas, quando solicitadas, poderão ter custo à parte.' },
+  { key:'lgpd', grupo:'base', on:true, titulo:'Confidencialidade e LGPD',
+    texto:'A SafeSeg trata todas as informações da contratante com sigilo, utilizando dados pessoais apenas para a finalidade contratada, em conformidade com a Lei nº 13.709/2018 (LGPD).' },
+  { key:'cancelamento', grupo:'base', on:true, titulo:'Cancelamento',
+    texto:'O cancelamento por parte da contratante após o início da execução ou da mobilização do profissional poderá ensejar cobrança proporcional aos custos já incorridos.' },
+  { key:'resp_tecnica', grupo:'base', on:true, titulo:'Responsabilidade técnica',
+    texto:'Os serviços são executados sob responsabilidade técnica habilitada, em conformidade com as Normas Regulamentadoras (NRs) e demais normas técnicas aplicáveis (ABNT/MTE).' },
+  { key:'aceite', grupo:'base', on:true, titulo:'Aceite',
+    texto:'A aprovação desta proposta — por escrito, e-mail, WhatsApp ou assinatura — formaliza a contratação e a concordância integral com estas condições gerais.' },
+  { key:'tr_modalidade', grupo:'Treinamento / NR', on:false, titulo:'Modalidade do treinamento',
+    texto:'Poderá ser realizado de forma 100% presencial, EAD ou híbrida (teoria EAD + prática presencial), conforme definido nesta proposta e na NR aplicável.' },
+  { key:'tr_pratica', grupo:'Treinamento / NR', on:false, titulo:'Prática e equipamentos',
+    texto:'Quando houver etapa prática, a contratante deverá disponibilizar equipamentos em condições de uso, EPIs dos participantes e área isolada e segura para as manobras.' },
+  { key:'tr_certif', grupo:'Treinamento / NR', on:false, titulo:'Certificação',
+    texto:'Os certificados individuais seguem o conteúdo programático e a carga horária exigida pela Norma Regulamentadora correspondente, com validade conforme a NR.' },
+  { key:'doc_elab', grupo:'Documentação (PGR/PCMSO/LTCAT)', on:false, titulo:'Elaboração de documentos',
+    texto:'O serviço contempla levantamento de campo, análise de riscos e elaboração técnica dos documentos (PGR, PCMSO, LTCAT, CIPA) conforme a NR-01 e demais normas aplicáveis.' },
+  { key:'doc_assin', grupo:'Documentação (PGR/PCMSO/LTCAT)', on:false, titulo:'Assinatura técnica',
+    texto:'Documentos que exijam Engenheiro de Segurança ou Médico do Trabalho serão entregues como minuta técnica e encaminhados para assinatura do responsável legalmente habilitado.' },
+  { key:'doc_revisao', grupo:'Documentação (PGR/PCMSO/LTCAT)', on:false, titulo:'Revisões',
+    texto:'Estão inclusas as revisões decorrentes de ajustes solicitados dentro do escopo. Mudanças de escopo ou novos setores/funções serão orçados à parte.' },
+  { key:'br_norma', grupo:'Brigada de Incêndio', on:false, titulo:'Brigada de incêndio / emergência',
+    texto:'Treinamento conforme NR-23, IT/NPT do Corpo de Bombeiros do estado e legislação local aplicável.' },
+  { key:'br_pratica', grupo:'Brigada de Incêndio', on:false, titulo:'Prática de combate',
+    texto:'A prática com extintores e simulações exige área externa segura e autorizada. A contratante deve providenciar o local e, quando aplicável, a recarga dos extintores utilizados, salvo se previsto nesta proposta.' },
+  { key:'co_escopo', grupo:'Consultoria / Mensal', on:false, titulo:'Consultoria / assessoria SST',
+    texto:'O serviço compreende análise técnica, orientação e acompanhamento conforme o escopo descrito, sem vínculo empregatício.' },
+  { key:'co_period', grupo:'Consultoria / Mensal', on:false, titulo:'Periodicidade',
+    texto:'Para contratos continuados (mensais), o valor refere-se ao período acordado, renovável automaticamente salvo aviso prévio de 30 dias por qualquer das partes.' },
+];
+
+let clausulasState = JSON.parse(JSON.stringify(COND_CLAUSULAS));
+
+function renderClausulas() {
+  const grupos = [...new Set(clausulasState.map(c => c.grupo))];
+  const box = document.getElementById('clausulasBox');
+  box.innerHTML = grupos.map(g => `
+    <div style="margin-bottom:12px;">
+      <div style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--gold-700); margin-bottom:6px;">${g === 'base' ? 'Cláusulas Básicas' : g}</div>
+      ${clausulasState.filter(c => c.grupo === g).map(c => {
+        const idx = clausulasState.indexOf(c);
+        return `<label style="display:flex; align-items:flex-start; gap:8px; padding:5px 0; font-size:12.5px; cursor:pointer;">
+          <input type="checkbox" ${c.on ? 'checked' : ''} onchange="clausulasState[${idx}].on = this.checked" style="margin-top:3px;">
+          <span><strong>${c.titulo}</strong> — <span class="text-muted">${c.texto}</span></span>
+        </label>`;
+      }).join('')}
+    </div>`).join('');
+}
+function textoClausulas() {
+  return clausulasState.filter(c => c.on).map(c => `${c.titulo.toUpperCase()}: ${c.texto}`).join('\n\n');
+}
 const PDF_COL = { goldBright:[242,183,5], goldDeep:[140,98,8], ink:[17,17,17], grayLine:[210,205,195], grayText:[90,86,78], soft:[245,243,238] };
 
 let itens = [];
@@ -916,6 +1010,76 @@ window.atualizarNumero = function() {
 };
 
 // ---------- Catálogo (busca) ----------
+// ---------- Busca de Cliente (Empresas + Leads reais) ----------
+let clientesCache = null;
+
+async function carregarClientesParaBusca() {
+  if (clientesCache) return clientesCache;
+  const { db, collection, getDocs } = window.__firestore;
+  const lista = [];
+  try {
+    const empresasSnap = await getDocs(collection(db, 'empresas'));
+    empresasSnap.forEach(d => {
+      const e = d.data();
+      lista.push({ tipo: 'Empresa (cliente)', nome: e.nome || '(sem nome)', cnpj: e.cnpj || '' });
+    });
+  } catch (err) { console.error('Erro ao carregar empresas:', err); }
+  try {
+    const leadsSnap = await getDocs(collection(db, 'leads'));
+    leadsSnap.forEach(d => {
+      const l = d.data();
+      lista.push({ tipo: 'Lead (prospecção)', nome: l.nome || '(sem nome)', cnpj: '' });
+    });
+  } catch (err) { console.error('Erro ao carregar leads:', err); }
+  clientesCache = lista;
+  return lista;
+}
+
+function sugerirLetra(nome) {
+  const limpo = (nome || '').replace(/[^A-Za-zÀ-ú\s]/g, '').trim();
+  const palavras = limpo.split(/\s+/).filter(Boolean);
+  if (palavras.length >= 2) return (palavras[0][0] + palavras[1][0]).toUpperCase();
+  return (limpo.slice(0, 2) || 'XX').toUpperCase();
+}
+
+window.abrirBuscaCliente = async function() {
+  document.getElementById('modalBuscaClienteOverlay').style.display = 'flex';
+  document.getElementById('buscaClienteInput').value = '';
+  document.getElementById('buscaClienteResultados').innerHTML = 'Carregando empresas e leads...';
+  await carregarClientesParaBusca();
+  filtrarBuscaCliente('');
+  setTimeout(() => document.getElementById('buscaClienteInput').focus(), 100);
+};
+window.fecharBuscaCliente = function() {
+  document.getElementById('modalBuscaClienteOverlay').style.display = 'none';
+};
+window.filtrarBuscaCliente = function(q) {
+  const box = document.getElementById('buscaClienteResultados');
+  const termo = (q || '').toLowerCase().trim();
+  const lista = (clientesCache || []).filter(c => !termo || c.nome.toLowerCase().includes(termo));
+
+  if (lista.length === 0) {
+    box.innerHTML = '<div class="text-muted" style="text-align:center; padding:20px;">Nenhum resultado. Você pode digitar o nome direto no campo Cliente mesmo assim.</div>';
+    return;
+  }
+  box.innerHTML = lista.map((c, i) => `
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--paper-100); cursor:pointer;" onclick="selecionarCliente(${clientesCache.indexOf(c)})">
+      <div>
+        <div style="font-weight:600; font-size:13.5px;">${c.nome}</div>
+        <div style="font-size:12px; color:var(--graphite-600);">${c.tipo}${c.cnpj ? ' · ' + c.cnpj : ''}</div>
+      </div>
+      <span style="font-size:11px; color:var(--gold-600); font-weight:600;">Selecionar →</span>
+    </div>`).join('');
+};
+window.selecionarCliente = function(idx) {
+  const c = clientesCache[idx];
+  document.getElementById('pCliente').value = c.nome;
+  document.getElementById('pCnpj').value = c.cnpj || '';
+  document.getElementById('pLetra').value = sugerirLetra(c.nome);
+  atualizarNumero();
+  fecharBuscaCliente();
+};
+
 window.abrirBuscaCurso = function() {
   document.getElementById('modalBuscaOverlay').style.display = 'flex';
   document.getElementById('buscaCursoInput').value = '';
@@ -1022,6 +1186,8 @@ window.limparFormulario = function() {
   itens = [];
   renderItens();
   atualizarNumero();
+  clausulasState = JSON.parse(JSON.stringify(COND_CLAUSULAS));
+  renderClausulas();
 };
 
 async function carregarPropostas() {
@@ -1218,20 +1384,27 @@ window.gerarPDF = async function() {
   y += 16;
 
   doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(...PDF_COL.grayText);
-  const condicoes = [
-    'Proposta válida por 15 dias a partir da data de emissão.',
-    'Pagamento preferencial via PIX: 52.112.925/0001-28 ou safesegseguranca@gmail.com.',
-    'Cancelamento com menos de 48h de antecedência: cobrança de 50% do valor.',
-    'Certificados individuais e lista de presença inclusos, entregues em até 5 dias úteis.',
-  ];
-  condicoes.forEach(linha => { doc.text('• ' + linha, M, y); y += 5; });
+  y += 4;
+  doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(...PDF_COL.ink);
+  if (y > H - 40) { footer(`pág. ${doc.internal.getNumberOfPages()}`); doc.addPage(); y = header() + 10; }
+  doc.text('CONDIÇÕES COMERCIAIS', M, y);
+  y += 7;
+  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...PDF_COL.grayText);
+  const clausulasAtivas = clausulasState.filter(c => c.on);
+  clausulasAtivas.forEach(c => {
+    const linhas = doc.splitTextToSize(`${sanitizePdf(c.titulo.toUpperCase())}: ${sanitizePdf(c.texto)}`, W - 2*M);
+    const alturaBloco = linhas.length * 4 + 3;
+    if (y + alturaBloco > H - 20) { footer(`pág. ${doc.internal.getNumberOfPages()}`); doc.addPage(); y = header() + 10; }
+    doc.text(linhas, M, y);
+    y += alturaBloco;
+  });
 
   footer(`pág. ${doc.internal.getNumberOfPages()}`);
   doc.save(`Orcamento_${num.replace(/[^a-zA-Z0-9]/g,'_')}_${cliente.replace(/[^a-zA-Z0-9]/g,'_')}.pdf`);
 };
 
 document.getElementById('pData').value = new Date().toISOString().slice(0,10);
-carregarPropostas().then(() => { renderItens(); });
+carregarPropostas().then(() => { renderItens(); renderClausulas(); });
 </script>
 <script type="module">
   import { auth, signOut } from "../assets/js/firebase-init.js";
