@@ -135,7 +135,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="3" width="12" height="7" rx="2"/><path d="M9 10v4M15 10v4M6 14h12v7H6z"/></svg>
       Agenda de Turmas
     </a>
-    <a class="nav-item" href="../validador/">
+    <a class="nav-item" href="validador.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
       Validador Público
     </a>
@@ -296,7 +296,7 @@
 </div>
 
 <script type="module">
-  import { db, collection, getDocs, addDoc, query, where, updateDoc, deleteDoc, doc, esperarAuth, criarUsuarioCliente } from '../assets/js/firebase-init.js';
+  import { db, collection, getDocs, addDoc, query, where, updateDoc, deleteDoc, doc, esperarAuth, criarUsuarioCliente, registrarAuditoria } from '../assets/js/firebase-init.js';
 
   // Schema confirmado da coleção 'empresas': nome, cnpj, seg, cidade, resp.
   // Certificados vivem como SUBCOLEÇÃO: empresas/{id}/certificados
@@ -580,6 +580,7 @@
     if (!confirm('Remover o acesso desse usuário? Ele não vai mais conseguir ver os dados da empresa. (A conta de login em si continua existindo — isso só revoga o acesso; pra excluir a conta por completo, precisa ser feito direto no console do Firebase.)')) return;
     try {
       await deleteDoc(doc(db, 'usuarios', uid));
+      registrarAuditoria('remover_acesso_cliente', { usuarioUidRemovido: uid, empresaId: empresaAtualId });
       carregarUsuariosDaEmpresa();
     } catch (err) {
       alert('Erro ao remover: ' + err.message);
@@ -616,6 +617,7 @@
     btn.textContent = 'Criar acesso';
 
     if (resultado.ok) {
+      registrarAuditoria('criar_acesso_cliente', { empresaId: empresaAtualId, email, nome });
       sucessoBox.textContent = `✅ Acesso criado! Login: ${email} · Senha: ${senha} — anote isso, não fica salvo em outro lugar.`;
       sucessoBox.style.display = 'block';
       document.getElementById('acessoNome').value = '';

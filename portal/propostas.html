@@ -161,6 +161,10 @@
               <label>Valor</label>
               <input type="number" id="pDescValor" value="0" oninput="atualizarTotal()">
             </div>
+            <div class="field" style="max-width:220px;">
+              <label>Motivo do desconto (opcional)</label>
+              <input type="text" id="pDescMotivo" placeholder="Ex: Cliente fidelidade, Black Friday...">
+            </div>
             <div class="field" style="max-width:200px;">
               <label>Status</label>
               <select id="pStatus">
@@ -1242,6 +1246,7 @@ window.limparFormulario = function() {
   document.getElementById('pData').value = new Date().toISOString().slice(0,10);
   document.getElementById('pDescTipo').value = 'none';
   document.getElementById('pDescValor').value = 0;
+  document.getElementById('pDescMotivo').value = '';
   document.getElementById('pStatus').value = 'enviada';
   itens = [];
   renderItens();
@@ -1304,6 +1309,7 @@ window.editarProposta = function(id) {
   document.getElementById('pData').value = p.data || '';
   document.getElementById('pDescTipo').value = p.descTipo || 'none';
   document.getElementById('pDescValor').value = p.descValor || 0;
+  document.getElementById('pDescMotivo').value = p.descMotivo || '';
   document.getElementById('pStatus').value = p.status || 'enviada';
   document.getElementById('pNumeroPreview').value = p.num || '';
   itens = JSON.parse(JSON.stringify(p.itens || []));
@@ -1338,6 +1344,7 @@ window.salvarProposta = async function() {
     itens,
     descTipo: document.getElementById('pDescTipo').value,
     descValor: Number(document.getElementById('pDescValor').value) || 0,
+    descMotivo: document.getElementById('pDescMotivo').value.trim(),
     total: Math.max(0, subtotal() - getDesconto()),
     status: document.getElementById('pStatus').value
   };
@@ -1439,7 +1446,16 @@ window.gerarPDF = async function() {
   doc.setFont('helvetica','bold'); doc.setFontSize(10);
   doc.text('Subtotal:', W-M-50, y); doc.text(money(subtotal()), W-M, y, {align:'right'});
   y += 6;
-  if (desc > 0) { doc.text('Desconto:', W-M-50, y); doc.text('- ' + money(desc), W-M, y, {align:'right'}); y += 6; }
+  if (desc > 0) {
+    const tipoDesc = document.getElementById('pDescTipo').value;
+    const valorDesc = document.getElementById('pDescValor').value;
+    const motivoDesc = document.getElementById('pDescMotivo').value.trim();
+    let rotuloDesc = tipoDesc === 'pct' ? `Desconto (${valorDesc}%)` : 'Desconto';
+    if (motivoDesc) rotuloDesc += ' - ' + motivoDesc;
+    doc.text(sanitizePdf(rotuloDesc) + ':', W-M-70, y);
+    doc.text('- ' + money(desc), W-M, y, {align:'right'});
+    y += 6;
+  }
   doc.setFontSize(13); doc.setTextColor(...PDF_COL.goldDeep);
   doc.text('TOTAL:', W-M-50, y+2); doc.text(money(total), W-M, y+2, {align:'right'});
   y += 16;

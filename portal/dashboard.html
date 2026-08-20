@@ -155,7 +155,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="3" width="12" height="7" rx="2"/><path d="M9 10v4M15 10v4M6 14h12v7H6z"/></svg>
       Agenda de Turmas
     </a>
-    <a class="nav-item" href="../validador/">
+    <a class="nav-item" href="validador.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
       Validador Público
     </a>
@@ -221,6 +221,11 @@
             <div class="kpi-card__value" id="kpiTurmas30d">—</div>
             <div class="kpi-card__meta" id="kpiTurmas30dMeta"></div>
           </div>
+          <div class="kpi-card hazard-edge--pending" style="cursor:pointer;" onclick="abrirModalSolicitacoes()" title="Clique pra ver e responder">
+            <div class="kpi-card__label">Solicitações de treinamento <span style="font-size:11px; font-weight:400; text-decoration:underline;">ver lista →</span></div>
+            <div class="kpi-card__value" id="kpiSolicitacoes">—</div>
+            <div class="kpi-card__meta">pendente(s) de resposta</div>
+          </div>
         </div>
       </section>
 
@@ -275,6 +280,16 @@
       <button onclick="fecharModalPendencias()" style="background:none; border:none; font-size:20px; cursor:pointer; color:var(--graphite-600);">✕</button>
     </div>
     <div id="listaPendenciasBody" style="padding:12px 20px; overflow-y:auto; flex:1;"></div>
+  </div>
+</div>
+
+<div id="modalSolicitacoesOverlay" style="display:none; position:fixed; inset:0; background:rgba(20,23,27,0.55); align-items:center; justify-content:center; z-index:60; padding:16px;">
+  <div style="background:#fff; border-radius:16px; width:100%; max-width:560px; max-height:80vh; display:flex; flex-direction:column; box-shadow:0 8px 24px rgba(0,0,0,0.2);">
+    <div style="padding:20px; border-bottom:1px solid var(--paper-200); display:flex; align-items:center; justify-content:space-between;">
+      <h3 style="font-family:var(--font-display); font-size:1.2rem; margin:0;">Solicitações de Treinamento</h3>
+      <button onclick="fecharModalSolicitacoes()" style="background:none; border:none; font-size:20px; cursor:pointer; color:var(--graphite-600);">✕</button>
+    </div>
+    <div id="listaSolicitacoesBody" style="padding:12px 20px; overflow-y:auto; flex:1;"></div>
   </div>
 </div>
 
@@ -515,7 +530,76 @@
     }
   };
 
+  // ---------- Solicitações de Treinamento ----------
+  let solicitacoesCache = [];
+
+  async function carregarContadorSolicitacoes() {
+    try {
+      const snap = await getDocs(collection(db, 'solicitacoesTreinamento'));
+      solicitacoesCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const pendentes = solicitacoesCache.filter(s => s.status === 'pendente');
+      document.getElementById('kpiSolicitacoes').textContent = pendentes.length;
+    } catch (err) {
+      document.getElementById('kpiSolicitacoes').textContent = '—';
+      console.error('Erro ao carregar solicitações:', err);
+    }
+  }
+
+  window.abrirModalSolicitacoes = function() {
+    renderSolicitacoes();
+    document.getElementById('modalSolicitacoesOverlay').style.display = 'flex';
+  };
+  window.fecharModalSolicitacoes = function() {
+    document.getElementById('modalSolicitacoesOverlay').style.display = 'none';
+  };
+  function renderSolicitacoes() {
+    const box = document.getElementById('listaSolicitacoesBody');
+    const ordenadas = [...solicitacoesCache].sort((a,b) => (b.criadoEm||'').localeCompare(a.criadoEm||''));
+    if (ordenadas.length === 0) {
+      box.innerHTML = '<div class="text-muted" style="text-align:center; padding:20px;">Nenhuma solicitação ainda.</div>';
+      return;
+    }
+    const labelStatus = { pendente: '⏳ Pendente', aceita: '✅ Aceita', recusada: '❌ Recusada' };
+    box.innerHTML = ordenadas.map(s => `
+      <div style="border:1px solid var(--paper-200); border-radius:10px; padding:14px; margin-bottom:10px; ${s.status !== 'pendente' ? 'opacity:.6;' : ''}">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+          <div>
+            <div style="font-weight:700; font-size:13.5px;">${s.empresaNome || '(empresa)'}</div>
+            <div style="font-size:13px; margin-top:2px;">${s.curso || '(curso não informado)'}</div>
+            <div style="font-size:11.5px; color:var(--graphite-600); margin-top:4px;">
+              ${s.qtd ? `~${s.qtd} participante(s)` : ''} ${s.dataPreferida ? ' · Preferência: ' + formatDateBR(s.dataPreferida) : ''}
+            </div>
+            ${s.obs ? `<div style="font-size:12px; color:var(--graphite-600); margin-top:4px; font-style:italic;">"${s.obs}"</div>` : ''}
+          </div>
+          <span class="selo selo--${s.status === 'pendente' ? 'pending' : s.status === 'aceita' ? 'ok' : 'danger'}">${labelStatus[s.status] || s.status}</span>
+        </div>
+        ${s.status === 'pendente' ? `
+        <div style="display:flex; gap:8px; margin-top:10px;">
+          <button class="btn btn--primary" style="padding:6px 12px; font-size:12px;" onclick="responderSolicitacao('${s.id}', 'aceita')">✅ Aceitar</button>
+          <button class="btn btn--secondary" style="padding:6px 12px; font-size:12px;" onclick="responderSolicitacao('${s.id}', 'recusada')">Recusar</button>
+          <a href="gerador-turmas.html" class="btn btn--ghost" style="padding:6px 12px; font-size:12px; text-decoration:none;">Ir pro Gerador de Turmas →</a>
+        </div>` : ''}
+      </div>`).join('');
+  }
+  window.responderSolicitacao = async function(id, novoStatus) {
+    try {
+      await updateDoc(doc(db, 'solicitacoesTreinamento', id), { status: novoStatus, respondidoEm: new Date().toISOString() });
+      const item = solicitacoesCache.find(s => s.id === id);
+      if (item) item.status = novoStatus;
+      renderSolicitacoes();
+      carregarContadorSolicitacoes();
+    } catch (err) {
+      alert('Erro: ' + err.message);
+    }
+  };
+  function formatDateBR(iso) {
+    if (!iso) return '';
+    const [a,m,d] = iso.split('-');
+    return `${d}/${m}/${a}`;
+  }
+
   carregarKPIs();
+  carregarContadorSolicitacoes();
 
   window.abrirModalPendencias = function() {
     const lista = window.__detalhesPendencia || [];

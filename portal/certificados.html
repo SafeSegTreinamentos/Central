@@ -164,6 +164,7 @@
       </div>
       <div class="flex gap-2">
         <button class="btn btn--secondary" onclick="exportarCertificadosCSV()">↓ Exportar</button>
+        <button class="btn btn--secondary" onclick="abrirModalExterno()">+ Certificado Externo</button>
         <a href="modelos.html" class="btn btn--secondary" style="text-decoration:none;">🗂️ Modelos</a>
         <a href="gerador-turmas.html" class="btn btn--primary">+ Gerar Turma</a>
       </div>
@@ -219,6 +220,57 @@
     <div style="padding:16px 20px; border-top:1px solid var(--paper-200); display:flex; justify-content:flex-end; gap:8px;">
       <button class="btn btn--secondary" onclick="fecharModalEditarCert()">Cancelar</button>
       <button class="btn btn--primary" onclick="salvarEdicaoCert()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CERTIFICADO EXTERNO (curso feito fora da SafeSeg) -->
+<div id="modalExternoOverlay" style="display:none; position:fixed; inset:0; background:rgba(20,23,27,0.55); align-items:center; justify-content:center; z-index:60; padding:16px;">
+  <div style="background:#fff; border-radius:16px; width:100%; max-width:460px; box-shadow:0 8px 24px rgba(0,0,0,0.2);">
+    <div style="padding:20px; border-bottom:1px solid var(--paper-200); display:flex; align-items:center; justify-content:space-between;">
+      <h3 style="font-family:var(--font-display); font-size:1.2rem; margin:0;">Certificado Externo</h3>
+      <button onclick="fecharModalExterno()" style="background:none; border:none; font-size:20px; cursor:pointer;">✕</button>
+    </div>
+    <div style="padding:20px; display:flex; flex-direction:column; gap:12px;">
+      <div class="text-muted" style="font-size:12px; background:var(--paper-50); border-radius:8px; padding:10px 12px;">
+        Pra registrar um curso que o colaborador fez fora da SafeSeg — mantém o histórico completo dele num lugar só.
+      </div>
+      <div>
+        <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Empresa</label>
+        <select id="extEmpresa" onchange="carregarFuncionariosParaExterno()" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;"></select>
+      </div>
+      <div>
+        <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Colaborador</label>
+        <select id="extFuncionario" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;"></select>
+      </div>
+      <div>
+        <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Curso / NR</label>
+        <input type="text" id="extCurso" list="listaCursosExterno" placeholder="Ex: NR-35 - Trabalho em Altura" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+        <datalist id="listaCursosExterno"></datalist>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Data de conclusão</label>
+          <input type="date" id="extDataConclusao" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Data de validade</label>
+          <input type="date" id="extDataValidade" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+        </div>
+      </div>
+      <div>
+        <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Instituição que emitiu (opcional)</label>
+        <input type="text" id="extInstituicao" placeholder="Ex: SENAI, outra empresa de treinamento..." style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+      </div>
+      <div>
+        <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Link do certificado (opcional)</label>
+        <input type="text" id="extLink" placeholder="Cola o link se tiver o PDF em algum lugar" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+      </div>
+      <div id="extErro" style="color:var(--status-danger); font-size:13px; display:none;"></div>
+    </div>
+    <div style="padding:16px 20px; border-top:1px solid var(--paper-200); display:flex; justify-content:flex-end; gap:8px;">
+      <button class="btn btn--secondary" onclick="fecharModalExterno()">Cancelar</button>
+      <button class="btn btn--primary" id="btnSalvarExterno" onclick="salvarCertificadoExterno()">Salvar</button>
     </div>
   </div>
 </div>
@@ -279,7 +331,7 @@
 </div>
 
 <script type="module">
-  import { db, collection, getDocs, doc, updateDoc, esperarAuth } from '../assets/js/firebase-init.js';
+  import { db, collection, getDocs, doc, updateDoc, addDoc, esperarAuth, registrarAuditoria } from '../assets/js/firebase-init.js';
 
   // Certificados vivem em: empresas/{id}/certificados
   // ⚠️ Schema do documento de certificado ainda NÃO foi confirmado no Firestore
@@ -344,7 +396,9 @@
             nome: pick(c, 'nomeCurso', 'descricao', 'tituloCurso') || '',
             cont: pick(c, 'cont', 'CONT', 'controle'),
             data: pick(c, 'validade', 'dataVencimento', 'vencimento', 'dataValidade'),
-            campoData: ['validade','dataVencimento','vencimento','dataValidade'].find(f => c[f] !== undefined) || 'validade'
+            campoData: ['validade','dataVencimento','vencimento','dataValidade'].find(f => c[f] !== undefined) || 'validade',
+            substituidoPor: c.substituidoPor || null,
+            origem: c.origem || 'safeseg'
           });
         });
       }));
@@ -400,13 +454,14 @@
       const certsHtml = col.certificados.map(c => {
         const st = statusPorData(c.data);
         return `
-          <div class="cert-row">
+          <div class="cert-row" style="${c.substituidoPor ? 'opacity:.5;' : ''}">
             <span class="cert-nr">${c.nr}</span>
             <span class="cert-nome">${c.nome}</span>
             <div class="cert-row__meta">
               ${c.cont ? `<span class="cert-cont">CONT ${c.cont}</span>` : ''}
               <span class="cert-data">${c.data || '—'}</span>
-              <span class="selo selo--${st.cls}">${st.label}</span>
+              ${c.substituidoPor ? `<span class="selo selo--pending">🔄 Renovado (veja o mais novo)</span>` : `<span class="selo selo--${st.cls}">${st.label}</span>`}
+              ${c.origem === 'externo' ? `<span class="selo" style="background:#EFE9FE; color:#6B46C1;">🌐 Externo</span>` : ''}
               <button class="btn btn--ghost" style="padding:4px 9px; font-size:11px;" onclick="abrirModalEditarCert('${c.id}', '${c.empresaId}', '${c.campoData}', '${(c.nr||'').replace(/'/g,"\\'")}', '${col.nome.replace(/'/g,"\\'")}')">✏️ Editar</button>
               <button class="btn btn--ghost" style="padding:4px 9px; font-size:11px;" onclick="abrirModalRegenerar('${(col.nome||'').replace(/'/g,"\\'")}', '${(c.cpf||'').replace(/'/g,"\\'")}', '${(c.nr||'').replace(/'/g,"\\'")}', '${(col.empresa||'').replace(/'/g,"\\'")}')">🔄 Regenerar</button>
             </div>
@@ -493,6 +548,7 @@
 
     try {
       await updateDoc(doc(db, 'empresas', empresaId, 'certificados', certId), dadosParaSalvar);
+      registrarAuditoria('editar_certificado', { certificadoId: certId, empresaId, novaData: dataBR, novoCont: cont || null });
       fecharModalEditarCert();
       carregarCertificados();
     } catch (err) {
@@ -554,6 +610,7 @@
       });
       const resultado = await res.json();
       if (resultado && resultado.sucesso) {
+        registrarAuditoria('regenerar_certificado', { colaborador: nome, curso, cont: resultado.numero });
         alert(`✅ Certificado gerado — CONT ${resultado.numero}`);
         fecharModalRegenerar();
         carregarCertificados();
@@ -567,6 +624,91 @@
     } finally {
       btn.disabled = false;
       btn.textContent = textoOriginal;
+    }
+  };
+
+  // ---------- Certificado Externo ----------
+  let cursosCatalogoParaExterno = [];
+  window.abrirModalExterno = async function() {
+    document.getElementById('extCurso').value = '';
+    document.getElementById('extDataConclusao').value = '';
+    document.getElementById('extDataValidade').value = '';
+    document.getElementById('extInstituicao').value = '';
+    document.getElementById('extLink').value = '';
+    document.getElementById('extErro').style.display = 'none';
+    document.getElementById('modalExternoOverlay').style.display = 'flex';
+
+    const selectEmp = document.getElementById('extEmpresa');
+    selectEmp.innerHTML = '<option value="">Carregando...</option>';
+    try {
+      const empresasSnap = await getDocs(collection(db, 'empresas'));
+      const opcoes = empresasSnap.docs.map(d => `<option value="${d.id}">${d.data().nome || '(sem nome)'}</option>`).sort((a,b)=>a.localeCompare(b));
+      selectEmp.innerHTML = '<option value="">Escolhe a empresa...</option>' + opcoes.join('');
+    } catch (e) { selectEmp.innerHTML = '<option value="">Erro ao carregar empresas</option>'; }
+
+    // pré-carrega o catálogo de cursos, pra sugerir nomes padronizados de NR
+    try {
+      const catSnap = await getDocs(collection(db, 'catalogoCursos'));
+      cursosCatalogoParaExterno = catSnap.docs.map(d => d.data()).filter(c => c.ativo !== false);
+      document.getElementById('listaCursosExterno').innerHTML = cursosCatalogoParaExterno.map(c => `<option value="${c.nome}">`).join('');
+    } catch (e) { /* segue sem sugestão, não é crítico */ }
+  };
+  window.fecharModalExterno = function() {
+    document.getElementById('modalExternoOverlay').style.display = 'none';
+  };
+  window.carregarFuncionariosParaExterno = async function() {
+    const empresaId = document.getElementById('extEmpresa').value;
+    const selectFunc = document.getElementById('extFuncionario');
+    if (!empresaId) { selectFunc.innerHTML = '<option value="">Escolhe a empresa primeiro...</option>'; return; }
+    selectFunc.innerHTML = '<option value="">Carregando...</option>';
+    try {
+      const snap = await getDocs(collection(db, 'empresas', empresaId, 'funcionarios'));
+      const ativos = snap.docs.map(d => d.data()).filter(f => f.status !== 'inativo');
+      selectFunc.innerHTML = '<option value="">Escolhe o colaborador...</option>' +
+        ativos.map(f => `<option value="${(f.cpf||'').replace(/"/g,'')}|${f.nome.replace(/"/g,'')}">${f.nome}</option>`).join('');
+    } catch (e) { selectFunc.innerHTML = '<option value="">Erro ao carregar</option>'; }
+  };
+  window.salvarCertificadoExterno = async function() {
+    const empresaId = document.getElementById('extEmpresa').value;
+    const funcionarioValor = document.getElementById('extFuncionario').value;
+    const curso = document.getElementById('extCurso').value.trim();
+    const dataConclusao = document.getElementById('extDataConclusao').value;
+    const dataValidade = document.getElementById('extDataValidade').value;
+    const instituicao = document.getElementById('extInstituicao').value.trim();
+    const link = document.getElementById('extLink').value.trim();
+    const erroBox = document.getElementById('extErro');
+
+    if (!empresaId || !funcionarioValor || !curso || !dataValidade) {
+      erroBox.textContent = 'Preenche empresa, colaborador, curso e data de validade.';
+      erroBox.style.display = 'block';
+      return;
+    }
+    const [cpf, nome] = funcionarioValor.split('|');
+    const [a,m,d] = dataValidade.split('-');
+    const validadeBR = `${d}/${m}/${a}`;
+
+    const btn = document.getElementById('btnSalvarExterno');
+    btn.disabled = true; btn.textContent = 'Salvando...';
+    try {
+      await addDoc(collection(db, 'empresas', empresaId, 'certificados'), {
+        colaborador: nome,
+        cpf: cpf || '',
+        nr: curso,
+        cont: '',
+        validade: validadeBR,
+        dataConclusao: dataConclusao || '',
+        instituicao,
+        pdfUrl: link || '',
+        origem: 'externo'
+      });
+      registrarAuditoria('adicionar_certificado_externo', { empresaId, colaborador: nome, curso });
+      fecharModalExterno();
+      carregarCertificados();
+    } catch (err) {
+      erroBox.textContent = 'Erro: ' + err.message;
+      erroBox.style.display = 'block';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Salvar';
     }
   };
 

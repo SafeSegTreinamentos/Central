@@ -101,6 +101,7 @@
         <div class="sub" id="topbarSub">Carregando...</div>
       </div>
       <div class="flex gap-2">
+        <button class="btn btn--secondary" onclick="abrirModalExterno()">+ Certificado Externo</button>
         <button class="btn btn--secondary">↓ Exportar</button>
       </div>
     </header>
@@ -125,8 +126,56 @@
   </div>
 </div>
 
+<!-- MODAL: CERTIFICADO EXTERNO -->
+<div id="modalExternoOverlay" style="display:none; position:fixed; inset:0; background:rgba(20,23,27,0.55); align-items:center; justify-content:center; z-index:60; padding:16px;">
+  <div style="background:#fff; border-radius:16px; width:100%; max-width:460px; box-shadow:0 8px 24px rgba(0,0,0,0.2);">
+    <div style="padding:20px; border-bottom:1px solid var(--paper-200); display:flex; align-items:center; justify-content:space-between;">
+      <h3 style="font-family:var(--font-display); font-size:1.2rem; margin:0;">Certificado Externo</h3>
+      <button onclick="fecharModalExterno()" style="background:none; border:none; font-size:20px; cursor:pointer;">✕</button>
+    </div>
+    <div style="padding:20px; display:flex; flex-direction:column; gap:12px;">
+      <div class="text-muted" style="font-size:12px; background:var(--paper-50); border-radius:8px; padding:10px 12px;">
+        Pra registrar um curso que seu colaborador fez fora da SafeSeg — mantém o histórico completo dele num lugar só.
+      </div>
+      <div>
+        <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Colaborador</label>
+        <select id="extFuncionario" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;"></select>
+      </div>
+      <div>
+        <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Curso / NR</label>
+        <input type="text" id="extCurso" placeholder="Ex: NR-35 - Trabalho em Altura" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+      </div>
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Data de conclusão</label>
+          <input type="date" id="extDataConclusao" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Data de validade</label>
+          <input type="date" id="extDataValidade" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+        </div>
+      </div>
+      <div>
+        <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Instituição que emitiu (opcional)</label>
+        <input type="text" id="extInstituicao" placeholder="Ex: SENAI, outra empresa de treinamento..." style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+      </div>
+      <div>
+        <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Link do certificado (opcional)</label>
+        <input type="text" id="extLink" placeholder="Cola o link se tiver o PDF em algum lugar" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+      </div>
+      <div id="extErro" style="color:var(--status-danger); font-size:13px; display:none;"></div>
+    </div>
+    <div style="padding:16px 20px; border-top:1px solid var(--paper-200); display:flex; justify-content:flex-end; gap:8px;">
+      <button class="btn btn--secondary" onclick="fecharModalExterno()">Cancelar</button>
+      <button class="btn btn--primary" id="btnSalvarExterno" onclick="salvarCertificadoExterno()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
-  import { db, collection, getDocs, obterMeuPerfil } from '../assets/js/firebase-init.js';
+  import { db, collection, getDocs, obterMeuPerfil, addDoc } from '../assets/js/firebase-init.js';
+
+  let empresaIdCache = null;
 
   function pick(obj, ...keys) {
     for (const k of keys) if (obj[k] !== undefined && obj[k] !== null && obj[k] !== '') return obj[k];
@@ -161,6 +210,7 @@
     }
 
     try {
+      empresaIdCache = perfil.empresaId;
       const certSnap = await getDocs(collection(db, 'empresas', perfil.empresaId, 'certificados'));
       const colaboradoresMap = {};
 
@@ -263,6 +313,70 @@
     } finally {
       btn.disabled = false;
       btn.textContent = textoOriginal;
+    }
+  };
+
+  // ---------- Certificado Externo (a própria empresa registra) ----------
+  window.abrirModalExterno = async function() {
+    document.getElementById('extCurso').value = '';
+    document.getElementById('extDataConclusao').value = '';
+    document.getElementById('extDataValidade').value = '';
+    document.getElementById('extInstituicao').value = '';
+    document.getElementById('extLink').value = '';
+    document.getElementById('extErro').style.display = 'none';
+    document.getElementById('modalExternoOverlay').style.display = 'flex';
+
+    const selectFunc = document.getElementById('extFuncionario');
+    selectFunc.innerHTML = '<option value="">Carregando...</option>';
+    try {
+      const snap = await getDocs(collection(db, 'empresas', empresaIdCache, 'funcionarios'));
+      const ativos = snap.docs.map(d => d.data()).filter(f => f.status !== 'inativo');
+      selectFunc.innerHTML = '<option value="">Escolhe o colaborador...</option>' +
+        ativos.map(f => `<option value="${(f.cpf||'').replace(/"/g,'')}|${f.nome.replace(/"/g,'')}">${f.nome}</option>`).join('');
+    } catch (e) { selectFunc.innerHTML = '<option value="">Erro ao carregar</option>'; }
+  };
+  window.fecharModalExterno = function() {
+    document.getElementById('modalExternoOverlay').style.display = 'none';
+  };
+  window.salvarCertificadoExterno = async function() {
+    const funcionarioValor = document.getElementById('extFuncionario').value;
+    const curso = document.getElementById('extCurso').value.trim();
+    const dataConclusao = document.getElementById('extDataConclusao').value;
+    const dataValidade = document.getElementById('extDataValidade').value;
+    const instituicao = document.getElementById('extInstituicao').value.trim();
+    const link = document.getElementById('extLink').value.trim();
+    const erroBox = document.getElementById('extErro');
+
+    if (!funcionarioValor || !curso || !dataValidade) {
+      erroBox.textContent = 'Preenche colaborador, curso e data de validade.';
+      erroBox.style.display = 'block';
+      return;
+    }
+    const [cpf, nome] = funcionarioValor.split('|');
+    const [a,m,d] = dataValidade.split('-');
+    const validadeBR = `${d}/${m}/${a}`;
+
+    const btn = document.getElementById('btnSalvarExterno');
+    btn.disabled = true; btn.textContent = 'Salvando...';
+    try {
+      await addDoc(collection(db, 'empresas', empresaIdCache, 'certificados'), {
+        colaborador: nome,
+        cpf: cpf || '',
+        nr: curso,
+        cont: '',
+        validade: validadeBR,
+        dataConclusao: dataConclusao || '',
+        instituicao,
+        pdfUrl: link || '',
+        origem: 'externo'
+      });
+      fecharModalExterno();
+      carregarCertificados();
+    } catch (err) {
+      erroBox.textContent = 'Erro: ' + err.message;
+      erroBox.style.display = 'block';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Salvar';
     }
   };
 </script>

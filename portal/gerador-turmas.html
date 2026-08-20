@@ -407,6 +407,7 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
 
     <div class="card">
       <h2>3. Alunos</h2>
+      <div id="sugestaoTurmaBox" style="display:none; background:#FFF8E8; border:1px solid var(--amber); border-radius:8px; padding:12px 14px; margin-bottom:12px; font-size:13px;"></div>
       <div class="actions-bar" style="justify-content:flex-start;margin-top:0;margin-bottom:10px;flex-wrap:wrap;">
         <button class="btn secondary small" id="btnAddAluno">+ Adicionar aluno</button>
         <button class="btn ghost small" id="btnToggleImport">Colar lista (Nome + CPF)</button>
@@ -754,6 +755,74 @@ async function carregarFuncionariosDaEmpresa() {
   }
 }
 document.getElementById('fEmpresa').addEventListener('change', carregarFuncionariosDaEmpresa);
+
+// ---------- Sugestão automática de turma ----------
+function nomeCursoAtual() {
+  const v = document.getElementById('fCurso').value;
+  if (v === 'custom') return null;
+  const cursos = loadCursos();
+  const c = cursos[+v];
+  return c ? c.nome : null;
+}
+function parseDataCertBR(str) {
+  if (!str) return null;
+  const [d,m,a] = str.split('/');
+  if (!d||!m||!a) return null;
+  const dt = new Date(+a, +m-1, +d);
+  return isNaN(dt.getTime()) ? null : dt;
+}
+async function verificarSugestaoTurma() {
+  const box = document.getElementById('sugestaoTurmaBox');
+  const empresaId = document.getElementById('fEmpresa').value;
+  const nomeCurso = nomeCursoAtual();
+  if (!empresaId || !nomeCurso || !window.__firestore) { box.style.display = 'none'; return; }
+
+  const { db, collection, getDocs } = window.__firestore;
+  try {
+    const [certsSnap, funcSnap] = await Promise.all([
+      getDocs(collection(db, 'empresas', empresaId, 'certificados')),
+      getDocs(collection(db, 'empresas', empresaId, 'funcionarios'))
+    ]);
+    const normaliza = s => (s||'').toString().toLowerCase().trim();
+    const funcAtivos = funcSnap.docs.map(d => d.data()).filter(f => f.status !== 'inativo');
+    const nomesFuncAtivos = new Set(funcAtivos.map(f => normaliza(f.nome)));
+
+    const em60dias = new Date(); em60dias.setDate(em60dias.getDate() + 60);
+
+    const candidatos = certsSnap.docs
+      .map(d => d.data())
+      .filter(c => normaliza(c.nr) === normaliza(nomeCurso) && !c.substituidoPor)
+      .filter(c => {
+        const dt = parseDataCertBR(c.validade);
+        if (!dt) return true; // sem data cadastrada = trata como pendente, também sugere
+        return dt <= em60dias;
+      })
+      .filter(c => nomesFuncAtivos.has(normaliza(c.colaborador))); // só quem ainda está ativo na empresa
+
+    if (candidatos.length === 0) { box.style.display = 'none'; return; }
+
+    box.style.display = 'block';
+    box.innerHTML = `💡 <strong>${candidatos.length} funcionário(s)</strong> dessa empresa estão vencidos ou vencendo em 60 dias no curso "${nomeCurso}":
+      <div style="margin:8px 0; font-size:12.5px; color:var(--muted);">${candidatos.map(c => c.colaborador).join(', ')}</div>
+      <button type="button" class="btn secondary small" onclick="adicionarSugestoesComoAlunos()">+ Adicionar todos como alunos</button>`;
+    window.__sugestoesAtuais = candidatos.map(c => ({ nome: c.colaborador, cpf: c.cpf || '' }));
+  } catch (e) {
+    console.error('Erro ao verificar sugestão de turma:', e);
+    box.style.display = 'none';
+  }
+}
+window.adicionarSugestoesComoAlunos = function() {
+  const sugestoes = window.__sugestoesAtuais || [];
+  let adicionados = 0;
+  sugestoes.forEach(s => {
+    if (!alunos.some(a => a.nome === s.nome)) { alunos.push({ nome: s.nome, cpf: s.cpf }); adicionados++; }
+  });
+  renderAlunos();
+  toast(`${adicionados} aluno(s) adicionado(s) a partir da sugestão`);
+  document.getElementById('sugestaoTurmaBox').style.display = 'none';
+};
+document.getElementById('fEmpresa').addEventListener('change', verificarSugestaoTurma);
+document.getElementById('fCurso').addEventListener('change', verificarSugestaoTurma);
 
 document.getElementById('btnAddFuncionarioSelecionado').addEventListener('click', () => {
   const selectFunc = document.getElementById('fSelectFuncionario');
@@ -1350,7 +1419,23 @@ async function emitirCertificadosDaTurma(id){
         // assinado ou não
         if (t.empresaId && window.__firestore) {
           try {
-            const { db, collection, addDoc } = window.__firestore;
+            const { db, collection, addDoc, getDocs, updateDoc, doc } = window.__firestore;
+
+            // Renovação automática: procura um certificado anterior do mesmo
+            // curso pra essa pessoa nessa empresa (que ainda não tenha sido
+            // substituído por outro), e linka os dois — dá pra ver o
+            // histórico de renovação de cada pessoa depois
+            let certificadoAnteriorId = null;
+            try {
+              const certsSnap = await getDocs(collection(db, 'empresas', t.empresaId, 'certificados'));
+              const normaliza = s => (s||'').toString().toLowerCase().trim();
+              const anterior = certsSnap.docs.find(d => {
+                const c = d.data();
+                return normaliza(c.colaborador) === normaliza(aluno.nome) && normaliza(c.nr) === normaliza(t.curso) && !c.substituidoPor;
+              });
+              if (anterior) certificadoAnteriorId = anterior.id;
+            } catch (e) { console.error('Erro ao buscar certificado anterior pra renovação:', e); }
+
             const docRef = await addDoc(collection(db, 'empresas', t.empresaId, 'certificados'), {
               colaborador: aluno.nome,
               cpf: aluno.cpf || '',
@@ -1358,9 +1443,17 @@ async function emitirCertificadosDaTurma(id){
               validade: '',
               pdfUrl: resultado.url,
               assinadoAssinafy: false,
-              criadoEm: new Date().toISOString()
+              criadoEm: new Date().toISOString(),
+              substituiCertificadoId: certificadoAnteriorId || null
             });
             item.firestoreDocId = docRef.id; // guarda pra "Verificar assinaturas" atualizar em vez de duplicar
+
+            if (certificadoAnteriorId) {
+              await updateDoc(doc(db, 'empresas', t.empresaId, 'certificados', certificadoAnteriorId), {
+                substituidoPor: docRef.id,
+                substituidoEm: new Date().toISOString()
+              });
+            }
           } catch (errFs) {
             console.error('Erro ao sincronizar certificado com Firestore:', errFs);
           }

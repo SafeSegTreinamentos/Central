@@ -171,6 +171,35 @@ export async function obterMeuPerfil() {
   return { uid: user.uid, ...snap.data() };
 }
 
+// ============================================================
+// registrarAuditoria() — grava "quem fez o quê e quando" na coleção
+// 'auditoria'. Chama isso depois de qualquer ação sensível (editar
+// certificado, mexer em funcionário, dar/tirar acesso, etc).
+// Nunca trava a ação principal se der erro — só loga no console.
+// ============================================================
+export async function registrarAuditoria(acao, detalhes) {
+  try {
+    const user = auth.currentUser;
+    if (!user) return;
+    let nomeUsuario = user.email || 'desconhecido';
+    try {
+      const perfilSnap = await getDoc(doc(db, 'usuarios', user.uid));
+      if (perfilSnap.exists() && perfilSnap.data().nome) nomeUsuario = perfilSnap.data().nome;
+    } catch (e) { /* segue com o e-mail mesmo, sem travar */ }
+
+    await addDoc(collection(db, 'auditoria'), {
+      acao,
+      detalhes: detalhes || {},
+      usuarioUid: user.uid,
+      usuarioEmail: user.email || '',
+      usuarioNome: nomeUsuario,
+      criadoEm: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error('Falha ao gravar log de auditoria (não crítico):', err);
+  }
+}
+
 // Reexporta os helpers do Firestore/Auth pra não precisar importar
 // a URL gigante do CDN de novo em cada página que usar este arquivo.
 export {
