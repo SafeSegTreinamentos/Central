@@ -172,7 +172,7 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
   // Também busca as empresas reais do Firestore pro seletor, e prepara a
   // função que grava a Agenda no lugar certo (Firestore, não localStorage).
   try {
-    const { obterMeuPerfil, db, collection, getDocs, addDoc, doc, updateDoc, query, where, deleteDoc } = await import('../assets/js/firebase-init.js');
+    const { obterMeuPerfil, db, collection, getDocs, addDoc, doc, updateDoc, setDoc, query, where, deleteDoc } = await import('../assets/js/firebase-init.js');
     const perfil = await obterMeuPerfil();
     if (perfil && perfil.role === 'cliente') {
       window.location.href = 'dashboard-cliente.html';
@@ -197,7 +197,7 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
     // Expõe o Firestore pro script de baixo (não-module) conseguir usar —
     // scripts type="module" não compartilham escopo com <script> normal,
     // então isso precisa ficar disponível via window.
-    window.__firestore = { db, collection, getDocs, addDoc, doc, updateDoc };
+    window.__firestore = { db, collection, getDocs, addDoc, doc, updateDoc, setDoc };
 
     // Grava/atualiza a Agenda real no Firestore — uma turma com N dias vira
     // N documentos na coleção 'agenda' (mesmo schema que o resto do sistema já usa)
@@ -522,7 +522,23 @@ function loadCursos(){
 }
 function saveCursos(list){ localStorage.setItem(LS_CURSOS, JSON.stringify(list)); }
 function loadTurmas(){ try{ return JSON.parse(localStorage.getItem(LS_TURMAS)||'[]'); }catch(e){ return []; } }
-function saveTurmas(list){ localStorage.setItem(LS_TURMAS, JSON.stringify(list)); }
+function saveTurmas(list){
+  localStorage.setItem(LS_TURMAS, JSON.stringify(list));
+  sincronizarTurmasComFirestore(list); // espelha em segundo plano, não trava a tela esperando
+}
+
+// Espelha a lista de turmas (localStorage) no Firestore, coleção 'turmas' —
+// é isso que deixa Certificados Pendentes e a aprovação de aluno funcionarem
+// igual em qualquer aparelho, não só no navegador onde foi criada.
+async function sincronizarTurmasComFirestore(list){
+  if (!window.__firestore) return;
+  const { db, collection, doc, setDoc } = window.__firestore;
+  try {
+    await Promise.all(list.map(t => setDoc(doc(db, 'turmas', String(t.id)), t)));
+  } catch (e) {
+    console.error('Falha ao sincronizar turmas com o Firestore (não crítico, localStorage continua funcionando):', e);
+  }
+}
 function loadSeq(){ try{ return JSON.parse(localStorage.getItem(LS_SEQ)||'{}'); }catch(e){ return {}; } }
 function saveSeq(obj){ localStorage.setItem(LS_SEQ, JSON.stringify(obj)); }
 

@@ -124,8 +124,9 @@
 
 <script type="module">
   try {
-    const { esperarAuth } = await import('../assets/js/firebase-init.js');
+    const { esperarAuth, db, collection, getDocs, doc, setDoc } = await import('../assets/js/firebase-init.js');
     await esperarAuth();
+    window.__firestore = { db, collection, getDocs, doc, setDoc };
   } catch (err) {
     console.error('Erro ao verificar login:', err);
     document.body.innerHTML = `
@@ -142,8 +143,52 @@
 
 <script>
   const LS_TURMAS = 'safeseg_turmas_v1';
-  function loadTurmas(){ try{ return JSON.parse(localStorage.getItem(LS_TURMAS)||'[]'); }catch(e){ return []; } }
-  function saveTurmas(list){ localStorage.setItem(LS_TURMAS, JSON.stringify(list)); }
+  let turmasCache = [];
+
+  function loadTurmas(){ return turmasCache; }
+
+  function saveTurmas(list){
+    turmasCache = list;
+    localStorage.setItem(LS_TURMAS, JSON.stringify(list)); // mantém local também, como backup
+    sincronizarComFirestore(list);
+  }
+
+  async function sincronizarComFirestore(list){
+    if (!window.__firestore) return;
+    const { db, doc, setDoc } = window.__firestore;
+    try {
+      await Promise.all(list.map(t => setDoc(doc(db, 'turmas', String(t.id)), t)));
+    } catch (e) {
+      console.error('Falha ao sincronizar turmas com o Firestore (não crítico):', e);
+    }
+  }
+
+  // Carrega as turmas: Firestore primeiro (funciona em qualquer aparelho).
+  // Se o Firestore ainda estiver vazio mas tiver dado salvo só localmente
+  // (turma criada antes dessa atualização), migra automaticamente pra nuvem.
+  async function carregarTurmasIniciais(){
+    const localData = (() => { try { return JSON.parse(localStorage.getItem(LS_TURMAS)||'[]'); } catch(e) { return []; } })();
+
+    if (!window.__firestore) { turmasCache = localData; renderTurmas(); return; }
+    const { db, collection, getDocs } = window.__firestore;
+    try {
+      const snap = await getDocs(collection(db, 'turmas'));
+      const doFirestore = snap.docs.map(d => d.data());
+      if (doFirestore.length > 0) {
+        turmasCache = doFirestore;
+      } else if (localData.length > 0) {
+        // migração de primeira vez: sobe o que só existia local pra nuvem
+        turmasCache = localData;
+        sincronizarComFirestore(localData);
+      } else {
+        turmasCache = [];
+      }
+    } catch (e) {
+      console.error('Erro ao carregar do Firestore, usando dado local:', e);
+      turmasCache = localData;
+    }
+    renderTurmas();
+  }
   function formatDateBR(iso){
     if(!iso) return '';
     const [y,m,d]=iso.split('-');
@@ -271,7 +316,7 @@
     }
   };
 
-  renderTurmas();
+  carregarTurmasIniciais();
 </script>
 <script type="module">
   import { auth, signOut } from "../assets/js/firebase-init.js";

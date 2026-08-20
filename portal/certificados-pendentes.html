@@ -100,7 +100,20 @@
   import { db, collection, getDocs, esperarAuth } from '../assets/js/firebase-init.js';
 
   const LS_TURMAS = 'safeseg_turmas_v1';
-  function loadTurmas(){ try{ return JSON.parse(localStorage.getItem(LS_TURMAS)||'[]'); }catch(e){ return []; } }
+
+  // Lê as turmas do Firestore primeiro (funciona em qualquer aparelho) — só
+  // cai pro localStorage se o Firestore estiver vazio (dado antigo, não
+  // sincronizado ainda; abrir o Gerador de Turmas uma vez resolve isso).
+  async function loadTurmas(){
+    try {
+      const snap = await getDocs(collection(db, 'turmas'));
+      const doFirestore = snap.docs.map(d => d.data());
+      if (doFirestore.length > 0) return doFirestore;
+    } catch (e) {
+      console.error('Erro ao buscar turmas no Firestore, usando dado local:', e);
+    }
+    try { return JSON.parse(localStorage.getItem(LS_TURMAS)||'[]'); } catch(e) { return []; }
+  }
 
   function normaliza(s) { return (s||'').toLowerCase().trim().replace(/\s+/g,' '); }
 
@@ -110,7 +123,7 @@
 
     try {
       // 1) Junta todos os alunos aprovados de todas as turmas salvas
-      const turmas = loadTurmas();
+      const turmas = await loadTurmas();
       const aprovadosPorTurma = [];
       turmas.forEach(t => {
         (t.alunos || []).forEach(a => {
