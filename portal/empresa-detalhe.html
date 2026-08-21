@@ -199,6 +199,16 @@
           <input type="date" id="funcAdmissao" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
         </div>
       </div>
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">RG (opcional — pra carteirinha)</label>
+          <input type="text" id="funcRg" placeholder="0.000.000-0 SSP/PR" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Data de Nascimento (opcional)</label>
+          <input type="date" id="funcNascimento" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+        </div>
+      </div>
       <div id="funcErro" style="color:var(--status-danger); font-size:13px; display:none;"></div>
     </div>
     <div style="padding:16px 20px; border-top:1px solid var(--paper-200); display:flex; justify-content:flex-end; gap:8px;">
@@ -413,6 +423,8 @@
     document.getElementById('funcCargo').value = '';
     document.getElementById('funcTelefone').value = '';
     document.getElementById('funcAdmissao').value = '';
+    document.getElementById('funcRg').value = '';
+    document.getElementById('funcNascimento').value = '';
     document.getElementById('funcErro').style.display = 'none';
     atualizarPreviewFoto(null);
     document.getElementById('modalFuncOverlay').style.display = 'flex';
@@ -430,6 +442,8 @@
     document.getElementById('funcCargo').value = f.cargo || '';
     document.getElementById('funcTelefone').value = f.telefone || '';
     document.getElementById('funcAdmissao').value = f.admissao || '';
+    document.getElementById('funcRg').value = f.rg || '';
+    document.getElementById('funcNascimento').value = f.nascimento || '';
     document.getElementById('funcErro').style.display = 'none';
     atualizarPreviewFoto(f.fotoBase64 || null);
     document.getElementById('modalFuncOverlay').style.display = 'flex';
@@ -466,6 +480,8 @@
     const cargo = document.getElementById('funcCargo').value.trim();
     const telefone = document.getElementById('funcTelefone').value.trim();
     const admissao = document.getElementById('funcAdmissao').value;
+    const rg = document.getElementById('funcRg').value.trim();
+    const nascimento = document.getElementById('funcNascimento').value;
     const erroBox = document.getElementById('funcErro');
     if (!nome) { erroBox.textContent = 'Digite o nome do funcionário.'; erroBox.style.display = 'block'; return; }
     if (cpf && !validarCPF(cpf)) { erroBox.textContent = 'Esse CPF não é válido — confere se digitou certo.'; erroBox.style.display = 'block'; return; }
@@ -474,10 +490,10 @@
     btn.disabled = true; btn.textContent = 'Salvando...';
     try {
       if (editandoFuncId) {
-        await updateDoc(doc(db, 'empresas', empresaId, 'funcionarios', editandoFuncId), { nome, cpf, cargo, telefone, admissao, fotoBase64: fotoFuncionarioBase64 || null });
+        await updateDoc(doc(db, 'empresas', empresaId, 'funcionarios', editandoFuncId), { nome, cpf, cargo, telefone, admissao, rg, nascimento, fotoBase64: fotoFuncionarioBase64 || null });
         registrarAuditoria('editar_funcionario', { empresaId, funcionarioId: editandoFuncId, nome });
       } else {
-        const novoRef = await addDoc(collection(db, 'empresas', empresaId, 'funcionarios'), { nome, cpf, cargo, telefone, admissao, status: 'ativo', fotoBase64: fotoFuncionarioBase64 || null });
+        const novoRef = await addDoc(collection(db, 'empresas', empresaId, 'funcionarios'), { nome, cpf, cargo, telefone, admissao, rg, nascimento, status: 'ativo', fotoBase64: fotoFuncionarioBase64 || null });
         registrarAuditoria('criar_funcionario', { empresaId, funcionarioId: novoRef.id, nome });
       }
       fecharModalFuncionario();

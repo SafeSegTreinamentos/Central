@@ -99,6 +99,7 @@
       <div class="tabs">
         <button class="tab active" id="tabNovo" onclick="mudarAba('novo')">Novo Orçamento</button>
         <button class="tab" id="tabHistorico" onclick="mudarAba('historico')">Propostas Salvas</button>
+        <button class="tab" id="tabEditarCondicoes" onclick="mudarAba('editarCondicoes')">Editar Condições</button>
       </div>
 
       <!-- ABA: NOVO ORÇAMENTO -->
@@ -180,7 +181,7 @@
         <div class="card">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
             <strong>Condições comerciais</strong>
-            <span class="text-muted" style="font-size:12px;">Escolhe quais cláusulas entram no PDF — as básicas já vêm marcadas</span>
+            <span class="text-muted" style="font-size:12px;">Marca quais cláusulas entram no PDF — pra editar o texto delas, vai em <a href="#" onclick="mudarAba('editarCondicoes'); return false;" style="color:var(--gold-600);">Editar Condições</a></span>
           </div>
           <div id="clausulasBox"></div>
         </div>
@@ -196,6 +197,19 @@
       <div id="viewHistorico" style="display:none;">
         <div class="card">
           <div id="historicoList">Carregando...</div>
+        </div>
+      </div>
+
+      <!-- ABA: EDITAR CONDIÇÕES -->
+      <div id="viewEditarCondicoes" style="display:none;">
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <strong>Biblioteca de Cláusulas</strong>
+            <span class="text-muted" style="font-size:12px;">Editar aqui muda o texto padrão pra todas as propostas novas — não afeta propostas já salvas</span>
+          </div>
+          <div id="bibliotecaStatus" class="text-muted" style="font-size:12px; margin-bottom:10px;"></div>
+          <div id="bibliotecaBox"></div>
+          <button type="button" class="btn btn--secondary" style="padding:8px 14px; font-size:13px; margin-top:14px;" onclick="adicionarClausulaBiblioteca()">+ Nova cláusula</button>
         </div>
       </div>
     </div>
@@ -231,8 +245,8 @@
 </div>
 
 <script type="module">
-  import { db, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, esperarAuth } from '../assets/js/firebase-init.js';
-  window.__firestore = { db, collection, getDocs, addDoc, doc, updateDoc, deleteDoc };
+  import { db, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, getDoc, setDoc, esperarAuth } from '../assets/js/firebase-init.js';
+  window.__firestore = { db, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, getDoc, setDoc };
   await esperarAuth();
 </script>
 
@@ -963,6 +977,28 @@ const COND_CLAUSULAS = [
 ];
 
 let clausulasState = JSON.parse(JSON.stringify(COND_CLAUSULAS));
+let bibliotecaClausulas = null; // carregada do Firestore no início; null = ainda não carregou
+
+// Carrega a biblioteca de cláusulas do Firestore (se já foi customizada antes).
+// Se nunca foi salva, usa a lista padrão do código como primeira versão.
+async function carregarBibliotecaClausulas() {
+  if (!window.__firestore) { bibliotecaClausulas = JSON.parse(JSON.stringify(COND_CLAUSULAS)); return; }
+  const { db, doc, getDoc } = window.__firestore;
+  try {
+    const snap = await getDoc(doc(db, 'configuracoes', 'clausulasComerciais'));
+    if (snap.exists() && snap.data().lista && snap.data().lista.length) {
+      bibliotecaClausulas = snap.data().lista;
+    } else {
+      bibliotecaClausulas = JSON.parse(JSON.stringify(COND_CLAUSULAS));
+    }
+  } catch (e) {
+    console.error('Erro ao carregar biblioteca de cláusulas, usando padrão:', e);
+    bibliotecaClausulas = JSON.parse(JSON.stringify(COND_CLAUSULAS));
+  }
+  // depois de carregar a biblioteca de verdade, reseta o estado da proposta atual pra usar ela
+  clausulasState = bibliotecaClausulas.map(c => ({ ...c }));
+  renderClausulas();
+}
 
 function renderClausulas() {
   const grupos = [...new Set(clausulasState.map(c => c.grupo))];
@@ -975,31 +1011,70 @@ function renderClausulas() {
         return `<div style="display:flex; align-items:flex-start; gap:8px; padding:5px 0; font-size:12.5px;">
           <input type="checkbox" ${c.on ? 'checked' : ''} onchange="clausulasState[${idx}].on = this.checked" style="margin-top:3px; cursor:pointer;">
           <span style="flex:1;"><strong>${c.titulo}</strong> — <span class="text-muted">${c.texto}</span></span>
-          <button type="button" onclick="editarClausula(${idx})" style="background:none; border:none; cursor:pointer; font-size:12px; flex-shrink:0;" title="Editar texto">✏️</button>
         </div>`;
       }).join('')}
     </div>`).join('');
-  box.innerHTML += `<button type="button" class="btn btn--secondary" style="padding:6px 12px; font-size:12px; margin-top:6px;" onclick="adicionarClausulaPersonalizada()">+ Adicionar cláusula personalizada</button>`;
 }
-window.editarClausula = function(idx) {
-  const c = clausulasState[idx];
-  const novoTitulo = prompt('Título da cláusula:', c.titulo);
-  if (novoTitulo === null) return;
-  const novoTexto = prompt('Texto da cláusula:', c.texto);
-  if (novoTexto === null) return;
-  clausulasState[idx].titulo = novoTitulo.trim() || c.titulo;
-  clausulasState[idx].texto = novoTexto.trim() || c.texto;
-  clausulasState[idx].on = true;
-  renderClausulas();
+
+// ---------- Biblioteca de Cláusulas (aba "Editar Condições") ----------
+function renderBiblioteca() {
+  const status = document.getElementById('bibliotecaStatus');
+  const box = document.getElementById('bibliotecaBox');
+  if (!bibliotecaClausulas) { box.innerHTML = 'Carregando...'; return; }
+  status.textContent = '';
+  const grupos = [...new Set(bibliotecaClausulas.map(c => c.grupo))];
+  box.innerHTML = grupos.map(g => `
+    <div style="margin-bottom:20px;">
+      <div style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--gold-700); margin-bottom:8px;">${g === 'base' ? 'Cláusulas Básicas' : g}</div>
+      ${bibliotecaClausulas.filter(c => c.grupo === g).map(c => {
+        const idx = bibliotecaClausulas.indexOf(c);
+        return `
+        <div style="border:1px solid var(--paper-200); border-radius:8px; padding:12px; margin-bottom:10px;">
+          <input type="text" value="${c.titulo.replace(/"/g,'&quot;')}" placeholder="Título da cláusula"
+            style="width:100%; border:none; border-bottom:1px solid var(--paper-200); padding:4px 2px; font-weight:700; font-size:13.5px; margin-bottom:8px;"
+            oninput="bibliotecaClausulas[${idx}].titulo = this.value">
+          <textarea rows="3" placeholder="Texto completo da cláusula"
+            style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:8px 10px; font-size:12.5px; font-family:inherit;"
+            oninput="bibliotecaClausulas[${idx}].texto = this.value">${c.texto}</textarea>
+          <div style="display:flex; justify-content:flex-end; margin-top:6px;">
+            <button type="button" class="btn btn--danger" style="padding:4px 10px; font-size:11px;" onclick="excluirClausulaBiblioteca(${idx})">🗑️ Excluir</button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`).join('') + `
+    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:6px;">
+      <button type="button" class="btn btn--primary" style="padding:9px 18px;" onclick="salvarBibliotecaClausulas()">💾 Salvar biblioteca</button>
+    </div>`;
+}
+window.adicionarClausulaBiblioteca = function() {
+  bibliotecaClausulas.push({ key: 'custom_' + Date.now(), grupo: 'Personalizadas', titulo: 'Nova cláusula', texto: '' });
+  renderBiblioteca();
 };
-window.adicionarClausulaPersonalizada = function() {
-  const titulo = prompt('Título da cláusula nova:');
-  if (!titulo) return;
-  const texto = prompt('Texto da cláusula:');
-  if (!texto) return;
-  clausulasState.push({ key: 'custom_' + Date.now(), grupo: 'Personalizadas', on: true, titulo: titulo.trim(), texto: texto.trim() });
-  renderClausulas();
+window.excluirClausulaBiblioteca = function(idx) {
+  if (!confirm('Excluir essa cláusula da biblioteca? Isso não afeta propostas já salvas.')) return;
+  bibliotecaClausulas.splice(idx, 1);
+  renderBiblioteca();
 };
+window.salvarBibliotecaClausulas = async function() {
+  const status = document.getElementById('bibliotecaStatus');
+  if (!window.__firestore) { status.textContent = '⚠️ Sem conexão com o Firestore.'; return; }
+  const { db, doc, setDoc } = window.__firestore;
+  try {
+    await setDoc(doc(db, 'configuracoes', 'clausulasComerciais'), { lista: bibliotecaClausulas });
+    status.textContent = '✅ Biblioteca salva — vale pra todas as propostas novas a partir de agora.';
+    status.style.color = 'var(--status-ok)';
+    // atualiza também a proposta que estiver aberta agora, preservando o que já estava marcado (on)
+    clausulasState = bibliotecaClausulas.map(c => {
+      const antigo = clausulasState.find(x => x.key === c.key);
+      return { ...c, on: antigo ? antigo.on : false };
+    });
+    renderClausulas();
+  } catch (err) {
+    status.textContent = '⚠️ Erro ao salvar: ' + err.message;
+    status.style.color = 'var(--status-danger)';
+  }
+};
+
 function textoClausulas() {
   return clausulasState.filter(c => c.on).map(c => `${c.titulo.toUpperCase()}: ${c.texto}`).join('\n\n');
 }
@@ -1232,9 +1307,12 @@ window.atualizarTotal = function() {
 window.mudarAba = function(aba) {
   document.getElementById('tabNovo').classList.toggle('active', aba === 'novo');
   document.getElementById('tabHistorico').classList.toggle('active', aba === 'historico');
+  document.getElementById('tabEditarCondicoes').classList.toggle('active', aba === 'editarCondicoes');
   document.getElementById('viewNovo').style.display = aba === 'novo' ? 'block' : 'none';
   document.getElementById('viewHistorico').style.display = aba === 'historico' ? 'block' : 'none';
+  document.getElementById('viewEditarCondicoes').style.display = aba === 'editarCondicoes' ? 'block' : 'none';
   if (aba === 'historico') renderHistorico();
+  if (aba === 'editarCondicoes') renderBiblioteca();
 };
 
 window.limparFormulario = function() {
@@ -1251,7 +1329,7 @@ window.limparFormulario = function() {
   itens = [];
   renderItens();
   atualizarNumero();
-  clausulasState = JSON.parse(JSON.stringify(COND_CLAUSULAS));
+  clausulasState = bibliotecaClausulas ? bibliotecaClausulas.map(c => ({ ...c, on: c.grupo === 'base' })) : JSON.parse(JSON.stringify(COND_CLAUSULAS));
   renderClausulas();
 };
 
@@ -1526,8 +1604,18 @@ window.gerarPDF = async function() {
   doc.save(`Orcamento_${num.replace(/[^a-zA-Z0-9]/g,'_')}_${cliente.replace(/[^a-zA-Z0-9]/g,'_')}.pdf`);
 };
 
+function aguardarFirestore() {
+  return new Promise(resolve => {
+    if (window.__firestore) return resolve();
+    const iv = setInterval(() => { if (window.__firestore) { clearInterval(iv); resolve(); } }, 30);
+  });
+}
+
 document.getElementById('pData').value = new Date().toISOString().slice(0,10);
-carregarPropostas().then(() => { renderItens(); renderClausulas(); });
+aguardarFirestore().then(() => {
+  carregarPropostas().then(() => { renderItens(); renderClausulas(); });
+  carregarBibliotecaClausulas();
+});
 </script>
 <script type="module">
   import { auth, signOut } from "../assets/js/firebase-init.js";

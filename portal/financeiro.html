@@ -87,21 +87,33 @@
         <h1>Financeiro</h1>
         <div class="sub" id="topbarSub" style="font-size:13px; color:var(--graphite-600);">Carregando...</div>
       </div>
-      <button class="btn btn--primary" id="btnNovoLancamento" onclick="abrirModalLancamento()">+ Novo Lançamento</button>
+      <button class="btn btn--primary" id="btnNovoLancamento" onclick="abrirModalConformeAba()">+ Novo Lançamento</button>
     </header>
 
     <div class="content">
       <div id="connStatus" class="text-muted" style="font-size:12px;">Conectando...</div>
 
+      <div class="card" id="cardFluxoChart" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <strong>Fluxo de Caixa — últimos 6 meses</strong>
+          <span class="text-muted" style="font-size:12px;">Entradas (pagas) vs Saídas (pagas), por mês</span>
+        </div>
+        <canvas id="chartFluxo" height="90"></canvas>
+        <div id="resumoCategoria" style="margin-top:20px;"></div>
+      </div>
+
       <div class="kpi-row">
         <div class="kpi"><div class="lbl">A Receber (aberto)</div><div class="val" id="kpiReceber" style="color:var(--status-ok);">—</div></div>
         <div class="kpi"><div class="lbl">A Pagar (aberto)</div><div class="val" id="kpiPagar" style="color:var(--status-danger);">—</div></div>
         <div class="kpi"><div class="lbl">Saldo previsto</div><div class="val" id="kpiSaldo">—</div></div>
+        <div class="kpi"><div class="lbl">Notas Fiscais emitidas</div><div class="val" id="kpiNF">—</div></div>
       </div>
 
       <div class="tabs">
         <button class="tab active" id="tabReceber" onclick="mudarAba('receber')">A Receber</button>
         <button class="tab" id="tabPagar" onclick="mudarAba('pagar')">A Pagar</button>
+        <button class="tab" id="tabNF" onclick="mudarAba('nf')">Notas Fiscais</button>
+        <button class="tab" id="tabFluxo" onclick="mudarAba('fluxo')">Fluxo de Caixa</button>
       </div>
 
       <div class="card">
@@ -145,6 +157,10 @@
         </div>
       </div>
       <div>
+        <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Categoria</label>
+        <select id="lancCategoria" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;"></select>
+      </div>
+      <div>
         <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Status</label>
         <select id="lancStatus" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
           <option value="aberto">Em aberto</option>
@@ -164,13 +180,67 @@
   </div>
 </div>
 
+<!-- MODAL NOTA FISCAL -->
+<div id="modalNFOverlay" style="display:none; position:fixed; inset:0; background:rgba(20,23,27,0.55); align-items:center; justify-content:center; z-index:60; padding:16px;">
+  <div style="background:#fff; border-radius:16px; width:100%; max-width:440px; box-shadow:0 8px 24px rgba(0,0,0,0.2);">
+    <div style="padding:20px; border-bottom:1px solid var(--paper-200); display:flex; align-items:center; justify-content:space-between;">
+      <h3 style="font-family:var(--font-display); font-size:1.2rem; margin:0;">Registrar Nota Fiscal</h3>
+      <button onclick="fecharModalNF()" style="background:none; border:none; font-size:20px; cursor:pointer; color:var(--graphite-600);">✕</button>
+    </div>
+    <div style="padding:20px; display:flex; flex-direction:column; gap:12px;">
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Número da NF</label>
+          <input type="text" id="nfNumero" placeholder="Ex: 1234" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Valor</label>
+          <input type="number" id="nfValor" placeholder="0,00" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+        </div>
+      </div>
+      <div>
+        <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Cliente (empresa)</label>
+        <select id="nfEmpresa" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;"></select>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Data de Emissão</label>
+          <input type="date" id="nfData" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Status</label>
+          <select id="nfStatus" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+            <option value="emitida">Emitida</option>
+            <option value="cancelada">Cancelada</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Link da NF (opcional)</label>
+        <input type="text" id="nfLink" placeholder="https://..." style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+      </div>
+      <div id="nfErro" style="color:var(--status-danger); font-size:13px; display:none;"></div>
+    </div>
+    <div style="padding:16px 20px; border-top:1px solid var(--paper-200); display:flex; justify-content:flex-end; gap:8px;">
+      <button class="btn btn--secondary" onclick="fecharModalNF()">Cancelar</button>
+      <button class="btn btn--primary" onclick="salvarNF()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script type="module">
   import { db, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, esperarAuth } from '../assets/js/firebase-init.js';
 
+  const CATEGORIAS_RECEITA = ['Treinamento', 'Consultoria', 'Documentação (PGR/PCMSO)', 'Outro'];
+  const CATEGORIAS_DESPESA = ['Material/EPI', 'Transporte', 'Impostos', 'Salário/Pró-labore', 'Marketing', 'Software/Assinatura', 'Outro'];
+
   let empresasCache = [];
-  let receberCache = []; // { id, empresaId, empresaNome, descricao, valor, vencimento, status }
+  let receberCache = []; // { id, empresaId, empresaNome, descricao, valor, vencimento, status, categoria }
   let pagarCache = [];   // { id, descricao, valor, vencimento, status, categoria }
+  let notasFiscaisCache = [];
   let abaAtual = 'receber';
+  let graficoFluxo = null;
 
   function fmtMoeda(v) { return 'R$ ' + Number(v||0).toLocaleString('pt-BR', {minimumFractionDigits:2}); }
 
@@ -183,6 +253,8 @@
 
       const selectEmpresa = document.getElementById('lancEmpresa');
       selectEmpresa.innerHTML = empresasCache.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
+      const selectEmpresaNF = document.getElementById('nfEmpresa');
+      selectEmpresaNF.innerHTML = empresasCache.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
 
       // A Receber: subcoleção financeiro de cada empresa
       receberCache = [];
@@ -196,6 +268,10 @@
       // A Pagar: coleção de topo
       const pagarSnap = await getDocs(collection(db, 'contasPagar'));
       pagarCache = pagarSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      // Notas Fiscais: coleção de topo
+      const nfSnap = await getDocs(collection(db, 'notasFiscais'));
+      notasFiscaisCache = nfSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
       atualizarKPIs();
       render();
@@ -217,18 +293,59 @@
     const saldoEl = document.getElementById('kpiSaldo');
     saldoEl.textContent = fmtMoeda(saldo);
     saldoEl.style.color = saldo >= 0 ? 'var(--status-ok)' : 'var(--status-danger)';
-    document.getElementById('topbarSub').textContent = `${receberCache.length} a receber · ${pagarCache.length} a pagar`;
+    document.getElementById('kpiNF').textContent = notasFiscaisCache.filter(n => n.status === 'emitida').length;
+    document.getElementById('topbarSub').textContent = `${receberCache.length} a receber · ${pagarCache.length} a pagar · ${notasFiscaisCache.length} nota(s) fiscal(is)`;
   }
 
   window.mudarAba = function(aba) {
     abaAtual = aba;
     document.getElementById('tabReceber').classList.toggle('active', aba === 'receber');
     document.getElementById('tabPagar').classList.toggle('active', aba === 'pagar');
+    document.getElementById('tabNF').classList.toggle('active', aba === 'nf');
+    document.getElementById('tabFluxo').classList.toggle('active', aba === 'fluxo');
+
+    document.getElementById('cardFluxoChart').style.display = aba === 'fluxo' ? 'block' : 'none';
+    document.querySelector('.card:not(#cardFluxoChart)').style.display = aba === 'fluxo' ? 'none' : 'block';
+    document.getElementById('btnNovoLancamento').style.display = aba === 'fluxo' ? 'none' : 'inline-block';
+    document.getElementById('btnNovoLancamento').textContent = aba === 'nf' ? '+ Registrar NF' : '+ Novo Lançamento';
+
+    if (aba === 'fluxo') { renderGraficoFluxo(); return; }
     render();
+  };
+  window.abrirModalConformeAba = function() {
+    if (abaAtual === 'nf') abrirModalNF();
+    else abrirModalLancamento();
   };
 
   function render() {
     const box = document.getElementById('lancamentosList');
+
+    if (abaAtual === 'nf') {
+      if (notasFiscaisCache.length === 0) {
+        box.innerHTML = `<div class="text-muted" style="text-align:center; padding:20px;">Nenhuma nota fiscal registrada ainda.</div>`;
+        return;
+      }
+      box.innerHTML = `
+        <table>
+          <thead><tr><th>Número</th><th>Cliente</th><th>Valor</th><th>Emissão</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            ${notasFiscaisCache.map(n => `
+              <tr>
+                <td style="font-family:var(--font-data);">${n.numero}</td>
+                <td>${n.empresaNome || '—'}</td>
+                <td>${fmtMoeda(n.valor)}</td>
+                <td style="font-family:var(--font-data); font-size:12px;">${n.dataEmissao ? n.dataEmissao.split('-').reverse().join('/') : '—'}</td>
+                <td><span class="selo selo--${n.status==='emitida'?'ok':'danger'}">${n.status==='emitida'?'Emitida':'Cancelada'}</span></td>
+                <td>
+                  ${n.link ? `<a href="${n.link}" target="_blank" class="btn btn--ghost" style="padding:5px 9px; font-size:11px; text-decoration:none;">📄 Ver</a>` : ''}
+                  <button class="btn btn--danger" style="padding:5px 9px; font-size:11px;" onclick="excluirNF('${n.id}')">Excluir</button>
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table>`;
+      return;
+    }
+
     const lista = abaAtual === 'receber' ? receberCache : pagarCache;
     if (lista.length === 0) {
       box.innerHTML = `<div class="text-muted" style="text-align:center; padding:20px;">Nenhum lançamento ${abaAtual === 'receber' ? 'a receber' : 'a pagar'} ainda.</div>`;
@@ -236,12 +353,13 @@
     }
     box.innerHTML = `
       <table>
-        <thead><tr>${abaAtual==='receber' ? '<th>Empresa</th>' : ''}<th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Status</th><th></th></tr></thead>
+        <thead><tr>${abaAtual==='receber' ? '<th>Empresa</th>' : ''}<th>Descrição</th><th>Categoria</th><th>Valor</th><th>Vencimento</th><th>Status</th><th></th></tr></thead>
         <tbody>
           ${lista.map(l => `
             <tr>
               ${abaAtual==='receber' ? `<td>${l.empresaNome}</td>` : ''}
               <td>${l.descricao || '—'}</td>
+              <td><span class="text-muted" style="font-size:12px;">${l.categoria || '—'}</span></td>
               <td>${fmtMoeda(l.valor)}</td>
               <td style="font-family:var(--font-data); font-size:12px;">${l.vencimento ? l.vencimento.split('-').reverse().join('/') : '—'}</td>
               <td><span class="selo selo--${l.status==='pago'?'ok':'pending'}">${l.status==='pago'?'Pago':'Em aberto'}</span></td>
@@ -258,10 +376,13 @@
   window.alternarCampoEmpresa = function() {
     const tipo = document.getElementById('lancTipo').value;
     document.getElementById('campoEmpresaBox').style.display = tipo === 'receber' ? 'block' : 'none';
+    const selectCategoria = document.getElementById('lancCategoria');
+    const opcoes = tipo === 'receber' ? CATEGORIAS_RECEITA : CATEGORIAS_DESPESA;
+    selectCategoria.innerHTML = opcoes.map(c => `<option value="${c}">${c}</option>`).join('');
   };
 
   window.abrirModalLancamento = function() {
-    document.getElementById('lancTipo').value = abaAtual;
+    document.getElementById('lancTipo').value = abaAtual === 'pagar' ? 'pagar' : 'receber';
     alternarCampoEmpresa();
     document.getElementById('lancDescricao').value = '';
     document.getElementById('lancValor').value = '';
@@ -278,6 +399,7 @@
   window.salvarLancamento = async function() {
     const tipo = document.getElementById('lancTipo').value;
     const descricao = document.getElementById('lancDescricao').value.trim();
+    const categoria = document.getElementById('lancCategoria').value;
     const valor = document.getElementById('lancValor').value;
     const vencimento = document.getElementById('lancVencimento').value;
     const statusCampo = document.getElementById('lancStatus').value;
@@ -289,9 +411,9 @@
       if (tipo === 'receber') {
         const empresaId = document.getElementById('lancEmpresa').value;
         if (!empresaId) { erroBox.textContent = 'Escolhe a empresa.'; erroBox.style.display = 'block'; return; }
-        await addDoc(collection(db, 'empresas', empresaId, 'financeiro'), { descricao, valor, vencimento, status: statusCampo, linkNF });
+        await addDoc(collection(db, 'empresas', empresaId, 'financeiro'), { descricao, categoria, valor, vencimento, status: statusCampo, linkNF });
       } else {
-        await addDoc(collection(db, 'contasPagar'), { descricao, valor, vencimento, status: statusCampo, linkNF });
+        await addDoc(collection(db, 'contasPagar'), { descricao, categoria, valor, vencimento, status: statusCampo, linkNF });
       }
       fecharModalLancamento();
       carregarTudo();
@@ -300,6 +422,100 @@
       erroBox.style.display = 'block';
     }
   };
+
+  // ---------- Notas Fiscais ----------
+  window.abrirModalNF = function() {
+    document.getElementById('nfNumero').value = '';
+    document.getElementById('nfValor').value = '';
+    document.getElementById('nfData').value = new Date().toISOString().slice(0,10);
+    document.getElementById('nfStatus').value = 'emitida';
+    document.getElementById('nfLink').value = '';
+    document.getElementById('nfErro').style.display = 'none';
+    document.getElementById('modalNFOverlay').style.display = 'flex';
+  };
+  window.fecharModalNF = function() {
+    document.getElementById('modalNFOverlay').style.display = 'none';
+  };
+  window.salvarNF = async function() {
+    const numero = document.getElementById('nfNumero').value.trim();
+    const valor = document.getElementById('nfValor').value;
+    const empresaId = document.getElementById('nfEmpresa').value;
+    const dataEmissao = document.getElementById('nfData').value;
+    const statusCampo = document.getElementById('nfStatus').value;
+    const link = document.getElementById('nfLink').value.trim();
+    const erroBox = document.getElementById('nfErro');
+    if (!numero || !valor || !empresaId) { erroBox.textContent = 'Preenche número, valor e cliente.'; erroBox.style.display = 'block'; return; }
+
+    const empresa = empresasCache.find(e => e.id === empresaId);
+    try {
+      await addDoc(collection(db, 'notasFiscais'), { numero, valor, empresaId, empresaNome: empresa ? empresa.nome : '', dataEmissao, status: statusCampo, link });
+      fecharModalNF();
+      carregarTudo();
+    } catch (err) {
+      erroBox.textContent = 'Erro: ' + err.message;
+      erroBox.style.display = 'block';
+    }
+  };
+  window.excluirNF = async function(id) {
+    if (!confirm('Excluir essa nota fiscal do registro?')) return;
+    try {
+      await deleteDoc(doc(db, 'notasFiscais', id));
+      carregarTudo();
+    } catch (err) { alert('Erro: ' + err.message); }
+  };
+
+  // ---------- Gráfico de Fluxo de Caixa ----------
+  function renderGraficoFluxo() {
+    const hoje = new Date();
+    const meses = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+      meses.push({ chave: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`, label: d.toLocaleDateString('pt-BR', {month:'short', year:'2-digit'}) });
+    }
+
+    function chaveDe(dataStr) {
+      if (!dataStr) return null;
+      return dataStr.slice(0,7); // funciona pra "AAAA-MM-DD"
+    }
+
+    const entradas = meses.map(m => receberCache.filter(r => r.status === 'pago' && chaveDe(r.vencimento) === m.chave).reduce((s,r) => s + Number(r.valor||0), 0));
+    const saidas = meses.map(m => pagarCache.filter(p => p.status === 'pago' && chaveDe(p.vencimento) === m.chave).reduce((s,p) => s + Number(p.valor||0), 0));
+
+    const ctx = document.getElementById('chartFluxo').getContext('2d');
+    if (graficoFluxo) graficoFluxo.destroy();
+    graficoFluxo = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: meses.map(m => m.label),
+        datasets: [
+          { label: 'Entradas (pagas)', data: entradas, backgroundColor: '#16a34a' },
+          { label: 'Saídas (pagas)', data: saidas, backgroundColor: '#dc2626' }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom' } },
+        scales: { y: { ticks: { callback: v => fmtMoeda(v) } } }
+      }
+    });
+
+    // resumo por categoria (receitas + despesas pagas, últimos 6 meses)
+    const chavesValidas = new Set(meses.map(m => m.chave));
+    const porCategoria = {};
+    receberCache.filter(r => r.status === 'pago' && chavesValidas.has(chaveDe(r.vencimento))).forEach(r => {
+      const cat = r.categoria || 'Sem categoria';
+      porCategoria[cat] = (porCategoria[cat] || 0) + Number(r.valor||0);
+    });
+    const resumoBox = document.getElementById('resumoCategoria');
+    const entradasOrdenadas = Object.entries(porCategoria).sort((a,b) => b[1]-a[1]);
+    resumoBox.innerHTML = entradasOrdenadas.length ? `
+      <strong style="font-size:13px;">Receita por categoria (últimos 6 meses)</strong>
+      <table style="margin-top:8px;">
+        <tbody>
+          ${entradasOrdenadas.map(([cat, valor]) => `<tr><td>${cat}</td><td style="text-align:right;">${fmtMoeda(valor)}</td></tr>`).join('')}
+        </tbody>
+      </table>` : '<div class="text-muted" style="font-size:12px;">Nenhuma receita paga registrada nos últimos 6 meses ainda.</div>';
+  }
 
   window.marcarComoPago = async function(id, empresaId) {
     try {
