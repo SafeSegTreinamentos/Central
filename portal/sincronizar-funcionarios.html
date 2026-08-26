@@ -107,7 +107,7 @@
 
   await esperarAuth();
 
-  function normaliza(s) { return (s||'').toLowerCase().trim().replace(/\s+/g,' '); }
+  function normaliza(s) { return (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim(); }
 
   let planoAcoes = []; // { nome, cpf, empresaDestinoId, empresaDestinoNome, acao: 'criar'|'atualizar-cpf'|'ja-ok', funcionarioId? }
 

@@ -65,6 +65,12 @@
   function sanitizarTexto(s) {
     return (s || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^ -~]/g, '');
   }
+  // Normaliza texto pra comparar nomes de pessoa/curso sem depender de
+  // acento, maiúscula/minúscula ou espaço duplo — usada tanto no
+  // carregamento quanto na geração do PDF, por isso fica aqui em cima
+  function normaliza(s) {
+    return (s || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+  }
 
   async function carregar() {
     const sub = document.getElementById('subInfo');
@@ -85,9 +91,8 @@
       dadosFuncionario = funcSnap.data();
       dadosEmpresa = empSnap.exists() ? empSnap.data() : { nome: '' };
 
-      catSnap.forEach(d => { const c = d.data(); catalogoMap[(c.nome||'').toLowerCase().trim()] = c; });
+      catSnap.forEach(d => { const c = d.data(); catalogoMap[normaliza(c.nome)] = c; });
 
-      const normaliza = s => (s||'').toString().toLowerCase().trim();
       cursosAtivos = certSnap.docs
         .map(d => d.data())
         .filter(c => normaliza(c.colaborador) === normaliza(dadosFuncionario.nome))
@@ -260,7 +265,7 @@
       cursosAtivos.forEach((c, i) => {
         if (vy > H - 46) return; // reserva espaço pro QR/rodapé
         const st = statusPorData(c.validade);
-        const catInfo = catalogoMap[(c.nr||'').toLowerCase().trim()];
+        const catInfo = catalogoMap[normaliza(c.nr)];
         const ch = catInfo ? catInfo.ch : '';
         const realizacao = formatarDataBR(c.dataConclusao) || formatarDataBR(c.criadoEm ? c.criadoEm.slice(0,10) : '');
 

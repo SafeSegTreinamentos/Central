@@ -799,7 +799,7 @@ async function verificarSugestaoTurma() {
       getDocs(collection(db, 'empresas', empresaId, 'certificados')),
       getDocs(collection(db, 'empresas', empresaId, 'funcionarios'))
     ]);
-    const normaliza = s => (s||'').toString().toLowerCase().trim();
+    const normaliza = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
     const funcAtivos = funcSnap.docs.map(d => d.data()).filter(f => f.status !== 'inativo');
     const nomesFuncAtivos = new Set(funcAtivos.map(f => normaliza(f.nome)));
 
@@ -1402,7 +1402,7 @@ async function obterOuCriarEmpresaNaoAlocados_() {
   const { db, collection, getDocs, addDoc } = window.__firestore;
   try {
     const snap = await getDocs(collection(db, 'empresas'));
-    const normaliza = s => (s||'').toString().toLowerCase().trim();
+    const normaliza = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
     const existente = snap.docs.find(d => {
       const n = normaliza(d.data().nome);
       return n === 'não alocados' || n === 'nao alocados';
@@ -1483,7 +1483,7 @@ async function emitirCertificadosDaTurma(id){
             let certificadoAnteriorId = null;
             try {
               const certsSnap = await getDocs(collection(db, 'empresas', empresaIdParaGravar, 'certificados'));
-              const normaliza = s => (s||'').toString().toLowerCase().trim();
+              const normaliza = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
               const anterior = certsSnap.docs.find(d => {
                 const c = d.data();
                 return normaliza(c.colaborador) === normaliza(aluno.nome) && normaliza(c.nr) === normaliza(t.curso) && !c.substituidoPor;

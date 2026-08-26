@@ -263,7 +263,7 @@
         } catch (e) { console.error(e); }
         try {
           const certSnap = await getDocs(collection(db, 'empresas', dadosTurma.empresaId, 'certificados'));
-          const normaliza = s => (s||'').toString().toLowerCase().trim();
+          const normaliza = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
           const nomesAlunos = new Set((dadosTurma.alunos||[]).map(a => normaliza(a.nome)));
           certificadosCache = certSnap.docs.map(d => d.data())
             .filter(c => normaliza(c.nr) === normaliza(dadosTurma.curso) && nomesAlunos.has(normaliza(c.colaborador)) && !c.substituidoPor);
@@ -271,7 +271,7 @@
       }
       try {
         const catSnap = await getDocs(collection(db, 'catalogoCursos'));
-        const normaliza = s => (s||'').toString().toLowerCase().trim();
+        const normaliza = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
         const cursoMatch = catSnap.docs.map(d => d.data()).find(c => normaliza(c.nome) === normaliza(dadosTurma.curso));
         conteudoProgramaticoCache = cursoMatch ? cursoMatch.prog || '' : '';
       } catch (e) { console.error(e); }
@@ -360,7 +360,7 @@
       box.innerHTML = '<tr><td colspan="3" class="text-muted" style="padding:12px; text-align:center;">Nenhum aluno aprovado ainda.</td></tr>';
       return;
     }
-    const normaliza = s => (s||'').toString().toLowerCase().trim();
+    const normaliza = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
     box.innerHTML = alunos.map(a => {
       const cert = certificadosCache.find(c => normaliza(c.colaborador) === normaliza(a.nome));
       return `
@@ -666,7 +666,7 @@
         doc.text('RECICLAGEM', M+150, y+5.5);
         y += 8;
         doc.setFont('helvetica','normal'); doc.setTextColor(...GRAFITE); doc.setFontSize(9);
-        const normaliza = s => (s||'').toString().toLowerCase().trim();
+        const normaliza = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
         aprovados.forEach((a, i) => {
           if (y > H - 20) { footer(`pág. ${doc.internal.getNumberOfPages()}`); doc.addPage(); y = header() + 8; }
           if (i % 2 === 1) { doc.setFillColor(248,246,240); doc.rect(M, y, W-2*M, 7, 'F'); }

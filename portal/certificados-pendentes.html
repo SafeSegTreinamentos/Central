@@ -115,7 +115,7 @@
     try { return JSON.parse(localStorage.getItem(LS_TURMAS)||'[]'); } catch(e) { return []; }
   }
 
-  function normaliza(s) { return (s||'').toLowerCase().trim().replace(/\s+/g,' '); }
+  function normaliza(s) { return (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim(); }
 
   async function carregar() {
     const status = document.getElementById('connStatus');

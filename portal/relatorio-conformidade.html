@@ -109,7 +109,7 @@
       funcionariosCache = funcSnap.docs.map(d => d.data()).filter(f => f.status !== 'inativo');
       certificadosCache = certSnap.docs.map(d => d.data()).filter(c => !c.substituidoPor);
 
-      const normaliza = s => (s||'').toString().toLowerCase().trim();
+      const normaliza = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
       linhasRelatorio = [];
       funcionariosCache.forEach(f => {
         const certsDele = certificadosCache.filter(c => normaliza(c.colaborador) === normaliza(f.nome));
