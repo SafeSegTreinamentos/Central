@@ -302,7 +302,7 @@
     const rodapeY = H - 8;
     doc.setFillColor(...PRETO); doc.rect(0, rodapeY, W, 8, 'F');
     doc.setFont('helvetica', 'normal'); doc.setFontSize(4.3); doc.setTextColor(...BRANCO);
-    doc.text('(46) 99920-3945  ·  safesegseguranca@gmail.com', W/2, rodapeY + 5, { align: 'center' });
+    doc.text('(46) 99920-3945  ·  contato@safeseg.eng.br', W/2, rodapeY + 5, { align: 'center' });
 
     doc.save(`Carteirinha_${(dadosFuncionario.nome||'colaborador').replace(/[^a-zA-Z0-9]/g,'_')}.pdf`);
     botao.disabled = false; botao.textContent = textoOriginal;

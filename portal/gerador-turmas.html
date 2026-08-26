@@ -1075,7 +1075,7 @@ function buildFrente(turma, dia, diaIndex, totalDias){
       <div class="doc-tag">TREINAMENTOS</div>
       <div class="doc-companyline">
         52.112.925/0001-28 · SAFESEG SEGURANÇA DO TRABALHO<br>
-        Rua Almiro Aleacio Amadori, 330 · Dois Vizinhos — PR · (46) 9920-3945 · safesegseguranca@gmail.com
+        Rua Almiro Aleacio Amadori, 330 · Dois Vizinhos — PR · (46) 99920-3945 · contato@safeseg.eng.br
       </div>
     </div>
     <div class="doc-title">DADOS DO TREINAMENTO${totalDias>1 ? ` — DIA ${diaIndex+1} DE ${totalDias}` : ''}</div>
@@ -1392,6 +1392,41 @@ async function chamarScriptCertificados(payload){
   return await res.json();
 }
 
+// Turmas "Abertas" (CT SafeSeg, sem empresa vinculada) não tinham pra onde ir
+// no Firestore — o certificado era gerado no Drive normalmente, mas ficava
+// invisível no Portal. Isso resolve criando/reaproveitando uma empresa
+// especial "Não Alocados" (mesmo padrão já usado na Sincronizar Funcionários),
+// só quando realmente precisa.
+async function obterOuCriarEmpresaNaoAlocados_() {
+  if (!window.__firestore) return null;
+  const { db, collection, getDocs, addDoc } = window.__firestore;
+  try {
+    const snap = await getDocs(collection(db, 'empresas'));
+    const normaliza = s => (s||'').toString().toLowerCase().trim();
+    const existente = snap.docs.find(d => {
+      const n = normaliza(d.data().nome);
+      return n === 'não alocados' || n === 'nao alocados';
+    });
+    if (existente) return existente.id;
+
+    const novaRef = await addDoc(collection(db, 'empresas'), {
+      nome: 'Não Alocados',
+      cnpj: '',
+      seg: '',
+      cidade: '',
+      resp: '',
+      telefone: '',
+      email: '',
+      endereco: '',
+      obs: 'Empresa especial criada automaticamente — reúne certificados de turmas "Abertas" (sem empresa vinculada). Mova manualmente pra empresa certa quando identificar quem é o aluno.'
+    });
+    return novaRef.id;
+  } catch (e) {
+    console.error('Erro ao obter/criar empresa Não Alocados:', e);
+    return null;
+  }
+}
+
 async function emitirCertificadosDaTurma(id){
   const t = loadTurmas().find(x=>x.id===id);
   if(!t){ toast('Turma não encontrada'); return; }
@@ -1403,6 +1438,10 @@ async function emitirCertificadosDaTurma(id){
     return;
   }
   if(!confirm(`Gerar ${aprovados.length} certificado(s) real(is) — só dos alunos já aprovados (de ${t.alunos.length} no total)? Isso cria os PDFs no Drive.`)) return;
+
+  // resolve UMA VEZ (antes do loop) pra onde grava no Firestore — empresa
+  // real da turma, ou "Não Alocados" se a turma for aberta
+  const empresaIdParaGravar = t.empresaId || await obterOuCriarEmpresaNaoAlocados_();
 
   const statusBox = document.getElementById(`emissaoStatus-${id}`);
   statusBox.style.display = 'block';
@@ -1433,7 +1472,7 @@ async function emitirCertificadosDaTurma(id){
         // grava no Firestore JÁ na emissão (não só depois de assinado) — é isso
         // que deixa a empresa ver/baixar qualquer certificado no Portal dela,
         // assinado ou não
-        if (t.empresaId && window.__firestore) {
+        if (empresaIdParaGravar && window.__firestore) {
           try {
             const { db, collection, addDoc, getDocs, updateDoc, doc } = window.__firestore;
 
@@ -1443,7 +1482,7 @@ async function emitirCertificadosDaTurma(id){
             // histórico de renovação de cada pessoa depois
             let certificadoAnteriorId = null;
             try {
-              const certsSnap = await getDocs(collection(db, 'empresas', t.empresaId, 'certificados'));
+              const certsSnap = await getDocs(collection(db, 'empresas', empresaIdParaGravar, 'certificados'));
               const normaliza = s => (s||'').toString().toLowerCase().trim();
               const anterior = certsSnap.docs.find(d => {
                 const c = d.data();
@@ -1452,7 +1491,7 @@ async function emitirCertificadosDaTurma(id){
               if (anterior) certificadoAnteriorId = anterior.id;
             } catch (e) { console.error('Erro ao buscar certificado anterior pra renovação:', e); }
 
-            const docRef = await addDoc(collection(db, 'empresas', t.empresaId, 'certificados'), {
+            const docRef = await addDoc(collection(db, 'empresas', empresaIdParaGravar, 'certificados'), {
               colaborador: aluno.nome,
               cpf: aluno.cpf || '',
               nr: t.curso || '',
@@ -1463,9 +1502,10 @@ async function emitirCertificadosDaTurma(id){
               substituiCertificadoId: certificadoAnteriorId || null
             });
             item.firestoreDocId = docRef.id; // guarda pra "Verificar assinaturas" atualizar em vez de duplicar
+            item.empresaIdUsado = empresaIdParaGravar; // guarda pra "Verificar assinaturas" achar o caminho certo depois
 
             if (certificadoAnteriorId) {
-              await updateDoc(doc(db, 'empresas', t.empresaId, 'certificados', certificadoAnteriorId), {
+              await updateDoc(doc(db, 'empresas', empresaIdParaGravar, 'certificados', certificadoAnteriorId), {
                 substituidoPor: docRef.id,
                 substituidoEm: new Date().toISOString()
               });
@@ -1532,18 +1572,19 @@ async function verificarAssinaturasClick(turmaId) {
 
         // Atualiza o MESMO registro criado na emissão (não cria duplicado) —
         // troca o pdfUrl pro PDF assinado e marca como confirmado
-        if (t && t.empresaId && window.__firestore) {
+        const empresaIdDoItem = item.empresaIdUsado || t.empresaId; // fallback pra certificados emitidos antes dessa correção
+        if (empresaIdDoItem && window.__firestore) {
           try {
             const { db, collection, addDoc, doc, updateDoc } = window.__firestore;
             if (item.firestoreDocId) {
-              await updateDoc(doc(db, 'empresas', t.empresaId, 'certificados', item.firestoreDocId), {
+              await updateDoc(doc(db, 'empresas', empresaIdDoItem, 'certificados', item.firestoreDocId), {
                 pdfUrl: item.urlAssinado,
                 assinadoAssinafy: true
               });
             } else {
               // não tinha registro prévio (ex: turma antiga, emitida antes dessa
               // atualização) — cria um novo pra não perder o certificado assinado
-              await addDoc(collection(db, 'empresas', t.empresaId, 'certificados'), {
+              await addDoc(collection(db, 'empresas', empresaIdDoItem, 'certificados'), {
                 colaborador: item.nome,
                 nr: t.curso || '',
                 validade: '',

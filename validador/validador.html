@@ -305,6 +305,12 @@
       if (!res.ok) throw new Error(`Servidor respondeu ${res.status} (${res.statusText})`);
       const data = await res.json();
 
+      if (data && data.limitado) {
+        note.textContent = '⏳ Muitas consultas em pouco tempo — aguarda um minuto e tenta de novo.';
+        note.className = 'attempts-note warn';
+        return;
+      }
+
       if (!data || !data.sucesso || !data.encontrado) {
         document.getElementById('notFoundCard').classList.add('show');
         note.textContent = '';

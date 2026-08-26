@@ -128,6 +128,7 @@
           <h2>Ficha da Empresa</h2>
           <div style="display:flex; gap:8px;">
             <a id="linkRelatorioConformidade" href="#" class="btn btn--secondary" style="padding:7px 14px; font-size:13px; text-decoration:none;">📋 Relatório de Conformidade</a>
+            <a id="linkInformativoAcesso" href="#" class="btn btn--secondary" style="padding:7px 14px; font-size:13px; text-decoration:none;">🔑 Informativo de Acesso</a>
             <button class="btn btn--secondary" id="btnEditarFicha" onclick="alternarEdicaoFicha()" style="padding:7px 14px; font-size:13px;">✏️ Editar</button>
           </div>
         </div>
@@ -253,6 +254,7 @@
     throw new Error('sem id');
   }
   document.getElementById('linkRelatorioConformidade').href = `relatorio-conformidade.html?empresaId=${empresaId}`;
+  document.getElementById('linkInformativoAcesso').href = `informativo-acesso.html?empresaId=${empresaId}`;
 
   let empresaAtual = null;
   let funcionariosCache = [];
