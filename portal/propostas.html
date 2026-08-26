@@ -1601,8 +1601,28 @@ window.gerarPDF = async function() {
   });
 
   footer(`pág. ${doc.internal.getNumberOfPages()}`);
-  doc.save(`Orcamento_${num.replace(/[^a-zA-Z0-9]/g,'_')}_${cliente.replace(/[^a-zA-Z0-9]/g,'_')}.pdf`);
+  const nomeArquivoPdf = `Orcamento_${num.replace(/[^a-zA-Z0-9]/g,'_')}_${cliente.replace(/[^a-zA-Z0-9]/g,'_')}.pdf`;
+  doc.save(nomeArquivoPdf);
+  salvarNoDriveEmSegundoPlano('proposta', nomeArquivoPdf, doc.output('datauristring'));
 };
+
+// Salva uma cópia do PDF/Excel gerado na pasta certa do Drive, via Apps
+// Script — roda em segundo plano, sem travar a tela nem interromper o
+// download local, que já aconteceu de qualquer forma.
+async function salvarNoDriveEmSegundoPlano(tipo, nomeArquivo, dataUriString, empresaNome, mimeType) {
+  try {
+    const base64 = dataUriString.split(',')[1];
+    const CERT_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz55Li88oyroPtFH1iTOV2nR58-xbuUAMkGcyb6GRzM3S6KQNARj7Sxvi1mZShhPg-WRg/exec';
+    const res = await fetch(CERT_APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ acao: 'salvarDocumento', tipo, nomeArquivo, conteudoBase64: base64, mimeType: mimeType || 'application/pdf', empresaNome })
+    });
+    const data = await res.json();
+    if (!data.sucesso) console.error('Não consegui salvar no Drive:', data.erro);
+  } catch (err) {
+    console.error('Erro ao salvar no Drive (o download local funcionou normalmente):', err);
+  }
+}
 
 function aguardarFirestore() {
   return new Promise(resolve => {
