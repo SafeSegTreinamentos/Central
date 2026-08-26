@@ -93,6 +93,22 @@
 
       catSnap.forEach(d => { const c = d.data(); catalogoMap[normaliza(c.nome)] = c; });
 
+      // 🔍 DIAGNÓSTICO TEMPORÁRIO — mostra no console (F12) os dados reais
+      // pra achar por que o casamento de nome está falhando em certos casos
+      console.log('🔍 Nome do funcionário (bruto):', JSON.stringify(dadosFuncionario.nome));
+      console.log('🔍 Nome normalizado:', JSON.stringify(normaliza(dadosFuncionario.nome)));
+      console.log('🔍 Todos os certificados dessa empresa:', certSnap.docs.map(d => {
+        const c = d.data();
+        return {
+          colaborador_bruto: c.colaborador,
+          colaborador_normalizado: normaliza(c.colaborador),
+          bate_com_funcionario: normaliza(c.colaborador) === normaliza(dadosFuncionario.nome),
+          tem_substituidoPor: !!c.substituidoPor,
+          nr: c.nr,
+          validade: c.validade
+        };
+      }));
+
       cursosAtivos = certSnap.docs
         .map(d => d.data())
         .filter(c => normaliza(c.colaborador) === normaliza(dadosFuncionario.nome))
