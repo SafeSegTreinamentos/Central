@@ -367,8 +367,16 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
       <h2>1. Dados do treinamento</h2>
       <div class="grid">
         <div class="field">
-          <label>Curso</label>
-          <select id="fCurso"></select>
+          <label>Instrutor / Responsável pela assinatura</label>
+          <select id="fInstrutor" onchange="atualizarCursosDoInstrutor()">
+            <option value="Deverson R. F. Pomerenk">Deverson R. F. Pomerenk</option>
+            <option value="Everton">Everton</option>
+          </select>
+          <div class="small-note">Essa é a mesma lista usada pra escolher quem assina depois da emissão. Pra adicionar um novo instrutor aqui, cadastra em <a href="instrutores.html">Instrutores</a> — precisa também bater com o nome no <code>ASSINAFY_INSTRUTORES</code> do Apps Script pra assinatura eletrônica funcionar.</div>
+        </div>
+        <div class="field">
+          <label>Curso <small style="color:var(--amber); font-weight:400;">— só mostra cursos com modelo cadastrado pra esse instrutor</small></label>
+          <select id="fCurso"><option value="">Carregando modelos...</option></select>
         </div>
         <div class="field">
           <label>Tipo</label>
@@ -391,14 +399,6 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
         <div class="field">
           <label>CNPJ da empresa</label>
           <input id="fCnpj" placeholder="00.000.000/0000-00">
-        </div>
-        <div class="field">
-          <label>Instrutor / Responsável pela assinatura</label>
-          <select id="fInstrutor">
-            <option value="Deverson R. F. Pomerenk">Deverson R. F. Pomerenk</option>
-            <option value="Everton">Everton</option>
-          </select>
-          <div class="small-note">Essa é a mesma lista usada pra escolher quem assina depois da emissão. Pra adicionar um novo instrutor aqui, cadastra em <a href="instrutores.html">Instrutores</a> — precisa também bater com o nome no <code>ASSINAFY_INSTRUTORES</code> do Apps Script pra assinatura eletrônica funcionar.</div>
         </div>
         <div class="field">
           <label>Instrutores auxiliares <small style="color:var(--amber); font-weight:400;">— opcional, pra registro (não assina o certificado)</small></label>
@@ -1057,7 +1057,7 @@ document.getElementById('fPlanilhaUpload').addEventListener('change', async (e)=
 
 function collectForm(){
   const cursoSel=document.getElementById('fCurso');
-  const cursoNome = cursoSel.value==='custom' ? (prompt('Nome do curso:')||'Curso') : loadCursos()[+cursoSel.value].nome;
+  const cursoNome = cursoSel.value; // agora o value da option já É o nome do curso (vem direto dos Modelos cadastrados)
   const empresaSel = document.getElementById('fEmpresa');
   const empresaOpt = empresaSel.options[empresaSel.selectedIndex];
   return {
@@ -1331,20 +1331,19 @@ document.getElementById('btnLimparForm').addEventListener('click',()=>{
 });
 
 /* Carrega uma turma existente (rascunho ou gerada) de volta no formulário para continuar editando */
-function editarTurma(id){
+async function editarTurma(id){
   const t = loadTurmas().find(x=>x.id===id);
   if(!t) return;
   currentTurmaId = t.id;
   currentTurmaCodigo = t.codigo;
-  const cursos = loadCursos();
-  const idx = cursos.findIndex(c=>c.nome===t.curso);
-  document.getElementById('fCurso').value = idx!==-1 ? idx : 'custom';
+  document.getElementById('fInstrutor').value = t.instrutor||'Deverson R. F. Pomerenk';
+  await atualizarCursosDoInstrutor(); // recarrega a lista de cursos baseada nesse instrutor ANTES de tentar selecionar o curso salvo
+  document.getElementById('fCurso').value = t.curso || '';
   document.getElementById('fTipo').value = t.tipo||'Formação';
   document.getElementById('fCarga').value = t.carga||'';
   document.getElementById('fEmpresa').value = t.empresaId||'';
   carregarFuncionariosDaEmpresa();
   document.getElementById('fCnpj').value = t.cnpj||'';
-  document.getElementById('fInstrutor').value = t.instrutor||'Deverson R. F. Pomerenk';
   document.querySelectorAll('.chk-instrutor-aux').forEach(c => {
     c.checked = (t.instrutoresAuxiliares || []).includes(c.value);
   });
@@ -1442,6 +1441,51 @@ async function chamarScriptCertificados(payload){
   if(!res.ok) throw new Error('HTTP '+res.status);
   return await res.json();
 }
+
+// Mesma tolerância usada no Apps Script pra achar o instrutor certo mesmo
+// com nome completo vs nome curto ("Deverson R. F. Pomerenk" bate com
+// "Deverson"), sem depender de acento
+function primeiroNomeSemAcento(s) {
+  return (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().split(/\s+/)[0] || '';
+}
+
+let modelosCache = null; // busca uma vez só, filtra localmente depois
+
+// O Curso agora é 100% dirigido pelos Modelos cadastrados de verdade —
+// isso elimina de vez qualquer descasamento de nome entre o que aparece
+// aqui e o que o Apps Script usa pra achar o modelo do Slides.
+window.atualizarCursosDoInstrutor = async function() {
+  const selectCurso = document.getElementById('fCurso');
+  const instrutorAtual = document.getElementById('fInstrutor').value;
+  const cursoJaSelecionado = selectCurso.value;
+
+  try {
+    if (!modelosCache) {
+      selectCurso.innerHTML = '<option value="">Carregando modelos...</option>';
+      const resultado = await chamarScriptCertificados({ acao: 'listarModelos' });
+      if (!resultado || !resultado.sucesso) throw new Error(resultado ? resultado.erro : 'sem resposta');
+      modelosCache = resultado.modelos || [];
+    }
+
+    const alvo = primeiroNomeSemAcento(instrutorAtual);
+    const cursosDoInstrutor = modelosCache
+      .filter(m => primeiroNomeSemAcento(m.instrutor) === alvo || !m.instrutor)
+      .map(m => m.curso)
+      .filter(Boolean);
+    const cursosUnicos = [...new Set(cursosDoInstrutor)].sort();
+
+    if (cursosUnicos.length === 0) {
+      selectCurso.innerHTML = `<option value="">Nenhum modelo cadastrado pra ${instrutorAtual}</option>`;
+      return;
+    }
+    selectCurso.innerHTML = cursosUnicos.map(c => `<option value="${c.replace(/"/g,'&quot;')}">${c}</option>`).join('');
+    // mantém o curso que já estava escolhido, se ele ainda for válido pro novo instrutor
+    if (cursosUnicos.includes(cursoJaSelecionado)) selectCurso.value = cursoJaSelecionado;
+  } catch (err) {
+    selectCurso.innerHTML = '<option value="">⚠️ Erro ao carregar modelos</option>';
+    console.error('Erro ao carregar cursos por instrutor:', err);
+  }
+};
 
 // Turmas "Abertas" (CT SafeSeg, sem empresa vinculada) não tinham pra onde ir
 // no Firestore — o certificado era gerado no Drive normalmente, mas ficava
@@ -1788,7 +1832,6 @@ function updateCurso(i, field, value){
   const cursos=loadCursos();
   cursos[i][field]=value;
   saveCursos(cursos);
-  populateCursoSelect();
   pushCursosToCloud();
 }
 function removeCurso(i){
@@ -1797,7 +1840,6 @@ function removeCurso(i){
   cursos.splice(i,1);
   saveCursos(cursos);
   renderCursos();
-  populateCursoSelect();
   pushCursosToCloud();
 }
 document.getElementById('btnAddCurso').addEventListener('click',()=>{
@@ -1805,7 +1847,6 @@ document.getElementById('btnAddCurso').addEventListener('click',()=>{
   cursos.push({nome:'Novo curso', carga:'', conteudo:''});
   saveCursos(cursos);
   renderCursos();
-  populateCursoSelect();
   pushCursosToCloud();
 });
 document.getElementById('btnSyncCursos').addEventListener('click', async ()=>{
@@ -1840,7 +1881,7 @@ async function loadTurmaFromLink(id){
   editarTurma(turma.id);
 }
 
-populateCursoSelect();
+atualizarCursosDoInstrutor();
 document.getElementById('fCurso').dispatchEvent(new Event('change'));
 renderDias();
 renderAlunos();

@@ -126,8 +126,15 @@
 
 <script type="module">
   try {
-    const { esperarAuth } = await import('../assets/js/firebase-init.js');
+    const { esperarAuth, db, collection, getDocs } = await import('../assets/js/firebase-init.js');
     await esperarAuth();
+    // busca a lista real de instrutores cadastrados — usada no dropdown
+    // das linhas da tabela de Modelos, em vez de fixo "Deverson"/"Everton"
+    try {
+      const snap = await getDocs(collection(db, 'instrutores'));
+      const nomes = snap.docs.map(d => d.data().nome).filter(Boolean).sort();
+      if (nomes.length > 0) window.__nomesInstrutores = nomes;
+    } catch (e) { console.error('Erro ao carregar instrutores:', e); }
   } catch (err) {
     console.error('Erro ao verificar login:', err);
     document.body.innerHTML = `
@@ -183,8 +190,7 @@
         <td class="edit-cell"><input type="text" value="${m.curso || ''}" placeholder="Ex: NR-35 - Trabalho em Altura" style="width:170px;" onchange="modelosState[${i}].curso=this.value"></td>
         <td class="edit-cell">
           <select onchange="modelosState[${i}].instrutor=this.value">
-            <option ${m.instrutor === 'Deverson' ? 'selected' : ''}>Deverson</option>
-            <option ${m.instrutor === 'Everton' ? 'selected' : ''}>Everton</option>
+            ${(window.__nomesInstrutores || ['Deverson', 'Everton']).map(n => `<option ${m.instrutor === n ? 'selected' : ''}>${n}</option>`).join('')}
           </select>
         </td>
         <td class="edit-cell"><input type="text" value="${m.modeloId || ''}" placeholder="Cola o link do Google Slides aqui" style="width:220px;" onchange="modelosState[${i}].modeloId=this.value"></td>
@@ -198,7 +204,8 @@
   }
 
   function adicionarModelo() {
-    modelosState.push({ curso: '', instrutor: 'Deverson', modeloId: '', validade: '', salvo: false });
+    const primeiroInstrutor = (window.__nomesInstrutores && window.__nomesInstrutores[0]) || 'Deverson';
+    modelosState.push({ curso: '', instrutor: primeiroInstrutor, modeloId: '', validade: '', salvo: false });
     renderModelos();
   }
 
