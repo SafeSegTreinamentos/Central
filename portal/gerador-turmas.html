@@ -411,6 +411,10 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
           <label>Cidade (aparece no certificado)</label>
           <input id="fCidade" placeholder="Ex: Dois Vizinhos - PR" value="Dois Vizinhos - PR">
         </div>
+        <div class="field">
+          <label>ART <small style="color:var(--amber); font-weight:400;">— opcional, dá pra deixar em branco e preencher depois, reabrindo a turma pra editar</small></label>
+          <input id="fArt" placeholder="Número da ART (se já tiver)">
+        </div>
       </div>
     </div>
 
@@ -1066,6 +1070,7 @@ function collectForm(){
     instrutor: document.getElementById('fInstrutor').value,
     instrutoresAuxiliares: Array.from(document.querySelectorAll('.chk-instrutor-aux:checked')).map(c => c.value),
     cidade: document.getElementById('fCidade').value || 'Dois Vizinhos - PR',
+    art: document.getElementById('fArt').value,
     dias: diasState,
     alunos: alunos,
     conteudo: document.getElementById('fConteudo').value,
@@ -1309,6 +1314,7 @@ function limparFormulario(){
   document.getElementById('fSelectFuncionario').innerHTML = '<option value="">Escolhe a empresa acima primeiro...</option>';
   document.getElementById('fCnpj').value='';
   document.getElementById('fCidade').value='Dois Vizinhos - PR';
+  document.getElementById('fArt').value='';
   document.querySelectorAll('.chk-instrutor-aux').forEach(c => c.checked = false);
   document.getElementById('fConteudo').value='';
   document.getElementById('fObs').value='';
@@ -1343,6 +1349,7 @@ function editarTurma(id){
     c.checked = (t.instrutoresAuxiliares || []).includes(c.value);
   });
   document.getElementById('fCidade').value = t.cidade||'Dois Vizinhos - PR';
+  document.getElementById('fArt').value = t.art||'';
   document.getElementById('fConteudo').value = t.conteudo||'';
   document.getElementById('fObs').value = t.obs||'';
   diasState = (t.dias||[]).slice();
@@ -1507,11 +1514,12 @@ async function emitirCertificadosDaTurma(id){
         dataInicioISO, dataFimISO,
         carga: t.carga,
         empresa: t.empresa,
-        cidade: t.cidade
+        cidade: t.cidade,
+        art: t.art
       });
       if(resultado && resultado.sucesso){
         sucesso++;
-        const item = { nome: aluno.nome, cpf: aluno.cpf, url: resultado.url, instrutor: t.instrutor };
+        const item = { nome: aluno.nome, cpf: aluno.cpf, url: resultado.url, instrutor: t.instrutor, instrutoresAuxiliares: t.instrutoresAuxiliares || [] };
         emitidos.push(item);
 
         // grava no Firestore JÁ na emissão (não só depois de assinado) — é isso
@@ -1671,7 +1679,7 @@ async function enviarParaAssinaturaClick(turmaId, indice) {
     const resultado = await chamarScriptCertificados({
       acao: 'assinafyEnviarParaAssinatura',
       certificadoUrl: item.url,
-      instrutor: item.instrutor,
+      instrutores: [item.instrutor, ...(item.instrutoresAuxiliares || [])].filter(Boolean),
       nomeAluno: item.nome
     });
     if (resultado && resultado.sucesso) {
@@ -1708,7 +1716,7 @@ async function enviarTodosParaAssinaturaClick(turmaId) {
       const resultado = await chamarScriptCertificados({
         acao: 'assinafyEnviarParaAssinatura',
         certificadoUrl: emitidos[i].url,
-        instrutor: emitidos[i].instrutor,
+        instrutores: [emitidos[i].instrutor, ...(emitidos[i].instrutoresAuxiliares || [])].filter(Boolean),
         nomeAluno: emitidos[i].nome
       });
       if (resultado && resultado.sucesso) {

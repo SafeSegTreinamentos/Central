@@ -463,7 +463,7 @@
               ${c.substituidoPor ? `<span class="selo selo--pending">🔄 Renovado (veja o mais novo)</span>` : `<span class="selo selo--${st.cls}">${st.label}</span>`}
               ${c.origem === 'externo' ? `<span class="selo" style="background:#EFE9FE; color:#6B46C1;">🌐 Externo</span>` : ''}
               <button class="btn btn--ghost" style="padding:4px 9px; font-size:11px;" onclick="abrirModalEditarCert('${c.id}', '${c.empresaId}', '${c.campoData}', '${(c.nr||'').replace(/'/g,"\\'")}', '${col.nome.replace(/'/g,"\\'")}')">✏️ Editar</button>
-              <button class="btn btn--ghost" style="padding:4px 9px; font-size:11px;" onclick="abrirModalRegenerar('${(col.nome||'').replace(/'/g,"\\'")}', '${(c.cpf||'').replace(/'/g,"\\'")}', '${(c.nr||'').replace(/'/g,"\\'")}', '${(col.empresa||'').replace(/'/g,"\\'")}')">🔄 Regenerar</button>
+              <button class="btn btn--ghost" style="padding:4px 9px; font-size:11px;" onclick="abrirModalRegenerar('${(col.nome||'').replace(/'/g,"\\'")}', '${(c.cpf||'').replace(/'/g,"\\'")}', '${(c.nr||'').replace(/'/g,"\\'")}', '${(col.empresa||'').replace(/'/g,"\\'")}', '${c.id}', '${c.empresaId}')">🔄 Regenerar</button>
             </div>
           </div>`;
       }).join('');
@@ -560,7 +560,10 @@
   // ---------- Regenerar certificado sem depender de turma cadastrada ----------
   const CERT_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz55Li88oyroPtFH1iTOV2nR58-xbuUAMkGcyb6GRzM3S6KQNARj7Sxvi1mZShhPg-WRg/exec';
 
-  window.abrirModalRegenerar = function(nome, cpf, curso, empresa) {
+  let regenDocId = null, regenEmpresaId = null;
+  window.abrirModalRegenerar = function(nome, cpf, curso, empresa, docId, empresaId) {
+    regenDocId = docId || null;
+    regenEmpresaId = empresaId || null;
     document.getElementById('regenNome').value = nome;
     document.getElementById('regenCpf').value = cpf || '';
     document.getElementById('regenCurso').value = curso;
@@ -611,6 +614,21 @@
       const resultado = await res.json();
       if (resultado && resultado.sucesso) {
         registrarAuditoria('regenerar_certificado', { colaborador: nome, curso, cont: resultado.numero });
+
+        // NOVO — atualiza o Firestore com o link do PDF novo (antes, o
+        // Firestore nunca era tocado aqui — o Portal continuava mostrando
+        // o link do PDF antigo mesmo depois de regenerar)
+        if (regenDocId && regenEmpresaId) {
+          try {
+            await updateDoc(doc(db, 'empresas', regenEmpresaId, 'certificados', regenDocId), {
+              pdfUrl: resultado.url,
+              regeneradoEm: new Date().toISOString()
+            });
+          } catch (errFs) {
+            console.error('Erro ao atualizar o Firestore depois de regenerar:', errFs);
+          }
+        }
+
         alert(`✅ Certificado gerado — CONT ${resultado.numero}`);
         fecharModalRegenerar();
         carregarCertificados();

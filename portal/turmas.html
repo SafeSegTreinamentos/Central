@@ -124,9 +124,9 @@
 
 <script type="module">
   try {
-    const { esperarAuth, db, collection, getDocs, doc, setDoc } = await import('../assets/js/firebase-init.js');
+    const { esperarAuth, db, collection, getDocs, addDoc, updateDoc, doc, setDoc } = await import('../assets/js/firebase-init.js');
     await esperarAuth();
-    window.__firestore = { db, collection, getDocs, doc, setDoc };
+    window.__firestore = { db, collection, getDocs, addDoc, updateDoc, doc, setDoc };
   } catch (err) {
     console.error('Erro ao verificar login:', err);
     document.body.innerHTML = `
@@ -275,6 +275,31 @@
     return await res.json();
   }
 
+  // Mesma lógica do Gerador de Turmas — turma sem empresa (Aberta) vai
+  // pra uma empresa especial "Não Alocados", em vez de ficar invisível
+  async function obterOuCriarEmpresaNaoAlocados_() {
+    if (!window.__firestore) return null;
+    const { db, collection, getDocs, addDoc } = window.__firestore;
+    try {
+      const snap = await getDocs(collection(db, 'empresas'));
+      const normaliza = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+      const existente = snap.docs.find(d => {
+        const n = normaliza(d.data().nome);
+        return n === 'não alocados' || n === 'nao alocados';
+      });
+      if (existente) return existente.id;
+
+      const novaRef = await addDoc(collection(db, 'empresas'), {
+        nome: 'Não Alocados', cnpj: '', seg: '', cidade: '', resp: '', telefone: '', email: '', endereco: '',
+        obs: 'Empresa especial criada automaticamente — reúne certificados de turmas "Abertas" (sem empresa vinculada). Mova manualmente pra empresa certa quando identificar quem é o aluno.'
+      });
+      return novaRef.id;
+    } catch (e) {
+      console.error('Erro ao obter/criar empresa Não Alocados:', e);
+      return null;
+    }
+  }
+
   window.regenerarCertificado = async function(turmaId, alunoIndex) {
     const turma = loadTurmas().find(t => t.id === turmaId);
     if (!turma || !turma.alunos || !turma.alunos[alunoIndex]) return;
@@ -300,11 +325,50 @@
         dataInicioISO, dataFimISO,
         carga: turma.carga,
         empresa: turma.empresa,
+        cidade: turma.cidade,
+        art: turma.art,
         reaproveitarNumero: true // reutiliza o mesmo CONT já existente, em vez de criar um novo
       });
       if (resultado && resultado.sucesso) {
         btn.textContent = '✅ Gerado (CONT ' + resultado.numero + ')';
         setTimeout(() => { btn.disabled = false; btn.textContent = textoOriginal; }, 4000);
+
+        // NOVO — sincroniza com o Firestore, igual o Gerador de Turmas já faz
+        // na emissão normal (isso nunca acontecia aqui, por isso o certificado
+        // regenerado nunca aparecia em Certificados/Carteirinha/Dossiê no Portal)
+        if (window.__firestore) {
+          try {
+            const { db, collection, addDoc, updateDoc, doc, getDocs } = window.__firestore;
+            const empresaIdParaGravar = turma.empresaId || await obterOuCriarEmpresaNaoAlocados_();
+            if (empresaIdParaGravar) {
+              const normaliza = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+              const certsSnap = await getDocs(collection(db, 'empresas', empresaIdParaGravar, 'certificados'));
+              const existente = certsSnap.docs.find(d => {
+                const c = d.data();
+                return normaliza(c.colaborador) === normaliza(aluno.nome) && normaliza(c.nr) === normaliza(turma.curso);
+              });
+              if (existente) {
+                await updateDoc(doc(db, 'empresas', empresaIdParaGravar, 'certificados', existente.id), {
+                  pdfUrl: resultado.url,
+                  cpf: aluno.cpf || '',
+                  regeneradoEm: new Date().toISOString()
+                });
+              } else {
+                await addDoc(collection(db, 'empresas', empresaIdParaGravar, 'certificados'), {
+                  colaborador: aluno.nome,
+                  cpf: aluno.cpf || '',
+                  nr: turma.curso || '',
+                  validade: '',
+                  pdfUrl: resultado.url,
+                  assinadoAssinafy: false,
+                  criadoEm: new Date().toISOString()
+                });
+              }
+            }
+          } catch (errFs) {
+            console.error('Erro ao sincronizar certificado regenerado com o Firestore:', errFs);
+          }
+        }
       } else {
         alert('Erro ao gerar: ' + (resultado ? resultado.erro : 'sem resposta do servidor'));
         btn.disabled = false;
