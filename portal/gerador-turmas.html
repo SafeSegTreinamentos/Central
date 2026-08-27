@@ -375,6 +375,10 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
           </select>
           <div class="small-note">Essa é a mesma lista usada pra escolher quem assina depois da emissão. Pra adicionar um novo instrutor aqui, precisa também adicionar ele no <code>ASSINAFY_INSTRUTORES</code> do Apps Script.</div>
         </div>
+        <div class="field">
+          <label>Cidade (aparece no certificado)</label>
+          <input id="fCidade" placeholder="Ex: Dois Vizinhos - PR" value="Dois Vizinhos - PR">
+        </div>
       </div>
     </div>
 
@@ -1028,6 +1032,7 @@ function collectForm(){
     empresa: empresaSel.value ? (empresaOpt ? empresaOpt.textContent : '') : 'CT SafeSeg',
     cnpj: document.getElementById('fCnpj').value,
     instrutor: document.getElementById('fInstrutor').value,
+    cidade: document.getElementById('fCidade').value || 'Dois Vizinhos - PR',
     dias: diasState,
     alunos: alunos,
     conteudo: document.getElementById('fConteudo').value,
@@ -1270,6 +1275,7 @@ function limparFormulario(){
   document.getElementById('fEmpresa').value='';
   document.getElementById('fSelectFuncionario').innerHTML = '<option value="">Escolhe a empresa acima primeiro...</option>';
   document.getElementById('fCnpj').value='';
+  document.getElementById('fCidade').value='Dois Vizinhos - PR';
   document.getElementById('fConteudo').value='';
   document.getElementById('fObs').value='';
   diasState=[]; renderDias();
@@ -1299,6 +1305,7 @@ function editarTurma(id){
   carregarFuncionariosDaEmpresa();
   document.getElementById('fCnpj').value = t.cnpj||'';
   document.getElementById('fInstrutor').value = t.instrutor||'Deverson R. F. Pomerenk';
+  document.getElementById('fCidade').value = t.cidade||'Dois Vizinhos - PR';
   document.getElementById('fConteudo').value = t.conteudo||'';
   document.getElementById('fObs').value = t.obs||'';
   diasState = (t.dias||[]).slice();
@@ -1462,7 +1469,8 @@ async function emitirCertificadosDaTurma(id){
         instrutor: t.instrutor,
         dataInicioISO, dataFimISO,
         carga: t.carga,
-        empresa: t.empresa
+        empresa: t.empresa,
+        cidade: t.cidade
       });
       if(resultado && resultado.sucesso){
         sucesso++;

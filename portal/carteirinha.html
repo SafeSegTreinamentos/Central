@@ -97,7 +97,8 @@
       // pra achar por que o casamento de nome está falhando em certos casos
       console.log('🔍 Nome do funcionário (bruto):', JSON.stringify(dadosFuncionario.nome));
       console.log('🔍 Nome normalizado:', JSON.stringify(normaliza(dadosFuncionario.nome)));
-      console.log('🔍 Todos os certificados dessa empresa:', certSnap.docs.map(d => {
+      console.log('🔍 Todos os certificados dessa empresa (JSON completo):');
+      console.log(JSON.stringify(certSnap.docs.map(d => {
         const c = d.data();
         return {
           colaborador_bruto: c.colaborador,
@@ -107,7 +108,7 @@
           nr: c.nr,
           validade: c.validade
         };
-      }));
+      }), null, 2));
 
       cursosAtivos = certSnap.docs
         .map(d => d.data())
