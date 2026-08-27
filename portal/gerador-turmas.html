@@ -199,6 +199,31 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
     // então isso precisa ficar disponível via window.
     window.__firestore = { db, collection, getDocs, addDoc, doc, updateDoc, setDoc };
 
+    // Busca a lista real de instrutores cadastrados e popula tanto o
+    // dropdown do responsável quanto a lista de auxiliares. Se não achar
+    // nenhum (Firestore vazio ou erro), mantém as 2 opções fixas que já
+    // estavam no HTML como reserva, pra não deixar a tela quebrada.
+    (async function carregarInstrutoresReais() {
+      try {
+        const snap = await getDocs(collection(db, 'instrutores'));
+        const nomes = snap.docs.map(d => d.data().nome).filter(Boolean).sort();
+        if (nomes.length === 0) return; // mantém as opções fixas do HTML
+
+        const selectInstrutor = document.getElementById('fInstrutor');
+        const valorAtual = selectInstrutor.value;
+        selectInstrutor.innerHTML = nomes.map(n => `<option value="${n}">${n}</option>`).join('');
+        if (nomes.includes(valorAtual)) selectInstrutor.value = valorAtual;
+
+        const boxAuxiliares = document.getElementById('fInstrutoresAuxiliares');
+        boxAuxiliares.innerHTML = nomes.map(n => `
+          <label style="display:flex; align-items:center; gap:6px; padding:3px 0; cursor:pointer;">
+            <input type="checkbox" class="chk-instrutor-aux" value="${n}"> ${n}
+          </label>`).join('');
+      } catch (e) {
+        console.error('Erro ao carregar instrutores:', e);
+      }
+    })();
+
     // Grava/atualiza a Agenda real no Firestore — uma turma com N dias vira
     // N documentos na coleção 'agenda' (mesmo schema que o resto do sistema já usa)
     window.sincronizarAgendaFirestore = async function(turma) {
@@ -373,7 +398,14 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
             <option value="Deverson R. F. Pomerenk">Deverson R. F. Pomerenk</option>
             <option value="Everton">Everton</option>
           </select>
-          <div class="small-note">Essa é a mesma lista usada pra escolher quem assina depois da emissão. Pra adicionar um novo instrutor aqui, precisa também adicionar ele no <code>ASSINAFY_INSTRUTORES</code> do Apps Script.</div>
+          <div class="small-note">Essa é a mesma lista usada pra escolher quem assina depois da emissão. Pra adicionar um novo instrutor aqui, cadastra em <a href="instrutores.html">Instrutores</a> — precisa também bater com o nome no <code>ASSINAFY_INSTRUTORES</code> do Apps Script pra assinatura eletrônica funcionar.</div>
+        </div>
+        <div class="field">
+          <label>Instrutores auxiliares <small style="color:var(--amber); font-weight:400;">— opcional, pra registro (não assina o certificado)</small></label>
+          <div id="fInstrutoresAuxiliares" style="border:1px solid var(--paper-200); border-radius:6px; padding:8px 10px; max-height:110px; overflow-y:auto; font-size:13px;">
+            <label style="display:flex; align-items:center; gap:6px; padding:3px 0; cursor:pointer;"><input type="checkbox" class="chk-instrutor-aux" value="Deverson R. F. Pomerenk"> Deverson R. F. Pomerenk</label>
+            <label style="display:flex; align-items:center; gap:6px; padding:3px 0; cursor:pointer;"><input type="checkbox" class="chk-instrutor-aux" value="Everton"> Everton</label>
+          </div>
         </div>
         <div class="field">
           <label>Cidade (aparece no certificado)</label>
@@ -1032,6 +1064,7 @@ function collectForm(){
     empresa: empresaSel.value ? (empresaOpt ? empresaOpt.textContent : '') : 'CT SafeSeg',
     cnpj: document.getElementById('fCnpj').value,
     instrutor: document.getElementById('fInstrutor').value,
+    instrutoresAuxiliares: Array.from(document.querySelectorAll('.chk-instrutor-aux:checked')).map(c => c.value),
     cidade: document.getElementById('fCidade').value || 'Dois Vizinhos - PR',
     dias: diasState,
     alunos: alunos,
@@ -1276,6 +1309,7 @@ function limparFormulario(){
   document.getElementById('fSelectFuncionario').innerHTML = '<option value="">Escolhe a empresa acima primeiro...</option>';
   document.getElementById('fCnpj').value='';
   document.getElementById('fCidade').value='Dois Vizinhos - PR';
+  document.querySelectorAll('.chk-instrutor-aux').forEach(c => c.checked = false);
   document.getElementById('fConteudo').value='';
   document.getElementById('fObs').value='';
   diasState=[]; renderDias();
@@ -1305,6 +1339,9 @@ function editarTurma(id){
   carregarFuncionariosDaEmpresa();
   document.getElementById('fCnpj').value = t.cnpj||'';
   document.getElementById('fInstrutor').value = t.instrutor||'Deverson R. F. Pomerenk';
+  document.querySelectorAll('.chk-instrutor-aux').forEach(c => {
+    c.checked = (t.instrutoresAuxiliares || []).includes(c.value);
+  });
   document.getElementById('fCidade').value = t.cidade||'Dois Vizinhos - PR';
   document.getElementById('fConteudo').value = t.conteudo||'';
   document.getElementById('fObs').value = t.obs||'';
