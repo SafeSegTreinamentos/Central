@@ -623,7 +623,7 @@ async function checkCloudStatus(){
     saveTurmas(data.turmas||[]);
     if(data.cursos && data.cursos.length){
       saveCursos(data.cursos);
-      populateCursoSelect();
+      atualizarCursosDoInstrutor(); // usa a lista real por instrutor, não a antiga por índice
     } else if(loadCursos().length){
       await pushCursosToCloud();
     }
@@ -1452,9 +1452,21 @@ let modelosCache = null; // busca uma vez só, filtra localmente depois
 // O Curso agora é 100% dirigido pelos Modelos cadastrados de verdade —
 // isso elimina de vez qualquer descasamento de nome entre o que aparece
 // aqui e o que o Apps Script usa pra achar o modelo do Slides.
+// Mesma lógica de "combinação de instrutores" usada no Apps Script — um
+// certificado com mais de uma pessoa assinando usa um modelo DIFERENTE
+// (com as assinaturas de todo mundo já desenhadas nele), então o Curso
+// mostrado aqui precisa considerar o responsável + quem estiver marcado
+// como auxiliar no momento, não só o responsável sozinho.
+function chaveCombinacaoInstrutores(listaOuNome) {
+  const lista = Array.isArray(listaOuNome) ? listaOuNome : (listaOuNome || '').toString().split(',');
+  const nomes = lista.map(primeiroNomeSemAcento).filter(Boolean);
+  return [...new Set(nomes)].sort().join('+');
+}
+
 window.atualizarCursosDoInstrutor = async function() {
   const selectCurso = document.getElementById('fCurso');
   const instrutorAtual = document.getElementById('fInstrutor').value;
+  const auxiliaresAtuais = Array.from(document.getElementById('fInstrutoresAuxiliares').selectedOptions).map(o => o.value);
   const cursoJaSelecionado = selectCurso.value;
 
   try {
@@ -1465,25 +1477,27 @@ window.atualizarCursosDoInstrutor = async function() {
       modelosCache = resultado.modelos || [];
     }
 
-    const alvo = primeiroNomeSemAcento(instrutorAtual);
+    const alvo = chaveCombinacaoInstrutores([instrutorAtual, ...auxiliaresAtuais]);
     const cursosDoInstrutor = modelosCache
-      .filter(m => primeiroNomeSemAcento(m.instrutor) === alvo)
+      .filter(m => chaveCombinacaoInstrutores(m.instrutor) === alvo)
       .map(m => m.curso)
       .filter(Boolean);
     const cursosUnicos = [...new Set(cursosDoInstrutor)].sort();
 
+    const rotuloCombo = auxiliaresAtuais.length > 0 ? `${instrutorAtual} + ${auxiliaresAtuais.join(' + ')}` : instrutorAtual;
     if (cursosUnicos.length === 0) {
-      selectCurso.innerHTML = `<option value="">Nenhum modelo cadastrado pra ${instrutorAtual}</option>`;
+      selectCurso.innerHTML = `<option value="">Nenhum modelo cadastrado pra ${rotuloCombo}</option>`;
       return;
     }
     selectCurso.innerHTML = cursosUnicos.map(c => `<option value="${c.replace(/"/g,'&quot;')}">${c}</option>`).join('');
-    // mantém o curso que já estava escolhido, se ele ainda for válido pro novo instrutor
+    // mantém o curso que já estava escolhido, se ele ainda for válido pra combinação atual
     if (cursosUnicos.includes(cursoJaSelecionado)) selectCurso.value = cursoJaSelecionado;
   } catch (err) {
     selectCurso.innerHTML = '<option value="">⚠️ Erro ao carregar modelos</option>';
     console.error('Erro ao carregar cursos por instrutor:', err);
   }
 };
+document.getElementById('fInstrutoresAuxiliares').addEventListener('change', atualizarCursosDoInstrutor);
 
 // Turmas "Abertas" (CT SafeSeg, sem empresa vinculada) não tinham pra onde ir
 // no Firestore — o certificado era gerado no Drive normalmente, mas ficava
@@ -1806,7 +1820,7 @@ async function refreshCursosFromCloud(){
   if(url){
     try{
       const data = await cloudGet({action:'list'});
-      if(data && data.ok && data.cursos && data.cursos.length){ saveCursos(data.cursos); populateCursoSelect(); }
+      if(data && data.ok && data.cursos && data.cursos.length){ saveCursos(data.cursos); atualizarCursosDoInstrutor(); }
     }catch(e){ }
   }
   renderCursos();

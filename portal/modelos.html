@@ -218,9 +218,10 @@
       <tr>
         <td class="edit-cell"><input type="text" value="${m.curso || ''}" placeholder="Ex: NR-35 - Trabalho em Altura" style="width:170px;" onchange="modelosState[${i}].curso=this.value"></td>
         <td class="edit-cell">
-          <select onchange="modelosState[${i}].instrutor=this.value; renderModelos();">
-            ${ordemInstrutores.map(n => `<option ${m.instrutor === n ? 'selected' : ''}>${n}</option>`).join('')}
+          <select multiple size="2" style="min-width:140px;" onchange="modelosState[${i}].instrutor = Array.from(this.selectedOptions).map(o=>o.value).join(', '); renderModelos();">
+            ${ordemInstrutores.map(n => `<option ${(m.instrutor||'').split(',').map(x=>x.trim()).includes(n) ? 'selected' : ''}>${n}</option>`).join('')}
           </select>
+          <div style="font-size:10px; color:var(--graphite-500); margin-top:2px;">Ctrl/Cmd+clique pra marcar mais de um (assinatura conjunta)</div>
         </td>
         <td class="edit-cell"><input type="text" value="${m.modeloId || ''}" placeholder="Cola o link do Google Slides aqui" style="width:220px;" onchange="modelosState[${i}].modeloId=this.value"></td>
         <td class="edit-cell"><input type="number" value="${m.validade || ''}" placeholder="2" style="width:60px;" onchange="modelosState[${i}].validade=this.value"></td>
