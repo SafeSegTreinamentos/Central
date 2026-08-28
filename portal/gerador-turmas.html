@@ -1467,7 +1467,7 @@ window.atualizarCursosDoInstrutor = async function() {
 
     const alvo = primeiroNomeSemAcento(instrutorAtual);
     const cursosDoInstrutor = modelosCache
-      .filter(m => primeiroNomeSemAcento(m.instrutor) === alvo || !m.instrutor)
+      .filter(m => primeiroNomeSemAcento(m.instrutor) === alvo)
       .map(m => m.curso)
       .filter(Boolean);
     const cursosUnicos = [...new Set(cursosDoInstrutor)].sort();
