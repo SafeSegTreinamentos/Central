@@ -172,7 +172,7 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
   // Também busca as empresas reais do Firestore pro seletor, e prepara a
   // função que grava a Agenda no lugar certo (Firestore, não localStorage).
   try {
-    const { obterMeuPerfil, db, collection, getDocs, addDoc, doc, updateDoc, setDoc, query, where, deleteDoc } = await import('../assets/js/firebase-init.js');
+    const { obterMeuPerfil, db, collection, getDocs, addDoc, doc, updateDoc, setDoc, query, where, deleteDoc } = await import('assets/js/firebase-init.js');
     const perfil = await obterMeuPerfil();
     if (perfil && perfil.role === 'cliente') {
       window.location.href = 'dashboard-cliente.html';
@@ -214,11 +214,10 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
         selectInstrutor.innerHTML = nomes.map(n => `<option value="${n}">${n}</option>`).join('');
         if (nomes.includes(valorAtual)) selectInstrutor.value = valorAtual;
 
-        const boxAuxiliares = document.getElementById('fInstrutoresAuxiliares');
-        boxAuxiliares.innerHTML = nomes.map(n => `
-          <label style="display:flex; align-items:center; gap:6px; padding:3px 0; cursor:pointer;">
-            <input type="checkbox" class="chk-instrutor-aux" value="${n}"> ${n}
-          </label>`).join('');
+        const selectAuxiliares = document.getElementById('fInstrutoresAuxiliares');
+        const auxJaMarcados = Array.from(selectAuxiliares.selectedOptions).map(o => o.value);
+        selectAuxiliares.innerHTML = nomes.map(n => `<option value="${n}">${n}</option>`).join('');
+        Array.from(selectAuxiliares.options).forEach(o => { o.selected = auxJaMarcados.includes(o.value); });
       } catch (e) {
         console.error('Erro ao carregar instrutores:', e);
       }
@@ -263,9 +262,9 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
 <div class="ssnav-shell">
   <nav class="ssnav-sidebar no-print">
     <div class="ssnav-logo">
-      <img src="../assets/img/logo-dark.png" alt="SafeSeg">
+      <img src="assets/logo-dark.png" alt="SafeSeg">
     </div>
-        <a class="ssnav-item" href="../index.html" style="background:rgba(245,158,11,.12); color:var(--amber);">
+        <a class="ssnav-item" href="hub.html" style="background:rgba(245,158,11,.12); color:var(--amber);">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
       Central (Hub)
     </a>
@@ -402,10 +401,11 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
         </div>
         <div class="field">
           <label>Instrutores auxiliares <small style="color:var(--amber); font-weight:400;">— opcional, pra registro (não assina o certificado)</small></label>
-          <div id="fInstrutoresAuxiliares" style="border:1px solid var(--paper-200); border-radius:6px; padding:8px 10px; max-height:110px; overflow-y:auto; font-size:13px;">
-            <label style="display:flex; align-items:center; gap:6px; padding:3px 0; cursor:pointer;"><input type="checkbox" class="chk-instrutor-aux" value="Deverson R. F. Pomerenk"> Deverson R. F. Pomerenk</label>
-            <label style="display:flex; align-items:center; gap:6px; padding:3px 0; cursor:pointer;"><input type="checkbox" class="chk-instrutor-aux" value="Everton"> Everton</label>
-          </div>
+          <select id="fInstrutoresAuxiliares" multiple size="4" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:6px 8px; font-size:13px; font-family:inherit;">
+            <option value="Deverson R. F. Pomerenk">Deverson R. F. Pomerenk</option>
+            <option value="Everton">Everton</option>
+          </select>
+          <div class="small-note">Segura Ctrl (Cmd no Mac) pra marcar mais de um.</div>
         </div>
         <div class="field">
           <label>Cidade (aparece no certificado)</label>
@@ -1068,7 +1068,7 @@ function collectForm(){
     empresa: empresaSel.value ? (empresaOpt ? empresaOpt.textContent : '') : 'CT SafeSeg',
     cnpj: document.getElementById('fCnpj').value,
     instrutor: document.getElementById('fInstrutor').value,
-    instrutoresAuxiliares: Array.from(document.querySelectorAll('.chk-instrutor-aux:checked')).map(c => c.value),
+    instrutoresAuxiliares: Array.from(document.getElementById('fInstrutoresAuxiliares').selectedOptions).map(o => o.value),
     cidade: document.getElementById('fCidade').value || 'Dois Vizinhos - PR',
     art: document.getElementById('fArt').value,
     dias: diasState,
@@ -1315,7 +1315,7 @@ function limparFormulario(){
   document.getElementById('fCnpj').value='';
   document.getElementById('fCidade').value='Dois Vizinhos - PR';
   document.getElementById('fArt').value='';
-  document.querySelectorAll('.chk-instrutor-aux').forEach(c => c.checked = false);
+  Array.from(document.getElementById('fInstrutoresAuxiliares').options).forEach(o => o.selected = false);
   document.getElementById('fConteudo').value='';
   document.getElementById('fObs').value='';
   diasState=[]; renderDias();
@@ -1344,8 +1344,9 @@ async function editarTurma(id){
   document.getElementById('fEmpresa').value = t.empresaId||'';
   carregarFuncionariosDaEmpresa();
   document.getElementById('fCnpj').value = t.cnpj||'';
-  document.querySelectorAll('.chk-instrutor-aux').forEach(c => {
-    c.checked = (t.instrutoresAuxiliares || []).includes(c.value);
+  const auxSalvos = t.instrutoresAuxiliares || [];
+  Array.from(document.getElementById('fInstrutoresAuxiliares').options).forEach(o => {
+    o.selected = auxSalvos.includes(o.value);
   });
   document.getElementById('fCidade').value = t.cidade||'Dois Vizinhos - PR';
   document.getElementById('fArt').value = t.art||'';
@@ -1895,7 +1896,7 @@ if(__turmaParam){ loadTurmaFromLink(__turmaParam); }
 
 <!-- Script de logout — independente -->
 <script type="module">
-  import { auth, signOut } from "../assets/js/firebase-init.js";
+  import { auth, signOut } from "assets/js/firebase-init.js";
   window.fazerLogout = async function() {
     if (!confirm("Sair da sua conta?")) return;
     await signOut(auth);
