@@ -135,7 +135,7 @@
 
 <script type="module">
   try {
-    const { esperarAuth, db, collection, getDocs } = await import('assets/js/firebase-init.js');
+    const { esperarAuth, db, collection, getDocs } = await import('./assets/js/firebase-init.js');
     await esperarAuth();
     // busca a lista real de instrutores cadastrados — usada no dropdown
     // das linhas da tabela de Modelos, em vez de fixo "Deverson"/"Everton"
@@ -356,7 +356,7 @@
   carregarModelosReais();
 </script>
 <script type="module">
-  import { auth, signOut } from "assets/js/firebase-init.js";
+  import { auth, signOut } from "./assets/js/firebase-init.js";
   window.fazerLogout = async function() {
     if (!confirm("Sair da sua conta?")) return;
     await signOut(auth);
