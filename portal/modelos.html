@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Portal SafeSeg — Modelos de Certificados</title>
-<link rel="stylesheet" href="safeseg-design-system.css">
+<link rel="stylesheet" href="../assets/css/safeseg-design-system.css">
 <style>
   html, body { height: 100%; }
   .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
@@ -28,14 +28,6 @@
     border: 1px solid var(--paper-200); border-radius: 5px; padding: 6px 8px;
     font-family: inherit; font-size: 13px; background: var(--paper-50); width: 100%;
   }
-  .instrutor-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-4); }
-  .instrutor-tab {
-    border: 1px solid var(--paper-200); background: var(--paper-50); color: var(--graphite-700);
-    border-radius: 999px; padding: 7px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer;
-    white-space: nowrap;
-  }
-  .instrutor-tab .count { opacity: .65; font-weight: 400; margin-left: 4px; }
-  .instrutor-tab.active { background: var(--graphite-900); color: var(--gold-300); border-color: var(--graphite-900); }
 
   @media (max-width: 900px) {
     .app { grid-template-columns: 1fr !important; }
@@ -49,10 +41,10 @@
 <div class="app">
   <nav class="sidebar">
     <div class="sidebar__logo">
-      <img src="assets/logo-dark.png" alt="SafeSeg" style="background:var(--graphite-900); border-radius:8px; padding:4px; max-width:150px; display:block;">
+      <img src="../assets/img/logo-dark.png" alt="SafeSeg" style="background:var(--graphite-900); border-radius:8px; padding:4px; max-width:150px; display:block;">
     </div>
 
-    <a class="nav-item" href="hub.html" style="background:var(--graphite-900); color:var(--gold-300); margin-bottom:4px;">
+    <a class="nav-item" href="../index.html" style="background:var(--graphite-900); color:var(--gold-300); margin-bottom:4px;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
       Central (Hub)
     </a>
@@ -119,7 +111,6 @@
           🗂️ Modelos por curso
           <button class="btn btn--primary" style="padding:8px 14px; font-size:13px;" onclick="adicionarModelo()">+ Adicionar modelo</button>
         </div>
-        <div class="instrutor-tabs" id="instrutorTabs"></div>
         <div class="modelos-table-wrap">
         <table>
           <thead>
@@ -135,7 +126,7 @@
 
 <script type="module">
   try {
-    const { esperarAuth, db, collection, getDocs } = await import('./assets/js/firebase-init.js');
+    const { esperarAuth, db, collection, getDocs } = await import('../assets/js/firebase-init.js');
     await esperarAuth();
     // busca a lista real de instrutores cadastrados — usada no dropdown
     // das linhas da tabela de Modelos, em vez de fixo "Deverson"/"Everton"
@@ -143,10 +134,6 @@
       const snap = await getDocs(collection(db, 'instrutores'));
       const nomes = snap.docs.map(d => d.data().nome).filter(Boolean).sort();
       if (nomes.length > 0) window.__nomesInstrutores = nomes;
-      // Se a tabela de Modelos já tinha renderizado antes dessa lista chegar
-      // (module script sempre executa depois de script normal), refaz as
-      // abas agora que os nomes reais dos instrutores estão disponíveis.
-      if (typeof window.__renderModelosSeDisponivel === 'function') window.__renderModelosSeDisponivel();
     } catch (e) { console.error('Erro ao carregar instrutores:', e); }
   } catch (err) {
     console.error('Erro ao verificar login:', err);
@@ -164,33 +151,8 @@
 
 <script>
   const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz55Li88oyroPtFH1iTOV2nR58-xbuUAMkGcyb6GRzM3S6KQNARj7Sxvi1mZShhPg-WRg/exec';
-  const TAB_OUTROS = '__outros__'; // aba pra modelo sem instrutor reconhecido (dado legado/sujo)
 
   let modelosState = [];
-  let abaAtiva = null; // nome do instrutor da aba selecionada, ou TAB_OUTROS
-
-  // Mesma tolerância usada no Gerador de Turmas — compara só o primeiro
-  // nome, sem acento, pra "Deverson R. F. Pomerenk" bater com "Deverson"
-  // e não depender de o texto salvo ser idêntico ao cadastro de Instrutores
-  function primeiroNomeSemAcento(s) {
-    return (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().split(/\s+/)[0] || '';
-  }
-
-  // Une os instrutores cadastrados de verdade (window.__nomesInstrutores) com
-  // qualquer nome de instrutor que já apareça nos modelos salvos, pra nenhuma
-  // aba sumir mesmo se o cadastro de Instrutores ainda não carregou ou não
-  // tiver todo mundo
-  function listaInstrutoresParaAbas() {
-    const doCadastro = window.__nomesInstrutores || [];
-    const dosModelos = [...new Set(modelosState.map(m => (m.instrutor || '').trim()).filter(Boolean))];
-    const vistos = new Set();
-    const unidos = [];
-    [...doCadastro, ...dosModelos].forEach(n => {
-      const chave = primeiroNomeSemAcento(n);
-      if (chave && !vistos.has(chave)) { vistos.add(chave); unidos.push(n); }
-    });
-    return unidos.sort();
-  }
 
   async function chamarAppsScript(payload) {
     const res = await fetch(APPS_SCRIPT_URL, {
@@ -217,73 +179,17 @@
     }
   }
 
-  // Chamada de fora (do script module de Instrutores) quando a lista real
-  // de instrutores chega depois da primeira renderização — refaz as abas
-  // sem perder a aba que já estava selecionada, se ela ainda existir.
-  window.__renderModelosSeDisponivel = function() {
-    if (modelosState.length) renderModelos();
-  };
-
-  function renderAbas() {
-    const wrap = document.getElementById('instrutorTabs');
-    const nomes = listaInstrutoresParaAbas();
-    const temOutros = modelosState.some(m => !nomes.some(n => primeiroNomeSemAcento(n) === primeiroNomeSemAcento(m.instrutor)));
-
-    if (!abaAtiva || (!nomes.some(n => primeiroNomeSemAcento(n) === primeiroNomeSemAcento(abaAtiva)) && abaAtiva !== TAB_OUTROS)) {
-      abaAtiva = nomes[0] || (temOutros ? TAB_OUTROS : null);
-    }
-
-    const contar = (nome) => modelosState.filter(m =>
-      nome === TAB_OUTROS
-        ? !nomes.some(n => primeiroNomeSemAcento(n) === primeiroNomeSemAcento(m.instrutor))
-        : primeiroNomeSemAcento(m.instrutor) === primeiroNomeSemAcento(nome)
-    ).length;
-
-    const abas = nomes.map(n => ({ chave: n, label: n }));
-    if (temOutros) abas.push({ chave: TAB_OUTROS, label: 'Outros / sem instrutor' });
-
-    if (abas.length === 0) { wrap.innerHTML = ''; return; }
-
-    wrap.innerHTML = abas.map(a => `
-      <button type="button" class="instrutor-tab ${a.chave === abaAtiva ? 'active' : ''}" onclick="selecionarAbaInstrutor('${a.chave.replace(/'/g, "\\'")}')">
-        ${a.label}<span class="count">${contar(a.chave)}</span>
-      </button>
-    `).join('');
-  }
-
-  window.selecionarAbaInstrutor = function(chave) {
-    abaAtiva = chave;
-    renderModelos();
-  };
-
   function renderModelos() {
-    renderAbas();
     const tbody = document.getElementById('modelosBody');
-
     if (modelosState.length === 0) {
       tbody.innerHTML = `<tr><td colspan="5" class="text-muted" style="text-align:center; padding:20px;">Nenhum modelo cadastrado ainda. Clique em "+ Adicionar modelo" pra começar.</td></tr>`;
       return;
     }
-
-    const nomes = listaInstrutoresParaAbas();
-    // guarda o índice real em modelosState junto de cada linha, pra editar/salvar/excluir
-    // continuar funcionando certinho mesmo mostrando só um subconjunto filtrado
-    const linhas = modelosState
-      .map((m, i) => ({ m, i }))
-      .filter(({ m }) => abaAtiva === TAB_OUTROS
-        ? !nomes.some(n => primeiroNomeSemAcento(n) === primeiroNomeSemAcento(m.instrutor))
-        : primeiroNomeSemAcento(m.instrutor) === primeiroNomeSemAcento(abaAtiva));
-
-    if (linhas.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5" class="text-muted" style="text-align:center; padding:20px;">Nenhum modelo nessa aba ainda. Clique em "+ Adicionar modelo" pra começar.</td></tr>`;
-      return;
-    }
-
-    tbody.innerHTML = linhas.map(({ m, i }) => `
+    tbody.innerHTML = modelosState.map((m, i) => `
       <tr>
         <td class="edit-cell"><input type="text" value="${m.curso || ''}" placeholder="Ex: NR-35 - Trabalho em Altura" style="width:170px;" onchange="modelosState[${i}].curso=this.value"></td>
         <td class="edit-cell">
-          <select onchange="modelosState[${i}].instrutor=this.value; renderAbas();">
+          <select onchange="modelosState[${i}].instrutor=this.value">
             ${(window.__nomesInstrutores || ['Deverson', 'Everton']).map(n => `<option ${m.instrutor === n ? 'selected' : ''}>${n}</option>`).join('')}
           </select>
         </td>
@@ -298,7 +204,7 @@
   }
 
   function adicionarModelo() {
-    const primeiroInstrutor = (abaAtiva && abaAtiva !== TAB_OUTROS) ? abaAtiva : ((window.__nomesInstrutores && window.__nomesInstrutores[0]) || 'Deverson');
+    const primeiroInstrutor = (window.__nomesInstrutores && window.__nomesInstrutores[0]) || 'Deverson';
     modelosState.push({ curso: '', instrutor: primeiroInstrutor, modeloId: '', validade: '', salvo: false });
     renderModelos();
   }
@@ -328,7 +234,6 @@
       m.salvo = true;
       m.cursoOriginal = m.curso;
       m.instrutorOriginal = m.instrutor;
-      renderModelos(); // se o instrutor mudou, a linha pode ter saído da aba atual — atualiza contagem/lista
       alert('Modelo salvo na planilha ✅');
     } catch (err) {
       alert('Erro ao salvar: ' + err.message);
@@ -356,7 +261,7 @@
   carregarModelosReais();
 </script>
 <script type="module">
-  import { auth, signOut } from "./assets/js/firebase-init.js";
+  import { auth, signOut } from "../assets/js/firebase-init.js";
   window.fazerLogout = async function() {
     if (!confirm("Sair da sua conta?")) return;
     await signOut(auth);
