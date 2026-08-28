@@ -215,10 +215,7 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
         if (nomes.includes(valorAtual)) selectInstrutor.value = valorAtual;
 
         const boxAuxiliares = document.getElementById('fInstrutoresAuxiliares');
-        boxAuxiliares.innerHTML = nomes.map(n => `
-          <label style="display:flex; align-items:center; gap:6px; padding:3px 0; cursor:pointer;">
-            <input type="checkbox" class="chk-instrutor-aux" value="${n}"> ${n}
-          </label>`).join('');
+        boxAuxiliares.innerHTML = nomes.map(n => `<option value="${n}">${n}</option>`).join('');
       } catch (e) {
         console.error('Erro ao carregar instrutores:', e);
       }
@@ -402,10 +399,11 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
         </div>
         <div class="field">
           <label>Instrutores auxiliares <small style="color:var(--amber); font-weight:400;">— opcional, pra registro (não assina o certificado)</small></label>
-          <div id="fInstrutoresAuxiliares" style="border:1px solid var(--paper-200); border-radius:6px; padding:8px 10px; max-height:110px; overflow-y:auto; font-size:13px;">
-            <label style="display:flex; align-items:center; gap:6px; padding:3px 0; cursor:pointer;"><input type="checkbox" class="chk-instrutor-aux" value="Deverson R. F. Pomerenk"> Deverson R. F. Pomerenk</label>
-            <label style="display:flex; align-items:center; gap:6px; padding:3px 0; cursor:pointer;"><input type="checkbox" class="chk-instrutor-aux" value="Everton"> Everton</label>
-          </div>
+          <select id="fInstrutoresAuxiliares" multiple size="4" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:6px; font-size:13px;">
+            <option value="Deverson R. F. Pomerenk">Deverson R. F. Pomerenk</option>
+            <option value="Everton">Everton</option>
+          </select>
+          <div class="small-note">Segura Ctrl (ou Cmd no Mac) pra marcar mais de um.</div>
         </div>
         <div class="field">
           <label>Cidade (aparece no certificado)</label>
@@ -1068,7 +1066,7 @@ function collectForm(){
     empresa: empresaSel.value ? (empresaOpt ? empresaOpt.textContent : '') : 'CT SafeSeg',
     cnpj: document.getElementById('fCnpj').value,
     instrutor: document.getElementById('fInstrutor').value,
-    instrutoresAuxiliares: Array.from(document.querySelectorAll('.chk-instrutor-aux:checked')).map(c => c.value),
+    instrutoresAuxiliares: Array.from(document.getElementById('fInstrutoresAuxiliares').selectedOptions).map(o => o.value),
     cidade: document.getElementById('fCidade').value || 'Dois Vizinhos - PR',
     art: document.getElementById('fArt').value,
     dias: diasState,
@@ -1315,7 +1313,7 @@ function limparFormulario(){
   document.getElementById('fCnpj').value='';
   document.getElementById('fCidade').value='Dois Vizinhos - PR';
   document.getElementById('fArt').value='';
-  document.querySelectorAll('.chk-instrutor-aux').forEach(c => c.checked = false);
+  Array.from(document.getElementById('fInstrutoresAuxiliares').options).forEach(o => o.selected = false);
   document.getElementById('fConteudo').value='';
   document.getElementById('fObs').value='';
   diasState=[]; renderDias();
@@ -1344,8 +1342,8 @@ async function editarTurma(id){
   document.getElementById('fEmpresa').value = t.empresaId||'';
   carregarFuncionariosDaEmpresa();
   document.getElementById('fCnpj').value = t.cnpj||'';
-  document.querySelectorAll('.chk-instrutor-aux').forEach(c => {
-    c.checked = (t.instrutoresAuxiliares || []).includes(c.value);
+  Array.from(document.getElementById('fInstrutoresAuxiliares').options).forEach(o => {
+    o.selected = (t.instrutoresAuxiliares || []).includes(o.value);
   });
   document.getElementById('fCidade').value = t.cidade||'Dois Vizinhos - PR';
   document.getElementById('fArt').value = t.art||'';

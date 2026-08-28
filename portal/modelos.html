@@ -185,12 +185,41 @@
       tbody.innerHTML = `<tr><td colspan="5" class="text-muted" style="text-align:center; padding:20px;">Nenhum modelo cadastrado ainda. Clique em "+ Adicionar modelo" pra começar.</td></tr>`;
       return;
     }
-    tbody.innerHTML = modelosState.map((m, i) => `
+
+    // Agrupa por instrutor pra facilitar organizar/revisar — mas guarda o
+    // ÍNDICE ORIGINAL de cada linha (modelosState continua uma lista só,
+    // agrupamento é só visual)
+    const grupos = {};
+    const ordemInstrutores = window.__nomesInstrutores || ['Deverson', 'Everton'];
+    modelosState.forEach((m, i) => {
+      const chave = m.instrutor || '(sem instrutor)';
+      if (!grupos[chave]) grupos[chave] = [];
+      grupos[chave].push(i);
+    });
+    // ordena os grupos pela mesma ordem do cadastro de Instrutores; quem não
+    // estiver nessa lista (instrutor removido/antigo) vai pro final
+    const nomesGrupos = Object.keys(grupos).sort((a, b) => {
+      const ia = ordemInstrutores.indexOf(a), ib = ordemInstrutores.indexOf(b);
+      if (ia === -1 && ib === -1) return a.localeCompare(b);
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    });
+
+    tbody.innerHTML = nomesGrupos.map(nomeInstrutor => `
+      <tr>
+        <td colspan="5" style="background:var(--graphite-900); color:var(--gold-300); font-weight:700; font-size:12.5px; padding:8px 12px; text-transform:uppercase; letter-spacing:.02em;">
+          ${nomeInstrutor} <span style="font-weight:400; color:#fff; opacity:.7;">— ${grupos[nomeInstrutor].length} modelo(s)</span>
+        </td>
+      </tr>
+      ${grupos[nomeInstrutor].map(i => {
+        const m = modelosState[i];
+        return `
       <tr>
         <td class="edit-cell"><input type="text" value="${m.curso || ''}" placeholder="Ex: NR-35 - Trabalho em Altura" style="width:170px;" onchange="modelosState[${i}].curso=this.value"></td>
         <td class="edit-cell">
-          <select onchange="modelosState[${i}].instrutor=this.value">
-            ${(window.__nomesInstrutores || ['Deverson', 'Everton']).map(n => `<option ${m.instrutor === n ? 'selected' : ''}>${n}</option>`).join('')}
+          <select onchange="modelosState[${i}].instrutor=this.value; renderModelos();">
+            ${ordemInstrutores.map(n => `<option ${m.instrutor === n ? 'selected' : ''}>${n}</option>`).join('')}
           </select>
         </td>
         <td class="edit-cell"><input type="text" value="${m.modeloId || ''}" placeholder="Cola o link do Google Slides aqui" style="width:220px;" onchange="modelosState[${i}].modeloId=this.value"></td>
@@ -199,7 +228,8 @@
           <button class="btn btn--secondary" style="padding:6px 10px; font-size:12px;" onclick="salvarLinhaModelo(${i})">Salvar</button>
           <button class="btn btn--danger" style="padding:6px 10px; font-size:12px;" onclick="excluirLinhaModelo(${i})">Excluir</button>
         </td>
-      </tr>
+      </tr>`;
+      }).join('')}
     `).join('');
   }
 
