@@ -219,7 +219,8 @@
     doc.text('Empresa: ' + sanitizarTexto(dadosEmpresa.nome || ''), 4, y);
     if (dadosFuncionario.cargo) doc.text('Função: ' + sanitizarTexto(dadosFuncionario.cargo), 4, y + 4);
 
-    <!--// assinatura (área inferior, antes da faixa final)
+    <!--
+    // assinatura (área inferior, antes da faixa final)
     doc.setDrawColor(...CINZA_TXT); doc.setLineWidth(0.2);
     doc.line(W/2 - 2, H - 20, W - 6, H - 20);
     doc.setFont('helvetica', 'normal'); doc.setFontSize(5); doc.setTextColor(...CINZA_TXT);
