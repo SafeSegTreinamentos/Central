@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal SafeSeg — Central de Mensagens</title>
+<link rel="stylesheet" href="../assets/css/safeseg-design-system.css">
+<style>
+  html, body { height: 100%; }
+  .app { display: grid; grid-template-columns: 240px 320px 1fr; min-height: 100vh; }
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .topbar { background: #fff; border-bottom: 1px solid var(--paper-200); padding: var(--space-4) var(--space-6); }
+  .topbar h1 { font-size: var(--text-xl); letter-spacing: 0.03em; }
+  .topbar .sub { font-size: var(--text-sm); color: var(--graphite-600); margin-top: 2px; }
+
+  .scripts-col { background: var(--paper-50); border-right: 1px solid var(--paper-200); overflow-y: auto; padding: var(--space-4); }
+  .scripts-group-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--graphite-600); letter-spacing: .03em; margin: 16px 0 8px; }
+  .scripts-group-label:first-child { margin-top: 0; }
+  .script-item { background: #fff; border: 1px solid var(--paper-200); border-radius: 8px; padding: 10px 12px; margin-bottom: 6px; cursor: pointer; transition: border-color .15s; }
+  .script-item:hover { border-color: var(--gold-400); }
+  .script-item.active { border-color: var(--gold-500); background: var(--gold-50, #FFF8E8); }
+  .script-item .titulo { font-weight: 700; font-size: 12.5px; }
+  .script-item .etapa { font-size: 11px; color: var(--graphite-600); margin-top: 2px; }
+
+  .content { padding: var(--space-6); overflow-y: auto; }
+  .personalizar-box { background: #fff; border: 1px solid var(--paper-200); border-radius: 10px; padding: var(--space-4); margin-bottom: var(--space-4); display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+  .personalizar-box .field { flex: 1; min-width: 160px; }
+  .personalizar-box label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--graphite-600); display: block; margin-bottom: 4px; }
+  .personalizar-box input { width: 100%; border: 1px solid var(--paper-200); border-radius: 6px; padding: 8px 10px; font-size: 13px; }
+
+  .script-card { background: #fff; border: 1px solid var(--paper-200); border-radius: 12px; padding: var(--space-5); box-shadow: var(--shadow-card); }
+  .script-card h2 { font-family: var(--font-display); font-size: 1.3rem; margin-bottom: 4px; }
+  .script-desc { font-size: 13px; color: var(--graphite-600); margin-bottom: 6px; }
+  .script-quando { font-size: 12px; color: var(--gold-700); background: #FFF8E8; border-radius: 6px; padding: 8px 12px; margin-bottom: 16px; }
+  .vtabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .vtab { padding: 6px 12px; border-radius: 20px; border: 1px solid var(--paper-200); background: #fff; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .vtab.active { background: var(--graphite-900); color: var(--gold-300); border-color: var(--graphite-900); }
+  .msg-box { background: var(--paper-50); border: 1px solid var(--paper-200); border-radius: 10px; padding: 16px; white-space: pre-wrap; font-size: 13.5px; line-height: 1.6; margin-bottom: 12px; }
+  .msg-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .obj-item { border: 1px solid var(--paper-200); border-radius: 10px; padding: 14px; margin-bottom: 10px; }
+  .obj-p { font-style: italic; color: var(--graphite-700); margin-bottom: 8px; font-size: 13.5px; }
+  .obj-r { background: var(--paper-50); border-radius: 8px; padding: 12px; font-size: 13px; white-space: pre-wrap; margin-bottom: 8px; }
+  .fase-item { border-left: 3px solid var(--gold-400); padding: 10px 0 10px 14px; margin-bottom: 10px; }
+  .fase-lbl { font-weight: 700; font-size: 13px; color: var(--gold-700); margin-bottom: 4px; }
+  .fase-txt { font-size: 13px; white-space: pre-wrap; background: var(--paper-50); border-radius: 8px; padding: 10px; margin-bottom: 6px; }
+  .dicas-box { background: #EAF6EC; border-radius: 8px; padding: 12px 14px; font-size: 12.5px; margin-top: 16px; }
+  .dicas-box li { margin-left: 16px; margin-bottom: 3px; }
+
+  @media (max-width: 1100px) {
+    .app { grid-template-columns: 1fr !important; }
+    .scripts-col { max-height: 300px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <nav class="sidebar">
+    <div class="sidebar__logo">
+      <img src="../assets/img/logo-dark.png" alt="SafeSeg" style="background:var(--graphite-900); border-radius:8px; padding:4px; max-width:150px; display:block;">
+    </div>
+    <a class="nav-item" href="../index.html" style="background:var(--graphite-900); color:var(--gold-300); margin-bottom:4px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+      Central (Hub)
+    </a>
+    <a class="nav-item" href="dashboard.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      Dashboard
+    </a>
+    <div class="nav-section-label">Comercial (CRM)</div>
+    <a class="nav-item" href="leads.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+      Leads (Funil)
+    </a>
+    <a class="nav-item active" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Central de Mensagens
+    </a>
+    <a class="nav-item" href="propostas.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15h6M9 11h3"/></svg>
+      Propostas
+    </a>
+    <a class="nav-item" href="catalogo-cursos.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      Catálogo de Cursos
+    </a>
+    <a class="nav-item" href="instrutores.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Instrutores
+    </a>
+
+    <a class="nav-item" href="empresas.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17"/><path d="M19 21V10a1 1 0 0 0-1-1h-3"/><path d="M8 7h2M8 11h2M8 15h2"/></svg>
+      Empresas (clientes)
+    </a>
+    <div class="nav-section-label">Financeiro</div>
+    <a class="nav-item" href="financeiro.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Financeiro
+    </a>
+    <button class="nav-item" style="width:100%; text-align:left; border:none; background:transparent; cursor:pointer; margin-top:auto; color:var(--status-danger);" onclick="fazerLogout()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      Sair
+    </button>
+  </nav>
+
+  <div class="scripts-col" id="scriptsCol"></div>
+
+  <div class="main">
+    <div class="hazard-stripe"></div>
+    <header class="topbar">
+      <h1>Central de Mensagens</h1>
+      <div class="sub">Scripts prontos de WhatsApp, telefone, visita e e-mail — seu material real, organizado</div>
+    </header>
+
+    <div class="content">
+      <div class="personalizar-box">
+        <div class="field">
+          <label>Personalizar pra (nome)</label>
+          <input type="text" id="pNome" placeholder="Ex: João da Metalúrgica" oninput="renderScript()">
+        </div>
+        <div class="field">
+          <label>Telefone (WhatsApp) — só números</label>
+          <input type="text" id="pTelefone" placeholder="46999999999" oninput="renderScript()">
+        </div>
+      </div>
+
+      <div id="scriptDetail">
+        <div class="text-muted" style="text-align:center; padding:60px 20px;">← Escolhe um script na lista ao lado</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SCRIPTS = {
+
+'wpp-prosp': {
+  canal:'💬 WhatsApp', canalClass:'bg-w', canalCor:'#25D366',
+  etapa:'Prospecção Fria', title:'1º Contato — WhatsApp',
+  desc:'Primeira mensagem para empresas que nunca ouviram falar da SafeSeg. Tom informativo, nunca pressione. 6 variantes por segmento.',
+  quando:'Envie entre 8h–11h ou 14h–17h. Nunca áudio no 1º contato. Substitua [Nome] e [Segmento] pelos dados reais.',
+  type:'wpp', vtabs:[['v1','🏭 Indústria'],['v2','🏗️ Construção'],['v3','🛒 Comércio'],['v4','🌾 Agro'],['v5','🏥 Saúde'],['v6','🔧 Serviços']],
+  msgs:{
+    v1:`Olá, [Nome]! Tudo bem? 😊\n\nSou o Deverson, da SafeSeg — Segurança do Trabalho aqui de Dois Vizinhos.\n\nVi que vocês são do segmento industrial e queria fazer uma pergunta rápida: os treinamentos obrigatórios de NR da equipe de vocês estão em dia? Pergunto porque muitas indústrias da região estão com pendências no eSocial sem nem saber.\n\nSe quiser, posso verificar quais NRs são obrigatórias para o segmento de vocês sem compromisso. 👷`,
+    v2:`Olá, [Nome]! Tudo certo? 🏗️\n\nSou o Deverson da SafeSeg. Trabalho com Segurança do Trabalho aqui no Sudoeste do PR.\n\nVocês estão em obra agora ou com equipe CLT? Pergunto porque o PCMAT e os treinamentos de NR 18 costumam gerar multa pesada quando a fiscalização aparece sem avisar.\n\nPosso dar uma olhada na situação de vocês e dizer exatamente o que está pendente. Seria útil?`,
+    v3:`Olá, [Nome]! Tudo bem? 😊\n\nSou o Deverson, da SafeSeg — Segurança do Trabalho.\n\nMuitas empresas de comércio com funcionários CLT não sabem que também precisam de treinamentos obrigatórios como NR 06 (EPI) e integração admissional. A fiscalização do MTE não avisa antes de chegar.\n\nPosso te enviar um checklist gratuito das obrigações para o segmento de vocês?`,
+    v4:`Olá, [Nome]! Boa tarde! 🌾\n\nSou o Deverson da SafeSeg. Trabalho com SST aqui no Sudoeste do PR.\n\nVocês têm funcionários CLT na propriedade rural? Desde 2022 o eSocial exige o envio dos eventos de SST para todas as empresas rurais com registro CLT, incluindo PGR e treinamentos como NR 31.\n\nSe quiser saber se vocês estão regularizados, é só me falar. Verifico sem custo. 👷`,
+    v5:`Olá, [Nome]! Tudo bem? 😊\n\nSou o Deverson, da SafeSeg — Segurança do Trabalho.\n\nEmpresas da área da saúde têm obrigações específicas de SST que muita gente não conhece: NR 32 (serviços de saúde), biossegurança, treinamentos de EPI hospitalar e registro no eSocial.\n\nPosso verificar a situação de vocês e indicar o que está pendente sem compromisso?`,
+    v6:`Olá, [Nome]! Tudo certo? 🔧\n\nSou o Deverson da SafeSeg. Sou especialista em Segurança do Trabalho aqui de Dois Vizinhos.\n\nEmpresas de serviços com equipe CLT têm obrigações básicas de SST muitas vezes ignoradas — integração admissional, treinamentos de EPI, PGR simplificado.\n\nPosso te enviar um diagnóstico gratuito do que é obrigatório para o seu CNPJ?`
+  },
+  dicas:['Não peça resposta imediata. Termine com uma pergunta aberta.','Se não responder em 2 dias, use o script de follow-up.','Nunca mande valor no primeiro contato — valor vem com proposta.','Personalize o nome e segmento antes de enviar.']
+},
+
+'wpp-fu': {
+  canal:'💬 WhatsApp', canalClass:'bg-w', canalCor:'#25D366',
+  etapa:'Follow-up', title:'Follow-up — Reativar Sem Pressionar',
+  desc:'Para quando o lead não respondeu ao primeiro contato. Tom leve e sem cobrança.',
+  quando:'Envie 2–3 dias após o primeiro contato sem resposta. Máximo 2 tentativas de follow-up.',
+  type:'wpp', vtabs:[['v1','Follow-up 1'],['v2','Follow-up 2 (último)']],
+  msgs:{
+    v1:`Olá, [Nome]! 😊\n\nPassei aqui só para deixar meu contato caso queira conversar sobre os treinamentos de SST da equipe.\n\nSem compromisso nenhum — se não for o momento certo, sem problema. 👷\n\nDeverson — SafeSeg\n(46) 99920-3945`,
+    v2:`Oi, [Nome]! Última vez que entro em contato pra não ser inconveniente. 😅\n\nSe precisar de apoio em Segurança do Trabalho no futuro — treinamentos, documentação, PGR — pode contar comigo.\n\nGuarda meu número! 🤝\n\nDeverson — SafeSeg`
+  },
+  dicas:['Nunca faça mais de 2 follow-ups no WhatsApp.','Tom leve e sem cobrança é essencial.','Se não responder após 2 tentativas, arquive por 30 dias e tente novamente.']
+},
+
+'wpp-obj': {
+  canal:'💬 WhatsApp', canalClass:'bg-w', canalCor:'#25D366',
+  etapa:'Contorno de Objeções', title:'Objeções — Respostas Prontas',
+  desc:'6 respostas para as objeções mais comuns. Copie e adapte ao contexto.',
+  quando:'Use quando o cliente responder com uma objeção. Responda em até 30 minutos.',
+  type:'obj',
+  objs:[
+    {p:'❝ Já temos um técnico de segurança. ❞',
+     r:`Ótimo! Excelente que vocês já têm essa preocupação. 👍\n\nMeu trabalho pode complementar o do técnico de vocês — especialmente em treinamentos práticos, documentação eSocial e reciclagens periódicas que às vezes ficam em segundo plano.\n\nVale uma conversa rápida para ver se faz sentido? Sem compromisso.`},
+    {p:'❝ Não tenho dinheiro agora / não está no orçamento. ❞',
+     r:`Entendo totalmente, [Nome]. Orçamento sempre é um ponto real.\n\nSó uma reflexão: uma autuação do MTE por falta de treinamento pode custar de R$ 3.000 a R$ 50.000 dependendo da infração. O custo do treinamento é bem menor que o risco.\n\nMas sem pressão — posso te enviar os valores para você ter em mãos quando o momento for melhor?`},
+    {p:'❝ Não tenho tempo agora. ❞',
+     r:`Claro, sem problema! 😊\n\nSó para facilitar: os treinamentos online podem ser feitos pelos funcionários no próprio celular, no horário que for melhor para eles. Não precisa parar a operação.\n\nQuando tiver um tempinho, me avise que eu monto um plano que se encaixa na rotina de vocês.`},
+    {p:'❝ Ja fiz esse treinamento ano passado. ❞',
+     r:`Boa notícia que fizeram! 👏\n\nSó quero confirmar uma coisa: dependendo da NR, os treinamentos têm validade — NR 35 vence em 2 anos, NR 33 em 1 ano, por exemplo. Você tem o certificado em mãos?\n\nSe quiser, verifico quais já estão vencendo para não pegar de surpresa na fiscalização.`},
+    {p:'❝ Vou pensar e te retorno. ❞',
+     r:`Claro, fique à vontade! 😊\n\nSó deixo uma informação: a proposta tem validade de 15 dias — depois disso posso precisar rever os valores.\n\nQualquer dúvida, estou aqui. 🤝`},
+    {p:'❝ Tem alguém mais barato. ❞',
+     r:`Entendo, sempre tem opção mais barata mesmo.\n\nA diferença que a SafeSeg oferece: certificados com validade reconhecida para fiscalização, suporte direto por 30 dias após o treinamento e registro correto no eSocial — porque um certificado mal emitido não vale nada na hora da autuação.\n\nSe quiser comparar lado a lado o que está incluído, posso te mostrar. 👷`}
+  ]
+},
+
+'wpp-fech': {
+  canal:'💬 WhatsApp', canalClass:'bg-w', canalCor:'#25D366',
+  etapa:'Fechamento', title:'Fechamento — Conduzir ao Sim',
+  desc:'Scripts para o momento decisivo. Tom firme mas sem pressão excessiva.',
+  quando:'Use quando o cliente demonstrou interesse e está "quase" decidindo.',
+  type:'wpp', vtabs:[['v1','Fechamento Direto'],['v2','Urgência Real']],
+  msgs:{
+    v1:`[Nome], tudo certo para seguirmos?\n\nResumo do que fechamos: [SERVIÇO] para [X] colaboradores, [MODALIDADE], com certificados e registro eSocial inclusos.\n\nValor: R$ [VALOR]\n\nPreciso só da sua confirmação para já encaixar na agenda. Qual a melhor data para vocês?`,
+    v2:`[Nome], só para te avisar: tenho agenda disponível para [DATA OU PERÍODO]. Depois disso já está comprometida por algumas semanas.\n\nSe quiser garantir o treinamento antes que o prazo do eSocial chegue, este é o momento ideal.\n\nConfirma e eu reservo agora?`
+  },
+  dicas:['Depois de fazer a proposta de fechamento, pare e espere. Não fale antes da resposta.','Se demorar mais de 24h, mande uma mensagem curta de acompanhamento.','Nunca conceda desconto antes de ouvir uma negativa real.']
+},
+
+'wpp-prop': {
+  canal:'💬 WhatsApp', canalClass:'bg-w', canalCor:'#25D366',
+  etapa:'Envio de Proposta', title:'Envio de Proposta — WhatsApp',
+  desc:'Mensagem para enviar junto com a proposta em PDF.',
+  quando:'Envie assim que gerar a proposta. Seja direto e destaque os pontos principais.',
+  type:'wpp', vtabs:[['v1','Treinamento'],['v2','Consultoria/Documentação']],
+  msgs:{
+    v1:`[Nome], segue a proposta conforme conversamos! 👷\n\n📋 *SafeSeg — Proposta Comercial*\n• Serviço: [NR/TREINAMENTO]\n• Participantes: [X] colaboradores\n• Modalidade: [Presencial/Online]\n• Data sugerida: [DATA]\n• Valor: *R$ [VALOR]*\n✅ Inclui: certificados, lista de presença, registro eSocial e suporte por 30 dias.\n\n⚠️ Proposta válida por 15 dias.\n\nQualquer dúvida, estou à disposição! Quando confirmar, já encaixo na agenda. 🤝`,
+    v2:`[Nome], segue a proposta conforme alinhamos! 📄\n\n📋 *SafeSeg — Proposta Comercial*\n• Serviço: [PGR / PCMSO / LTCAT / Consultoria]\n• Grau de Risco: [GR]\n• Prazo de entrega: [X] dias úteis\n• Valor: *R$ [VALOR]*\n✅ Inclui: elaboração completa + envio no eSocial + revisão se necessário.\n\n⚠️ Proposta válida por 15 dias.\n\nQualquer dúvida é só falar! 👷`
+  },
+  dicas:['Envie sempre no WhatsApp E por e-mail para maior formalidade.','Ligue ou mande mensagem 24h depois para confirmar que recebeu.','Nunca deixe a proposta "no ar" por mais de 3 dias sem follow-up.']
+},
+
+'wpp-pos': {
+  canal:'💬 WhatsApp', canalClass:'bg-w', canalCor:'#25D366',
+  etapa:'Pós-Venda', title:'Pós-Venda — Conclusão e Indicação',
+  desc:'Mensagens para após a conclusão do serviço. Fidelização e geração de indicações.',
+  quando:'Envie em até 24h após o treinamento ou entrega do documento.',
+  type:'wpp', vtabs:[['v1','Conclusão Treinamento'],['v2','Solicitação de Indicação'],['v3','Alerta de Renovação']],
+  msgs:{
+    v1:`[Nome], obrigado pela confiança! 🙏\n\nFoi um prazer realizar o [TREINAMENTO] com a equipe de vocês hoje. Os certificados ficam prontos em até 5 dias úteis e envio por aqui mesmo.\n\nQualquer dúvida sobre o conteúdo do treinamento nas próximas semanas, pode me chamar. O suporte está incluído. 👷\n\n— Deverson | SafeSeg`,
+    v2:`[Nome], espero que tudo esteja correndo bem depois do [TREINAMENTO]! 😊\n\nSe ficou satisfeito com o serviço, tenho um pedido: você conhece algum empresário amigo que também precise regularizar os treinamentos da equipe?\n\nUma indicação sua me ajuda muito — e garanto o mesmo cuidado que tive com vocês. Quem indicar também ganha [BENEFÍCIO SE HOUVER]. 🤝`,
+    v3:`[Nome], bom dia! 🛡️\n\nPassando para avisar que o [TREINAMENTO] que fizemos em [DATA] vence em [DATA DE VENCIMENTO].\n\nVamos agendar a reciclagem antes de vencer? Fica muito mais caro ser autuado por treinamento vencido do que renovar no prazo.\n\nMe fala e eu já verifico a agenda! 📅`
+  },
+  dicas:['Pós-venda bem feito gera indicação espontânea.','Aviso de renovação 30 dias antes é um diferencial valorizado.','Se pedir indicação, ofereça algo em troca — mesmo que seja um agradecimento público.']
+},
+
+'wpp-reat': {
+  canal:'💬 WhatsApp', canalClass:'bg-w', canalCor:'#25D366',
+  etapa:'Reativação', title:'Reativação — Cliente Antigo / Lead Frio',
+  desc:'Para clientes que pararam de responder há mais de 30 dias ou que já foram clientes.',
+  quando:'Use para leads frios (30+ dias sem resposta) ou ex-clientes sem renovação.',
+  type:'wpp', vtabs:[['v1','Lead Frio'],['v2','Ex-Cliente']],
+  msgs:{
+    v1:`[Nome], bom dia! Tudo bem? 😊\n\nFaz um tempo que não nos falamos — passei por aqui para saber se vocês conseguiram resolver a questão dos treinamentos de SST.\n\nCaso ainda esteja pendente, tenho disponibilidade no próximo mês e posso oferecer condições especiais para fecharmos agora.\n\nQuer que eu envie um novo orçamento? 👷`,
+    v2:`[Nome]! Quanto tempo! Tudo bem com vocês? 😊\n\nSou o Deverson da SafeSeg — fizemos o [TREINAMENTO] com vocês em [ANO].\n\nPassando para lembrar que dependendo do treinamento que fizemos, pode estar na hora da reciclagem. Além disso, as regras do eSocial mudaram e vale uma revisão.\n\nMe fala como estão e a gente vê o que faz sentido agora! 🤝`
+  },
+  dicas:['Não mencione a demora sem contato — age como se fosse natural.','Ofereça algo novo: atualização de legislação, nova NR, mudança no eSocial.','Lead frio ≠ lead perdido. Muitos fecham no 2º ou 3º contato.']
+},
+
+'tel-prosp': {
+  canal:'📞 Telefone', canalClass:'bg-t', canalCor:'#2196F3',
+  etapa:'Prospecção', title:'Prospecção por Ligação — Roteiro Completo',
+  desc:'Roteiro em 5 fases para a ligação de prospecção fria. Objetivo: conseguir a reunião, não vender no telefone.',
+  quando:'Ligue entre 9h–11h ou 14h–16h. Evite segundas-feiras de manhã e sextas à tarde.',
+  type:'tel',
+  fases:[
+    {num:'1', lbl:'Apresentação (10s)', txt:`"Bom dia, [Nome]! Aqui é o Deverson Pomerenk, da SafeSeg — Segurança do Trabalho aqui de Dois Vizinhos. Você tem 2 minutinhos?"
+
+[Aguardar resposta. Se SIM, continue. Se NÃO, pergunte o melhor horário.]`},
+    {num:'2', lbl:'Gancho (20s)', txt:`"Perfeito. Entrei em contato porque trabalho com empresas do segmento de [SEGMENTO] aqui na região e muitas estão com pendências em treinamentos obrigatórios sem saber — especialmente desde as mudanças do eSocial em 2022.
+
+Queria entender rapidamente como vocês estão hoje nessa questão."`},
+    {num:'3', lbl:'Diagnóstico (60s)', txt:`Faça 1 ou 2 perguntas abertas:
+
+→ "Vocês têm funcionários CLT?"
+→ "Os treinamentos de NR da equipe estão em dia?"
+→ "Vocês já tiveram visita de fiscalização do MTE?"
+
+[Ouça e anote. Não interrompa.]`},
+    {num:'4', lbl:'Proposta da próxima etapa', txt:`"[Nome], pelo que você me contou, acredito que vale uma análise mais detalhada. Consigo verificar quais treinamentos são obrigatórios para o CNPJ de vocês e te enviar um diagnóstico por escrito.
+
+Você prefere que eu mande pelo WhatsApp ou por e-mail?"`},
+    {num:'5', lbl:'Fechamento da ligação', txt:`[Se aceitar:] "Ótimo! Vou te mandar ainda hoje. Pode esperar uma mensagem minha no número [NÚMERO DELES]?"
+
+[Se resistir:] "Tudo bem, [Nome]. Posso te enviar só uma mensagem com as principais obrigações para o seu segmento — sem compromisso nenhum. Fica como referência para quando precisar."`}
+  ],
+  dicas:['Meta da ligação: agendar conversa, não vender.','Fale devagar. Tom calmo transmite confiança.','Anote tudo durante a ligação — empresa, nome, situação atual.','Se cair no caixa postal: grave uma mensagem de 20 segundos com gancho.']
+},
+
+'tel-port': {
+  canal:'📞 Telefone', canalClass:'bg-t', canalCor:'#2196F3',
+  etapa:'Porteiro / Recepção', title:'Passar pelo Porteiro — Táticas',
+  desc:'Como chegar ao decisor quando a recepção filtra as ligações.',
+  quando:'Use quando a recepcionista ou secretária bloquear o acesso ao responsável.',
+  type:'tel',
+  fases:[
+    {num:'1', lbl:'Tática Direta', txt:`"Bom dia! Preciso falar com o [Nome do Dono/Gerente] sobre a regularização dos treinamentos de segurança do trabalho da empresa. É urgente para o eSocial. Ele está disponível?"`},
+    {num:'2', lbl:'Tática do Especialista', txt:`"Bom dia! Aqui é o Deverson Pomerenk, especialista em SST. Preciso verificar com [Nome] se os registros de treinamento de vocês estão corretos no eSocial antes do vencimento. Pode me transferir?"`},
+    {num:'3', lbl:'Se pedir para mandar e-mail', txt:`"Claro! Mas eu precisaria confirmar com [Nome] antes, porque é uma questão de prazo legal. É só 2 minutos. Ele não está mesmo disponível agora?"`},
+    {num:'4', lbl:'Coleta de informação', txt:`"Tudo bem! Me ajuda com uma coisa: qual o melhor horário para falar com [Nome] diretamente? E por acaso você sabe o e-mail ou WhatsApp dele para eu enviar o material?"`}
+  ],
+  dicas:['Nunca minta sobre a razão da ligação.','Seja simpático com o porteiro — ele decide se passa ou não.','Se descobrir o nome do dono/gerente antes, use-o naturalmente.','Nunca force. Se bloquear, tente outro canal (WhatsApp, e-mail, Instagram).']
+},
+
+'tel-obj': {
+  canal:'📞 Telefone', canalClass:'bg-t', canalCor:'#2196F3',
+  etapa:'Objeções por Telefone', title:'Objeções por Telefone — 4 Respostas',
+  desc:'As 4 objeções mais comuns em ligação e como contorná-las.',
+  quando:'Mantenha a calma, nunca discuta, e sempre proponha o próximo passo.',
+  type:'obj',
+  objs:[
+    {p:'❝ Não tenho interesse. ❞',
+     r:`"[Nome], entendo. Só me permite fazer uma pergunta rápida: você já verificou se todos os treinamentos obrigatórios para o eSocial estão em dia? Muitas empresas acham que estão regularizadas e não estão. Posso te enviar um checklist gratuito para você verificar por conta própria?"`},
+    {p:'❝ Já tenho fornecedor de SST. ❞',
+     r:`"Ótimo que já tem! Não quero substituir ninguém. Minha proposta seria só complementar — às vezes surgem treinamentos novos ou vencimentos que o fornecedor atual não cobre. Me permite só te enviar o portfólio para você ter como referência?"`},
+    {p:'❝ Me manda um e-mail. ❞',
+     r:`"Claro! Só para personalizar o material: vocês têm mais funcionários de produção ou área administrativa? Assim envio exatamente o que é obrigatório para o perfil de vocês."`},
+    {p:'❝ Ligue semana que vem. ❞',
+     r:`"Perfeito! Qual o melhor dia e horário para você — manhã ou tarde? Assim já marco na agenda para não perder."`}
+  ]
+},
+
+'vis-rot': {
+  canal:'🤝 Visita Presencial', canalClass:'bg-v', canalCor:'#9C27B0',
+  etapa:'Roteiro de Reunião', title:'Roteiro da Reunião Presencial — 4 Fases',
+  desc:'Estrutura completa para visita comercial. Objetivo: fechar ou avançar uma etapa no pipeline.',
+  quando:'Leve: proposta impressa, caneta, cartão de visita, tablet ou celular com portfólio.',
+  type:'vis',
+  fases:[
+    {num:'1', lbl:'Quebra-gelo (5 min)', txt:`Aperto de mão, apresentação e agradecimento pela disponibilidade.
+
+→ "Obrigado pelo tempo, [Nome]. São 30 minutos. Meu objetivo aqui é entender a situação de vocês e ver se consigo ajudar — sem compromisso."
+
+Observe o ambiente: máquinas, número de funcionários visíveis, EPIs em uso. Esses são dados de diagnóstico.`},
+    {num:'2', lbl:'Diagnóstico (10–15 min)', txt:`Faça perguntas abertas. Anote tudo.
+
+→ "Me conta: quantos funcionários CLT vocês têm hoje?"
+→ "Vocês já receberam alguma visita do MTE ou autuação?"
+→ "Quais treinamentos de NR vocês já realizaram?"
+→ "Como é a rotina de vocês em termos de documentação de SST?"
+→ "O que seria mais urgente resolver agora?"
+
+[Ouça mais do que fala. Deixe os silêncios existirem.]`},
+    {num:'3', lbl:'Apresentação da solução (10 min)', txt:`Com base no diagnóstico, apresente apenas o que é relevante para eles.
+
+→ "Baseado no que você me contou, o que está mais urgente para vocês é [X]. Isso porque [MOTIVO LEGAL/PRAZO]."
+
+→ Mostre o portfólio apenas com os serviços relevantes.
+
+→ "O investimento para resolver isso fica em torno de R$ [VALOR]. Isso inclui [CERTIFICADOS/ESOCIAL/SUPORTE]."`},
+    {num:'4', lbl:'Fechamento ou Próximo Passo', txt:`→ [Se pronto para fechar:] "Posso emitir a proposta formal agora e você me confirma hoje ou amanhã. Qual a data que funciona para o treinamento?"
+
+→ [Se precisar de tempo:] "Sem problema. Te envio a proposta por WhatsApp ainda hoje. Você consegue me dar um retorno até [DATA]?"
+
+→ [Sempre:] Saia com uma ação concreta definida — data de retorno, envio de proposta ou confirmação de data.`}
+  ],
+  dicas:['Nunca fale mal da concorrência.','Se aparecer o dono/sócio na visita, dirija-se a ele diretamente.','Leve cases de empresas parecidas (sem citar nomes) para criar identificação.','Anote tudo após sair — isso vira o CRM do lead.']
+},
+
+'vis-diag': {
+  canal:'🤝 Visita Presencial', canalClass:'bg-v', canalCor:'#9C27B0',
+  etapa:'Diagnóstico por Segmento', title:'Perguntas de Diagnóstico por Segmento',
+  desc:'Perguntas certas para cada tipo de empresa. Use na visita ou ligação para entender a dor rapidamente.',
+  quando:'Use nas primeiras perguntas da reunião. Não faça todas — escolha 2 ou 3 mais relevantes.',
+  type:'vis',
+  fases:[
+    {num:'🏭', lbl:'Indústria', txt:`→ "Vocês operam com máquinas ou equipamentos pesados?"
+→ "Têm trabalho em altura ou espaços confinados?"
+→ "Como é feita a manutenção das máquinas — tem LOTO?"
+→ "O PPRA/PGR de vocês está atualizado desde 2022?"`},
+    {num:'🏗️', lbl:'Construção Civil', txt:`→ "Estão com obra ativa agora? Quantos funcionários no canteiro?"
+→ "Tem PCMAT elaborado para essa obra?"
+→ "Os trabalhadores em altura têm NR 35 atualizada?"
+→ "Como fazem o controle de EPIs — têm ficha assinada?"`},
+    {num:'🌾', lbl:'Agronegócio', txt:`→ "Vocês têm funcionários registrados em CLT na propriedade?"
+→ "Já enviaram os eventos de SST no eSocial (S-2240 e S-2220)?"
+→ "Operam com máquinas agrícolas? Têm treinamento de NR 31?"
+→ "Usam agrotóxicos? Têm treinamento de NR 31 e ficha de EPI?"`},
+    {num:'🏥', lbl:'Saúde', txt:`→ "Vocês têm equipe CLT — técnicos, recepção, limpeza?"
+→ "Realizam treinamento de biossegurança e NR 32?"
+→ "Como é o descarte de resíduos do serviço de saúde (RSS)?"
+→ "Têm PPCI aprovado pelo Corpo de Bombeiros?"`},
+    {num:'🛒', lbl:'Comércio / Serviços', txt:`→ "Quantos funcionários CLT vocês têm?"
+→ "Fazem integração admissional quando contratam alguém novo?"
+→ "Os EPIs são entregues com ficha assinada?"
+→ "Já tiveram alguma visita de fiscalização?"`}
+  ],
+  dicas:['Anote as respostas em tempo real — demonstra profissionalismo.','Use as respostas para personalizar a proposta com os termos que o cliente usou.','Se ele disser "não sei", isso é uma dor — ele precisa de você.']
+},
+
+'vis-fech': {
+  canal:'🤝 Visita Presencial', canalClass:'bg-v', canalCor:'#9C27B0',
+  etapa:'Fechamento na Visita', title:'Técnicas de Fechamento na Visita',
+  desc:'Abordagens para fechar o negócio ainda durante a reunião presencial.',
+  quando:'Use quando o cliente já demonstrou interesse e fez perguntas sobre preço ou data.',
+  type:'vis',
+  fases:[
+    {num:'1', lbl:'Fechamento por Pressuposto', txt:`"[Nome], para organizar melhor: o treinamento de vocês funciona melhor no turno da manhã ou à tarde?"
+
+[Você pressupõe que vai acontecer e coloca a decisão em detalhe logístico, não em comprar ou não.]`},
+    {num:'2', lbl:'Fechamento por Resumo', txt:`"Então, pelo que conversamos: vocês precisam do [TREINAMENTO] para [X] funcionários, de preferência [DATA], no valor de R$ [VALOR], com certificados inclusos. Está correto? Posso confirmar na agenda?"`},
+    {num:'3', lbl:'Fechamento por Urgência Real', txt:`"[Nome], só te aviso que minha agenda de [MÊS] já está quase fechada. Se fechar hoje, consigo garantir a data de [DATA]. Na semana que vem pode não ter mais disponibilidade."`},
+    {num:'4', lbl:'Fechamento por Custo da Inação', txt:`"[Nome], uma autuação do MTE por falta de [TREINAMENTO] pode gerar multa de até R$ [VALOR DA MULTA]. O investimento no treinamento é R$ [VALOR]. Faz sentido resolver agora, né?"`}
+  ],
+  dicas:['Apresente o preço com segurança — nunca se desculpe pelo valor.','Depois da proposta de fechamento, fique em silêncio. Quem falar primeiro, perde.','Se não fechar na visita, saia com data e hora de retorno definidos.']
+},
+
+'ig-frio': {
+  canal:'📸 Instagram', canalClass:'bg-i', canalCor:'#E1306C',
+  etapa:'Abordagem Fria', title:'Direct — Abordagem Fria no Instagram',
+  desc:'3 abordagens para empresas que nunca interagiram com o perfil. Tom curto e direto.',
+  quando:'Envie pelo Direct. Perfil da empresa ou do dono. Nunca envie mais de 1 direct por dia para a mesma pessoa.',
+  type:'wpp', vtabs:[['v1','Abordagem Direta'],['v2','Por Conteúdo'],['v3','Por Problema']],
+  msgs:{
+    v1:`Olá! Vi o perfil de vocês e notei que são do segmento de [SEGMENTO]. 👷
+
+Sou o Deverson, da SafeSeg — Segurança do Trabalho. Muitas empresas como a de vocês têm pendências nos treinamentos de NR sem saber.
+
+Posso te enviar um checklist gratuito com o que é obrigatório para o CNPJ de vocês?`,
+    v2:`Oi! Vi o post de vocês sobre [ASSUNTO DO POST]. 😊
+
+Sou o Deverson, da SafeSeg. Trabalho com SST aqui no Sudoeste do PR.
+
+Aproveitei o gancho porque muitas empresas do [SEGMENTO] que acompanho têm dúvidas sobre os treinamentos obrigatórios. Posso ajudar com isso também?`,
+    v3:`Oi, [Nome]! Direto ao ponto: 👇
+
+Vocês já verificaram se os treinamentos de SST da equipe estão em dia no eSocial?
+
+Desde 2022 é obrigatório para qualquer CNPJ com funcionário CLT — e a fiscalização está ativa.
+
+Posso verificar a situação de vocês sem custo. Topa?`
+  },
+  dicas:['No Instagram, a primeira mensagem precisa ser curta. Máximo 4 linhas.','Nunca mande link no primeiro direct — pode bloquear.','Se curtiu um post, comente primeiro. Depois mande o direct.']
+},
+
+'ig-eng': {
+  canal:'📸 Instagram', canalClass:'bg-i', canalCor:'#E1306C',
+  etapa:'Engajamento', title:'Direct — Curtiu / Salvou / Comentou',
+  desc:'Para quando alguém interagiu com o perfil da SafeSeg.',
+  quando:'Envie no mesmo dia da interação. O lead está "quente" neste momento.',
+  type:'wpp', vtabs:[['v1','Curtiu / Salvou'],['v2','Comentou']],
+  msgs:{
+    v1:`Oi, [Nome]! Vi que você curtiu/salvou nosso post sobre [ASSUNTO]. 😊
+
+Fico feliz que o conteúdo foi útil! Se a sua empresa também precisa de apoio em Segurança do Trabalho, posso ajudar.
+
+Qual o segmento de atuação de vocês?`,
+    v2:`Oi, [Nome]! Vi seu comentário no nosso post — obrigado! 🙏
+
+Se quiser aprofundar o assunto ou entender como isso se aplica à empresa de vocês, posso te ajudar diretamente aqui.
+
+Me conta: qual é o segmento?`
+  },
+  dicas:['Quem engajou já tem interesse. Seja mais direto do que no contato frio.','Não mande proposta direto — pergunte o segmento primeiro.','Stories com enquetes também geram leads: responda quem votou.']
+},
+
+'em-prosp': {
+  canal:'✉️ E-mail', canalClass:'bg-e', canalCor:'#FF6F00',
+  etapa:'Prospecção Fria', title:'E-mail de Prospecção Fria',
+  desc:'Template completo de e-mail para primeiro contato formal.',
+  quando:'Envie entre 8h–10h em dias úteis (terça a quinta têm maior taxa de abertura).',
+  type:'email',
+  assunto:'[EMPRESA DE VOCÊS] — Treinamentos de NR obrigatórios em dia?',
+  corpo:`Olá, [Nome]!
+
+Meu nome é Deverson Pomerenk, especialista em Segurança do Trabalho pela SafeSeg, empresa localizada em Dois Vizinhos - PR.
+
+Entrei em contato porque trabalho com empresas do segmento de [SEGMENTO] na região do Sudoeste e identifiquei um padrão comum: muitas estão com pendências em treinamentos obrigatórios de NR sem saber — especialmente após as mudanças do eSocial em 2022.
+
+O que mais preocupa é que a fiscalização do MTE não avisa com antecedência. Uma autuação por falta de treinamento pode gerar multas entre R$ 3.000 e R$ 50.000 dependendo da infração.
+
+Gostaria de te enviar um diagnóstico gratuito com:
+✅ As NRs obrigatórias para o perfil da empresa de vocês
+✅ Verificação de quais já estão vencidas ou prestes a vencer
+✅ Estimativa de custo para regularização
+
+Seria útil? Fico à disposição para uma conversa rápida de 15 minutos.
+
+Atenciosamente,
+Deverson Rodrigo F. Pomerenk
+SafeSeg — Segurança do Trabalho
+📱 (46) 99920-3945 | contato@safeseg.eng.br
+📍 Dois Vizinhos - PR`
+},
+
+'em-fu': {
+  canal:'✉️ E-mail', canalClass:'bg-e', canalCor:'#FF6F00',
+  etapa:'Follow-up E-mail', title:'Follow-up por E-mail',
+  desc:'E-mail de acompanhamento quando não houve resposta ao primeiro contato.',
+  quando:'Envie 3–5 dias após o primeiro e-mail sem resposta. Máximo 2 follow-ups.',
+  type:'email',
+  assunto:'Re: [EMPRESA DE VOCÊS] — Treinamentos de NR obrigatórios em dia?',
+  corpo:`Olá, [Nome]!
+
+Encaminho novamente meu e-mail anterior caso tenha ficado soterrado na caixa de entrada.
+
+Entendo que é difícil dar atenção a tudo que chega — por isso, quero ser direto: se o assunto não for relevante agora, é só me falar e não entro mais em contato.
+
+Mas se a questão dos treinamentos obrigatórios de SST ainda for algo que preocupa a empresa, posso ajudar de forma simples e rápida.
+
+Fico à disposição.
+
+Atenciosamente,
+Deverson Rodrigo F. Pomerenk
+SafeSeg — Segurança do Trabalho
+📱 (46) 99920-3945`
+},
+
+'em-prop': {
+  canal:'✉️ E-mail', canalClass:'bg-e', canalCor:'#FF6F00',
+  etapa:'Envio de Proposta', title:'E-mail de Envio de Proposta',
+  desc:'Template para envio formal da proposta comercial em PDF.',
+  quando:'Envie imediatamente após gerar a proposta. Sempre junto com o envio no WhatsApp.',
+  type:'email',
+  assunto:'SafeSeg — Proposta Comercial | [NOME DA EMPRESA] | [SERVIÇO]',
+  corpo:`Olá, [Nome]!
+
+Conforme conversamos, segue em anexo a proposta comercial da SafeSeg para [NOME DA EMPRESA].
+
+RESUMO DA PROPOSTA:
+• Serviço: [TREINAMENTO/CONSULTORIA]
+• Participantes: [X] colaboradores
+• Modalidade: [Presencial/Online/Semipresencial]
+• Data sugerida: [DATA OU "A COMBINAR"]
+• Valor total: R$ [VALOR]
+
+O que está incluso:
+✅ Certificados individuais com validade legal
+✅ Lista de presença assinada
+✅ Registro correto no eSocial (S-2240 / S-2220)
+✅ Suporte por WhatsApp por 30 dias após o treinamento
+✅ Alerta de renovação quando o certificado estiver vencendo
+
+⚠️ Esta proposta tem validade de 15 dias a partir de hoje.
+
+Qualquer dúvida, fico à disposição para uma conversa rápida. Pode me ligar ou responder este e-mail.
+
+Atenciosamente,
+Deverson Rodrigo F. Pomerenk
+SafeSeg — Segurança do Trabalho
+📱 (46) 99920-3945 | contato@safeseg.eng.br
+CNPJ: 52.112.925/0001-28 | Dois Vizinhos - PR`
+},
+
+'sp-desc': {
+  canal:'⚡ Situação Especial', canalClass:'bg-s', canalCor:'#ef5350',
+  etapa:'Negociação', title:'Pediu Desconto — Como Responder',
+  desc:'Tática para não conceder desconto desnecessário e manter o valor percebido.',
+  quando:'Use quando o cliente pedir desconto antes de apresentar objeção real.',
+  type:'obj',
+  objs:[
+    {p:'❝ Dá pra fazer um desconto? ❞',
+     r:`"[Nome], o valor que eu te passei já é o nosso melhor preço para esse volume. Mas me deixa entender melhor: qual seria o valor que funciona para vocês?
+
+[Espera a resposta.]
+
+Se for uma questão de orçamento, posso verificar se tem alguma forma de parcelar ou ajustar o escopo. Mas preciso entender o que está trancando para ajudar de verdade."`},
+    {p:'❝ O concorrente fez mais barato. ❞',
+     r:`"Entendo, [Nome]. Preço mais baixo sempre existe. A pergunta é o que está incluso.
+
+Nosso valor inclui: certificados com validade legal, registro no eSocial, suporte por 30 dias e alerta de renovação. Um certificado mal emitido não resolve a autuação — e aí o custo é bem maior.
+
+Mas se quiser comparar item por item o que cada proposta oferece, fico à disposição. 🤝"`}
+  ]
+},
+
+'sp-sumiu': {
+  canal:'⚡ Situação Especial', canalClass:'bg-s', canalCor:'#ef5350',
+  etapa:'Resgate', title:'Sumiu Após Proposta — Resgatar Lead',
+  desc:'O cliente recebeu a proposta e parou de responder. Como reativar sem parecer desesperado.',
+  quando:'Use 3 dias após o envio da proposta sem resposta.',
+  type:'wpp', vtabs:[['v1','Mensagem Suave'],['v2','Última Tentativa']],
+  msgs:{
+    v1:`[Nome], tudo bem? 😊\n\nPassei para saber se você teve a chance de ver a proposta que te enviei.\n\nSe surgiu alguma dúvida ou se o valor não ficou dentro do esperado, me fala sem problema — consigo adaptar conforme a situação de vocês.`,
+    v2:`[Nome]! Última mensagem sobre a proposta para não ser inconveniente. 😅\n\nSe não for o momento certo agora, sem problema. A proposta fica guardada e quando precisar é só me chamar.\n\nSó lembro que a validade dela é até [DATA]. 🤝`
+  },
+  dicas:['Nunca pergunte "E aí, o que acharam?" — é fraco.','Sempre dê uma saída digna — "sem problema se não for o momento".','Se não responder à segunda mensagem, arquive por 30 dias.']
+},
+
+'sp-conc': {
+  canal:'⚡ Situação Especial', canalClass:'bg-s', canalCor:'#ef5350',
+  etapa:'Concorrência', title:'Concorrente Mais Barato — Defender o Valor',
+  desc:'Como responder quando o cliente diz que tem uma proposta mais barata.',
+  quando:'Nunca fale mal da concorrência. Foque no que você entrega de diferente.',
+  type:'obj',
+  objs:[
+    {p:'❝ Achei mais barato em outro lugar. ❞',
+     r:`"[Nome], entendo — preço menor sempre chama atenção.
+
+Posso te fazer uma pergunta? O que está incluso na proposta deles?
+
+[Espera a resposta.]
+
+Vou te contar o que a SafeSeg entrega: certificado com validade reconhecida para fiscalização, registro correto no eSocial com os campos certos, suporte por 30 dias e aviso de renovação antes de vencer.
+
+Se eles entregam o mesmo, é uma boa escolha. Se não entregam, o risco pode custar muito mais que a diferença de preço. O que você acha que é mais importante agora?"`}
+  ]
+},
+
+'sp-urg': {
+  canal:'⚡ Situação Especial', canalClass:'bg-s', canalCor:'#ef5350',
+  etapa:'Urgência', title:'Urgência / Fiscalização — Fechar Rápido',
+  desc:'Para quando o cliente está com fiscalização chegando ou prazo no eSocial vencendo.',
+  quando:'Aja rápido. O cliente em pânico precisa de segurança e ação imediata.',
+  type:'wpp', vtabs:[['v1','Fiscalização Chegando'],['v2','Prazo eSocial']],
+  msgs:{
+    v1:`[Nome], entendi a situação. Vamos resolver isso agora. 👷\n\nPrimeiro: respira. Uma autuação por treinamento pendente é grave, mas tem como reduzir o impacto se agirmos rápido.\n\nMe passa:\n1️⃣ Número de funcionários CLT\n2️⃣ Quais treinamentos já têm certificado\n\nCom esses dados monto o plano de ação para hoje mesmo.`,
+    v2:`[Nome], vamos agir agora para não perder o prazo. ⏰\n\nConsigo organizar o treinamento [ONLINE/PRESENCIAL] ainda esta semana para regularizar antes do envio no eSocial.\n\nMe confirma: quantos funcionários precisam fazer o treinamento de [NR]?\n\nAssim já reservo a agenda e mando a proposta em menos de 1 hora.`
+  },
+  dicas:['Cliente em pânico precisa de calma da sua parte — seja a âncora.','Não prometa o que não pode cumprir. Seja honesto sobre prazos.','Tenha um "pacote urgência" com preço definido para não demorar com proposta.']
+},
+
+'sp-insat': {
+  canal:'⚡ Situação Especial', canalClass:'bg-s', canalCor:'#ef5350',
+  etapa:'Gestão de Crise', title:'Cliente Insatisfeito — Contornar',
+  desc:'Como responder a um cliente com reclamação ou insatisfação.',
+  quando:'Responda rápido. Nunca discuta. O objetivo é resolver, não ter razão.',
+  type:'obj',
+  objs:[
+    {p:'❝ O treinamento não atendeu o que precisávamos. ❞',
+     r:`"[Nome], me conta melhor o que aconteceu — quero entender para resolver da forma certa.
+
+[Ouve sem interromper.]
+
+Obrigado por me falar isso. Vou verificar o que aconteceu e te dou um retorno ainda hoje com a solução. Nosso compromisso é que você saia satisfeito com o serviço — isso para mim é inegociável."`},
+    {p:'❝ O certificado demorou mais do que foi prometido. ❞',
+     r:`"[Nome], me desculpe pela demora. Isso não deveria ter acontecido.
+
+Vou emitir agora com prioridade e te envio ainda hoje. Se precisar antes, posso te mandar uma declaração provisória enquanto o certificado final fica pronto.
+
+O que seria melhor para você?"`}
+  ]
+}
+};
+
+// Metadados de categoria pra organizar a lista lateral
+const CATEGORIAS = [
+  { label: '💬 WhatsApp', chaves: ['wpp-prosp','wpp-fu','wpp-obj','wpp-fech','wpp-prop','wpp-pos','wpp-reat'] },
+  { label: '📞 Telefone', chaves: ['tel-prosp','tel-port','tel-obj'] },
+  { label: '🤝 Visita Presencial', chaves: ['vis-rot','vis-diag','vis-fech'] },
+  { label: '📸 Instagram', chaves: ['ig-frio','ig-eng'] },
+  { label: '✉️ E-mail', chaves: ['em-prosp','em-fu','em-prop'] },
+  { label: '⚠️ Casos Especiais', chaves: ['sp-desc','sp-sumiu','sp-conc','sp-urg','sp-insat'] }
+];
+
+let scriptAtualId = null;
+let vtabAtual = null;
+
+function renderListaLateral() {
+  const box = document.getElementById('scriptsCol');
+  box.innerHTML = CATEGORIAS.map(cat => `
+    <div class="scripts-group-label">${cat.label}</div>
+    ${cat.chaves.filter(k => SCRIPTS[k]).map(k => {
+      const s = SCRIPTS[k];
+      return `<div class="script-item ${k === scriptAtualId ? 'active' : ''}" onclick="abrirScript('${k}')">
+        <div class="titulo">${s.title}</div>
+        <div class="etapa">${s.etapa}</div>
+      </div>`;
+    }).join('')}
+  `).join('');
+}
+
+function personalizarTexto(txt) {
+  const nome = document.getElementById('pNome').value.trim();
+  if (!nome) return txt;
+  return txt.replace(/\[Nome\]/g, nome).replace(/\[NOME\]/g, nome.toUpperCase());
+}
+
+function copiarTexto(texto, btn) {
+  navigator.clipboard.writeText(texto).then(() => {
+    const original = btn.textContent;
+    btn.textContent = '✅ Copiado!';
+    setTimeout(() => { btn.textContent = original; }, 1500);
+  });
+}
+
+function linkWhatsApp(texto) {
+  const tel = document.getElementById('pTelefone').value.replace(/\D/g, '');
+  const numero = tel ? (tel.startsWith('55') ? tel : '55' + tel) : '';
+  return `https://wa.me/${numero}?text=${encodeURIComponent(texto)}`;
+}
+
+window.abrirScript = function(id) {
+  scriptAtualId = id;
+  vtabAtual = null;
+  renderListaLateral();
+  renderScript();
+};
+
+window.trocarVtab = function(v) {
+  vtabAtual = v;
+  renderScript();
+};
+
+window.renderScript = function() {
+  if (!scriptAtualId) return;
+  const s = SCRIPTS[scriptAtualId];
+  const box = document.getElementById('scriptDetail');
+  let corpo = '';
+
+  if (s.type === 'wpp' || s.type === 'email' && s.vtabs) {
+    if (!vtabAtual) vtabAtual = s.vtabs[0][0];
+    corpo += `<div class="vtabs">${s.vtabs.map(([k,l]) => `<button class="vtab ${k===vtabAtual?'active':''}" onclick="trocarVtab('${k}')">${l}</button>`).join('')}</div>`;
+    const texto = personalizarTexto(s.msgs[vtabAtual] || '');
+    corpo += `<div class="msg-box">${texto}</div>`;
+    corpo += `<div class="msg-actions">
+      <button class="btn btn--primary" onclick="copiarTexto(\`${texto.replace(/`/g,'\\`')}\`, this)">📋 Copiar mensagem</button>
+      <a class="btn btn--secondary" href="${linkWhatsApp(texto)}" target="_blank" style="text-decoration:none;">💬 Abrir WhatsApp</a>
+    </div>`;
+  } else if (s.type === 'email') {
+    const assunto = personalizarTexto(s.assunto || '');
+    const corpoTxt = personalizarTexto(s.corpo || '');
+    corpo += `<div style="font-size:12px; font-weight:700; color:var(--graphite-600); margin-bottom:4px;">ASSUNTO</div>`;
+    corpo += `<div class="msg-box" style="margin-bottom:8px;">${assunto}</div>`;
+    corpo += `<div style="font-size:12px; font-weight:700; color:var(--graphite-600); margin-bottom:4px;">CORPO DO E-MAIL</div>`;
+    corpo += `<div class="msg-box">${corpoTxt}</div>`;
+    corpo += `<div class="msg-actions">
+      <button class="btn btn--primary" onclick="copiarTexto(\`${corpoTxt.replace(/`/g,'\\`')}\`, this)">📋 Copiar corpo</button>
+      <a class="btn btn--secondary" href="mailto:?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(corpoTxt)}" style="text-decoration:none;">✉️ Abrir e-mail</a>
+    </div>`;
+  } else if (s.type === 'obj') {
+    corpo += s.objs.map(o => {
+      const r = personalizarTexto(o.r);
+      return `<div class="obj-item">
+        <div class="obj-p">${o.p}</div>
+        <div class="obj-r">${r}</div>
+        <button class="btn btn--secondary" style="padding:6px 12px; font-size:12px;" onclick="copiarTexto(\`${r.replace(/`/g,'\\`')}\`, this)">📋 Copiar resposta</button>
+      </div>`;
+    }).join('');
+  } else if (s.type === 'tel' || s.type === 'vis') {
+    corpo += s.fases.map(f => {
+      const t = personalizarTexto(f.txt);
+      return `<div class="fase-item">
+        <div class="fase-lbl">${f.num}. ${f.lbl}</div>
+        <div class="fase-txt">${t}</div>
+        <button class="btn btn--secondary" style="padding:5px 10px; font-size:11.5px;" onclick="copiarTexto(\`${t.replace(/`/g,'\\`')}\`, this)">📋 Copiar</button>
+      </div>`;
+    }).join('');
+  }
+
+  const dicasHtml = s.dicas ? `<div class="dicas-box"><strong>💡 Dicas:</strong><ul>${s.dicas.map(d => `<li>${d}</li>`).join('')}</ul></div>` : '';
+
+  box.innerHTML = `
+    <div class="script-card">
+      <h2>${s.title}</h2>
+      <div class="script-desc">${s.desc}</div>
+      ${s.quando ? `<div class="script-quando">⏰ ${s.quando}</div>` : ''}
+      ${corpo}
+      ${dicasHtml}
+    </div>`;
+};
+
+// Se veio de um Lead (leads.html?nome=X&telefone=Y), já pré-preenche
+(function preencherDaURL() {
+  const params = new URLSearchParams(location.search);
+  const nome = params.get('nome');
+  const telefone = params.get('telefone');
+  if (nome) document.getElementById('pNome').value = nome;
+  if (telefone) document.getElementById('pTelefone').value = telefone;
+})();
+
+renderListaLateral();
+</script>
+<script type="module">
+  import { esperarAuth } from '../assets/js/firebase-init.js';
+  await esperarAuth();
+</script>
+<script type="module">
+  import { auth, signOut } from "../assets/js/firebase-init.js";
+  window.fazerLogout = async function() {
+    if (!confirm("Sair da sua conta?")) return;
+    await signOut(auth);
+    location.reload();
+  };
+</script>
+
+</body>
+</html>

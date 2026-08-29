@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal SafeSeg — Informativo de Acesso eSocial</title>
+<link rel="stylesheet" href="../assets/css/safeseg-design-system.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+  html, body { height: 100%; }
+  .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .topbar { background: #fff; border-bottom: 1px solid var(--paper-200); padding: var(--space-4) var(--space-6); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:var(--space-3); }
+  .content { padding: var(--space-6); display: flex; gap: var(--space-6); align-items: flex-start; flex-wrap: wrap; }
+  .panel { flex: 0 0 380px; max-width: 380px; }
+  .card { background: #fff; border: 1px solid var(--paper-200); border-radius: var(--radius-md); box-shadow: var(--shadow-card); padding: var(--space-5); margin-bottom: var(--space-4); }
+  .aluno-row { display:flex; align-items:center; gap:10px; padding:9px 10px; border:1px solid var(--paper-200); border-radius:8px; margin-bottom:8px; }
+  .aluno-row.selecionado { border-color: var(--gold-400); background: #FFFBF0; }
+  .aluno-row .info { flex:1; min-width:0; }
+  .aluno-row .nome { font-weight:700; font-size:13.5px; }
+  .aluno-row .sub { font-size:11.5px; color:var(--graphite-600); font-family: var(--font-data); }
+  .senha-input { width:70px; border:1px solid var(--paper-200); border-radius:6px; padding:5px 7px; font-size:12px; font-family: var(--font-data); text-align:center; }
+
+  /* ===================== PREVIEW / IMPRESSÃO ===================== */
+  .preview-wrap { flex: 1 1 480px; display:flex; justify-content:center; }
+  .sheet { width: 480px; max-width:100%; background:#fff; border-radius:14px; box-shadow: var(--shadow-card); overflow:hidden; }
+  .hazard { height:8px; background: repeating-linear-gradient(-45deg, var(--gold-500) 0 10px, var(--graphite-900) 10px 20px); }
+  .header { padding: 20px 24px 14px 24px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--paper-200); }
+  .header img { max-height: 40px; }
+  .header .step-title { font-family: var(--font-display); font-size:1.1rem; letter-spacing:.03em; color:var(--graphite-900); text-align:right; }
+  .header .step-sub { font-size:11px; color:var(--graphite-600); text-align:right; }
+  .access-box { margin: 18px 24px; background: var(--graphite-900); border-radius:10px; padding:16px 18px; display:flex; align-items:center; gap:16px; }
+  .access-box .qr { background:#fff; border-radius:8px; padding:6px; flex-shrink:0; }
+  .access-box .txt { color:#fff; font-size:12.5px; line-height:1.5; }
+  .access-box .txt a { color: var(--gold-300); font-weight:700; text-decoration:none; word-break:break-all; }
+  .students { padding: 4px 24px 18px 24px; display:flex; flex-direction:column; gap:10px; }
+  .student-card { border:1.5px solid var(--paper-200); border-radius:10px; padding:12px 14px; }
+  .student-top { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; }
+  .student-name { font-weight:800; font-size:14px; color:var(--graphite-900); }
+  .student-id { font-size:10.5px; color:var(--graphite-500); font-family: var(--font-data); }
+  .student-creds { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .cred .k { font-size:9.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--graphite-500); font-weight:700; }
+  .cred .v { font-family: var(--font-data); font-size:12.5px; color:var(--graphite-900); word-break:break-all; }
+  .footer { padding: 12px 24px 20px 24px; font-size:10.5px; color:var(--graphite-500); text-align:center; border-top:1px solid var(--paper-200); margin-top:6px; }
+  .empty-state { padding: 40px 20px; text-align:center; color:var(--graphite-400); font-size:13px; }
+
+  @media print {
+    .panel, .topbar, .sidebar { display:none !important; }
+    .content { padding:0; }
+    .preview-wrap { justify-content:flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <nav class="sidebar">
+    <div class="sidebar__logo">
+      <img src="../assets/img/logo-dark.png" alt="SafeSeg" style="background:var(--graphite-900); border-radius:8px; padding:4px; max-width:150px; display:block;">
+    </div>
+    <a class="nav-item" href="../index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+      Central (Hub)
+    </a>
+    <a class="nav-item" href="empresas.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17"/><path d="M19 21V10a1 1 0 0 0-1-1h-3"/><path d="M8 7h2M8 11h2M8 15h2"/></svg>
+      Empresas
+    </a>
+    <a class="nav-item" style="background:var(--graphite-900); color:var(--gold-300);" href="informativo-acesso.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h4"/></svg>
+      Informativo de Acesso
+    </a>
+    <button class="nav-item" style="width:100%; text-align:left; border:none; background:transparent; cursor:pointer; margin-top:auto; color:var(--status-danger);" onclick="fazerLogout()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      Sair
+    </button>
+  </nav>
+
+  <div class="main">
+    <div class="hazard-stripe"></div>
+    <header class="topbar">
+      <div>
+        <h1>Informativo de Acesso — eSocial</h1>
+        <div class="sub" id="topbarSub" style="font-size:13px; color:var(--graphite-600);">Gera a ficha de login/senha da plataforma eSocial Brasil pros alunos de uma turma</div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn--secondary" onclick="window.print()">🖨️ Imprimir</button>
+        <button class="btn btn--primary" onclick="baixarPDF()">📄 Baixar PDF</button>
+      </div>
+    </header>
+
+    <div class="content">
+      <div class="panel">
+        <div id="connStatus" class="text-muted" style="font-size:12px; margin-bottom:10px;">Conectando...</div>
+
+        <div class="card">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Empresa</label>
+          <select id="empresaSelect" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;" onchange="carregarFuncionarios()"></select>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <strong style="font-size:13.5px;">Funcionários</strong>
+            <span class="text-muted" style="font-size:11.5px;" id="contadorSelecionados"></span>
+          </div>
+          <div id="funcionariosList" class="text-muted" style="font-size:13px;">Escolhe uma empresa primeiro.</div>
+        </div>
+
+        <div class="card">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Link da plataforma</label>
+          <input type="text" id="urlInput" value="ead.esocialbrasil.com.br/login" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:13px; font-family:var(--font-data);" oninput="renderPreview()">
+        </div>
+      </div>
+
+      <div class="preview-wrap">
+        <div class="sheet" id="sheet">
+          <div class="hazard"></div>
+          <div class="header">
+            <img src="../assets/img/logo-dark.png" alt="SafeSeg" style="background:var(--graphite-900); border-radius:6px; padding:3px;">
+            <div>
+              <div class="step-title">INFORMATIVO DE ACESSO</div>
+              <div class="step-sub">Plataforma eSocial Brasil</div>
+            </div>
+          </div>
+          <div class="access-box">
+            <div class="qr" id="qrcode"></div>
+            <div class="txt">
+              Acesse a plataforma de treinamentos pelo link ou QR code ao lado:<br>
+              <a href="#" id="urlLink" target="_blank">ead.esocialbrasil.com.br/login</a>
+            </div>
+          </div>
+          <div class="students" id="students"></div>
+          <div class="footer">SafeSeg Segurança do Trabalho · Guarda essa ficha, ela tem seu login de acesso ao curso</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { db, collection, getDocs, esperarAuth } from '../assets/js/firebase-init.js';
+
+  const params = new URLSearchParams(location.search);
+  const empresaIdPreSelecionada = params.get('empresaId');
+
+  let empresasCache = [];
+  let funcionariosCache = []; // { id, nome, cpf, selecionado, senha, funcaoOriginal }
+  let qrInstance = null;
+
+  function limparCpf(cpf) { return (cpf || '').replace(/\D/g, ''); }
+
+  // Gera uma senha provisória de 4 dígitos — o funcionário troca no primeiro acesso
+  function gerarSenhaProvisoria() {
+    return String(Math.floor(1000 + Math.random() * 9000));
+  }
+
+  async function carregar() {
+    const status = document.getElementById('connStatus');
+    await esperarAuth();
+    try {
+      const snap = await getDocs(collection(db, 'empresas'));
+      empresasCache = snap.docs
+        .map(d => ({ id: d.id, nome: d.data().nome || '(sem nome)' }))
+        .sort((a, b) => a.nome.localeCompare(b.nome));
+
+      const select = document.getElementById('empresaSelect');
+      select.innerHTML = '<option value="">— Escolhe a empresa —</option>' +
+        empresasCache.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
+
+      if (empresaIdPreSelecionada) {
+        select.value = empresaIdPreSelecionada;
+        await carregarFuncionarios();
+      }
+
+      status.textContent = '✅ Carregado.';
+      status.style.color = 'var(--status-ok)';
+    } catch (err) {
+      status.textContent = '⚠️ Erro: ' + err.message;
+      console.error(err);
+    }
+  }
+
+  window.carregarFuncionarios = async function() {
+    const empresaId = document.getElementById('empresaSelect').value;
+    const listBox = document.getElementById('funcionariosList');
+    if (!empresaId) {
+      funcionariosCache = [];
+      listBox.innerHTML = '<div class="text-muted" style="font-size:13px;">Escolhe uma empresa primeiro.</div>';
+      renderPreview();
+      return;
+    }
+    listBox.innerHTML = 'Carregando...';
+    try {
+      const snap = await getDocs(collection(db, 'empresas', empresaId, 'funcionarios'));
+      funcionariosCache = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(f => f.status !== 'inativo')
+        .map(f => ({
+          id: f.id,
+          nome: f.nome || '',
+          cpf: f.cpf || '',
+          selecionado: false,
+          senha: gerarSenhaProvisoria()
+        }))
+        .sort((a, b) => a.nome.localeCompare(b.nome));
+      renderFuncionarios();
+      renderPreview();
+    } catch (err) {
+      listBox.innerHTML = '⚠️ Erro ao carregar: ' + err.message;
+      console.error(err);
+    }
+  };
+
+  function renderFuncionarios() {
+    const listBox = document.getElementById('funcionariosList');
+    if (funcionariosCache.length === 0) {
+      listBox.innerHTML = '<div class="text-muted" style="font-size:13px;">Nenhum funcionário ativo cadastrado nessa empresa ainda.</div>';
+      document.getElementById('contadorSelecionados').textContent = '';
+      return;
+    }
+    listBox.innerHTML = funcionariosCache.map((f, i) => `
+      <div class="aluno-row ${f.selecionado ? 'selecionado' : ''}">
+        <input type="checkbox" ${f.selecionado ? 'checked' : ''} onchange="alternarFuncionario(${i}, this.checked)" style="cursor:pointer;">
+        <div class="info">
+          <div class="nome">${f.nome}</div>
+          <div class="sub">${limparCpf(f.cpf)}@esocialbrasil</div>
+        </div>
+        <input type="text" class="senha-input" value="${f.senha}" onchange="alterarSenha(${i}, this.value)" title="Senha provisória">
+      </div>`).join('');
+    atualizarContador();
+  }
+
+  function atualizarContador() {
+    const n = funcionariosCache.filter(f => f.selecionado).length;
+    document.getElementById('contadorSelecionados').textContent = n > 0 ? `${n} selecionado(s)` : '';
+  }
+
+  window.alternarFuncionario = function(idx, valor) {
+    funcionariosCache[idx].selecionado = valor;
+    renderFuncionarios();
+    renderPreview();
+  };
+  window.alterarSenha = function(idx, valor) {
+    funcionariosCache[idx].senha = valor.trim();
+    renderPreview();
+  };
+
+  function sanitizarTexto(s) {
+    return (s || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  }
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str || '';
+    return div.innerHTML;
+  }
+
+  window.renderPreview = function() {
+    const urlInput = document.getElementById('urlInput');
+    const url = (urlInput.value || '').trim() || 'ead.esocialbrasil.com.br/login';
+    const fullUrl = url.startsWith('http') ? url : 'https://' + url;
+
+    document.getElementById('urlLink').textContent = url;
+    document.getElementById('urlLink').href = fullUrl;
+
+    const qrEl = document.getElementById('qrcode');
+    qrEl.innerHTML = '';
+    try {
+      qrInstance = new QRCode(qrEl, {
+        text: fullUrl, width: 92, height: 92,
+        colorDark: '#14171B', colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    } catch (e) { console.error('Erro ao gerar QR:', e); }
+
+    const studentsEl = document.getElementById('students');
+    const selecionados = funcionariosCache.filter(f => f.selecionado);
+
+    if (selecionados.length === 0) {
+      studentsEl.innerHTML = `<div class="empty-state">Escolhe a empresa e marca os funcionários ao lado pra ver a prévia aqui.</div>`;
+      return;
+    }
+
+    studentsEl.innerHTML = selecionados.map(f => `
+      <div class="student-card">
+        <div class="student-top">
+          <div class="student-name">${escapeHtml(f.nome || 'NOME DO ALUNO')}</div>
+          <div class="student-id">CPF ${escapeHtml(f.cpf || '—')}</div>
+        </div>
+        <div class="student-creds">
+          <div class="cred">
+            <div class="k">E-mail de acesso</div>
+            <div class="v">${escapeHtml(limparCpf(f.cpf))}@esocialbrasil</div>
+          </div>
+          <div class="cred">
+            <div class="k">Senha provisória</div>
+            <div class="v">${escapeHtml(f.senha)}</div>
+          </div>
+        </div>
+      </div>`).join('');
+  };
+
+  window.baixarPDF = function() {
+    const selecionados = funcionariosCache.filter(f => f.selecionado);
+    if (selecionados.length === 0) { alert('Marca pelo menos um funcionário antes de gerar o PDF.'); return; }
+    const nomeEmpresa = document.getElementById('empresaSelect').selectedOptions[0]?.textContent || 'informativo';
+    const nomeArquivoPdf = `Informativo_Acesso_${sanitizarTexto(nomeEmpresa).replace(/[^a-zA-Z0-9]/g,'_')}.pdf`;
+    const opcoes = {
+      margin: 0,
+      filename: nomeArquivoPdf,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    // gera o PDF uma única vez (como data URI), usa pra baixar local E pra
+    // mandar pro Drive — evita renderizar a mesma folha duas vezes
+    html2pdf().set(opcoes).from(document.getElementById('sheet')).outputPdf('datauristring').then(dataUri => {
+      const link = document.createElement('a');
+      link.href = dataUri;
+      link.download = nomeArquivoPdf;
+      link.click();
+      salvarNoDriveEmSegundoPlano('informativo_acesso', nomeArquivoPdf, dataUri, nomeEmpresa);
+    }).catch(err => {
+      console.error('Erro ao gerar PDF, tentando modo simples:', err);
+      html2pdf().set(opcoes).from(document.getElementById('sheet')).save();
+    });
+  };
+
+  async function salvarNoDriveEmSegundoPlano(tipo, nomeArquivo, dataUriString, empresaNome, mimeType) {
+    try {
+      const base64 = dataUriString.split(',')[1];
+      const CERT_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz55Li88oyroPtFH1iTOV2nR58-xbuUAMkGcyb6GRzM3S6KQNARj7Sxvi1mZShhPg-WRg/exec';
+      const res = await fetch(CERT_APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ acao: 'salvarDocumento', tipo, nomeArquivo, conteudoBase64: base64, mimeType: mimeType || 'application/pdf', empresaNome })
+      });
+      const data = await res.json();
+      if (!data.sucesso) console.error('Não consegui salvar no Drive:', data.erro);
+    } catch (err) {
+      console.error('Erro ao salvar no Drive (o download local funcionou normalmente):', err);
+    }
+  }
+
+  carregar();
+</script>
+<script type="module">
+  import { auth, signOut } from "../assets/js/firebase-init.js";
+  window.fazerLogout = async function() {
+    if (!confirm("Sair da sua conta?")) return;
+    await signOut(auth);
+    location.reload();
+  };
+</script>
+
+</body>
+</html>

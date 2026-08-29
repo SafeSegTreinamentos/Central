@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SafeSeg | Central Técnica</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --amber:#F59E0B;
+  --amber-dark:#B45309;
+  --graphite:#14171B;
+  --graphite2:#1D2126;
+  --graphite3:#262B32;
+  --line:#33393f;
+  --text:#E9E9E7;
+  --muted:#9AA0A6;
+  --danger:#EF4444;
+  --ok:#22C55E;
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:'Inter',Arial,sans-serif;background:var(--graphite);color:var(--text);}
+h1,h2,h3{font-family:'Bebas Neue',Arial,sans-serif;letter-spacing:.5px;margin:0 0 8px;}
+.hazard{height:6px;background:repeating-linear-gradient(45deg,var(--amber) 0 14px,#111 14px 28px);}
+
+.ssnav-shell{display:grid;grid-template-columns:230px 1fr;min-height:100vh;}
+.ssnav-sidebar{background:#0e1013;border-right:1px solid var(--line);padding:20px 12px;display:flex;flex-direction:column;gap:3px;}
+.ssnav-logo{padding:0 8px 20px;}
+.ssnav-logo img{width:100%;max-width:140px;display:block;}
+.ssnav-section{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#5a6069;padding:14px 8px 4px;}
+.ssnav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:6px;color:#B8BCC2;font-size:13px;font-weight:500;text-decoration:none;}
+.ssnav-item:hover{background:var(--graphite2);color:#fff;}
+.ssnav-item.active{background:var(--graphite2);color:var(--amber);}
+.ssnav-item svg{width:18px;height:18px;flex-shrink:0;}
+.ssnav-main{min-width:0;}
+@media (max-width:900px){
+  .ssnav-shell{grid-template-columns:1fr;}
+  .ssnav-sidebar{flex-direction:row;overflow-x:auto;align-items:center;padding:10px;gap:6px;}
+  .ssnav-logo{padding:0 10px 0 0;flex-shrink:0;}
+  .ssnav-logo img{max-width:70px;}
+  .ssnav-section{display:none;}
+  .ssnav-item{flex-direction:column;gap:2px;font-size:10px;padding:6px 8px;white-space:nowrap;}
+}
+
+.app{max-width:1100px;margin:0 auto;padding:20px 20px 80px;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--line);margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+.brand h1{font-size:24px;color:#fff;display:flex;align-items:center;gap:10px;}
+.internal-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:var(--graphite2);color:var(--amber);border:1px solid var(--amber-dark);padding:3px 9px;border-radius:5px;}
+.brand .sub{color:var(--muted);font-size:13px;margin-top:2px;}
+
+.tabs{display:flex;gap:8px;flex-wrap:wrap;}
+.tab-btn{background:var(--graphite2);border:1px solid var(--line);color:var(--muted);padding:10px 16px;border-radius:8px 8px 0 0;cursor:pointer;font-weight:600;font-size:13px;}
+.tab-btn.active{background:var(--graphite3);color:var(--amber);border-bottom:2px solid var(--amber);}
+.panel{display:none;}
+.panel.active{display:block;}
+
+.card{background:var(--graphite2);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:16px;}
+.card h2{color:#fff;font-size:20px;}
+.card h2 small{color:var(--muted);font-family:'Inter',Arial,sans-serif;font-size:12px;font-weight:400;}
+
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;}
+input,select,textarea{width:100%;background:#0f1215;border:1px solid var(--line);color:var(--text);padding:9px 10px;border-radius:6px;font-size:14px;font-family:inherit;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--amber);}
+textarea{resize:vertical;min-height:70px;}
+.field{margin-bottom:10px;}
+.row{display:flex;gap:10px;flex-wrap:wrap;}
+.row > *{flex:1;min-width:150px;}
+
+.btn{background:var(--amber);color:#111;border:none;padding:10px 18px;border-radius:6px;font-weight:700;cursor:pointer;font-size:13px;letter-spacing:.3px;}
+.btn:hover{background:#ffb020;}
+.btn.secondary{background:transparent;border:1px solid var(--amber);color:var(--amber);}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--muted);}
+.btn.danger{background:transparent;border:1px solid var(--danger);color:var(--danger);}
+.btn.small{padding:6px 10px;font-size:12px;}
+
+.toast{position:fixed;bottom:20px;right:20px;background:var(--graphite3);border:1px solid var(--amber);color:#fff;padding:12px 18px;border-radius:8px;z-index:999;display:none;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.5);}
+
+/* Banco de Perguntas */
+.pergunta-item{background:var(--graphite3);border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:10px;}
+.pergunta-item .meta-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap;}
+.pergunta-tag{font-size:10px;font-weight:700;background:var(--graphite2);color:var(--amber);padding:2px 9px;border-radius:20px;border:1px solid var(--amber-dark);}
+.status-pill{font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;text-transform:uppercase;}
+.status-pill.revisar{background:rgba(245,158,11,.15);color:var(--amber);border:1px solid var(--amber-dark);}
+.status-pill.ok{background:rgba(34,197,94,.12);color:var(--ok);border:1px solid var(--ok);}
+.empty{text-align:center;padding:30px;color:var(--muted);}
+.provas-note{background:rgba(245,158,11,.08);border:1px solid var(--amber-dark);border-radius:8px;padding:12px 14px;font-size:12.5px;color:#E9C98A;margin-bottom:16px;line-height:1.6;}
+
+/* Normas Regulamentadoras */
+.nr-search{margin-bottom:14px;}
+.nr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;}
+.nr-card{display:flex;align-items:flex-start;gap:10px;background:var(--graphite3);border:1px solid var(--line);border-radius:8px;padding:12px 14px;text-decoration:none;color:var(--text);transition:border-color .15s ease;}
+.nr-card:hover{border-color:var(--amber);}
+.nr-card.revoked{opacity:.45;}
+.nr-num{font-family:'Bebas Neue',Arial,sans-serif;color:var(--amber);font-size:20px;letter-spacing:1px;min-width:52px;flex-shrink:0;}
+.nr-title{font-size:12.5px;line-height:1.4;color:var(--text);}
+.nr-title .revoked-tag{display:block;font-size:10px;color:var(--danger);font-weight:700;margin-top:3px;}
+.nr-ext-icon{margin-left:auto;flex-shrink:0;color:var(--muted);width:14px;height:14px;}
+
+/* Conhecimento Técnico */
+.nota-item{background:var(--graphite3);border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:10px;}
+.nota-item h3{color:#fff;font-size:15px;margin-bottom:6px;}
+.nota-item .nota-body{font-size:13px;color:var(--text);white-space:pre-wrap;line-height:1.6;}
+.nota-actions{display:flex;gap:8px;margin-top:10px;}
+</style>
+</head>
+<body>
+
+<div class="ssnav-shell">
+  <nav class="ssnav-sidebar">
+    <div class="ssnav-logo">
+      <img src="../assets/img/logo-dark.png" alt="SafeSeg">
+    </div>
+        <a class="ssnav-item" href="../index.html" style="background:rgba(245,158,11,.12); color:var(--amber);">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+      Central (Hub)
+    </a>
+<a class="ssnav-item" href="dashboard.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      Dashboard
+    </a>
+    <div class="ssnav-section">Gestão Interna</div>
+    <a class="ssnav-item" href="empresas.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17"/><path d="M19 21V10a1 1 0 0 0-1-1h-3"/><path d="M8 7h2M8 11h2M8 15h2"/></svg>
+      Empresas
+    </a>
+    <a class="ssnav-item" href="gerador-turmas.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 21h10M9 18v3M15 18v3"/></svg>
+      Gerador de Turmas
+    </a>
+    <a class="ssnav-item" href="turmas.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 10v6M2 10l10-5 10 5-10 5-10-5z"/><path d="M6 12v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/></svg>
+      Turmas
+    </a>
+    <a class="ssnav-item active" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9.5 2a2.5 2.5 0 0 0-2.5 2.5V6H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-2V4.5A2.5 2.5 0 0 0 14.5 2z"/><path d="M9 12h6M9 16h4"/></svg>
+      Central Técnica
+    </a>
+    <div class="ssnav-section">Documentos &amp; Certificação</div>
+    <a class="ssnav-item" href="certificados.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 16c0-5 4-9 9-9s9 4 9 9"/><path d="M2 16h20"/><path d="M9 7V4"/></svg>
+      Certificados
+    </a>
+    <a class="ssnav-item" href="modelos.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v4H4zM4 12h16v8H4z"/><path d="M8 16h8"/></svg>
+      Modelos
+    </a>
+
+    <a class="ssnav-item" href="documentos.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/></svg>
+      Documentos
+    </a>
+    <a class="ssnav-item" href="agenda-turmas.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="3" width="12" height="7" rx="2"/><path d="M9 10v4M15 10v4M6 14h12v7H6z"/></svg>
+      Agenda de Turmas
+    </a>
+    <a class="ssnav-item" href="validador.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+      Validador Público
+    </a>
+    <a class="ssnav-item" href="#" onclick="fazerLogout(); return false;" style="color:#F87171; margin-top:auto;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      Sair
+    </a>
+  </nav>
+
+  <div class="ssnav-main">
+    <div class="hazard"></div>
+
+    <div class="app">
+      <div class="topbar">
+        <div class="brand">
+          <h1>Central Técnica <span class="internal-tag">Somente uso interno</span></h1>
+          <div class="sub">Provas, normas regulamentadoras e conhecimento técnico — apoio pro seu dia a dia</div>
+        </div>
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="provas" onclick="setTab('provas')">Banco de Perguntas</button>
+          <button class="tab-btn" data-tab="normas" onclick="setTab('normas')">Normas (NRs)</button>
+          <button class="tab-btn" data-tab="conhecimento" onclick="setTab('conhecimento')">Conhecimento Técnico</button>
+        </div>
+      </div>
+
+      <!-- ===================== BANCO DE PERGUNTAS ===================== -->
+      <div class="panel active" id="panel-provas">
+        <div class="provas-note">
+          📌 Isso alimenta o gerador de provas que já existe no Hub. Aqui é onde você revisa e melhora as perguntas com calma — marca as que ainda precisam de ajuste, edita o texto, adiciona novas. Sem pressa, vai evoluindo aos poucos.
+        </div>
+
+        <div class="card">
+          <h2>Adicionar pergunta</h2>
+          <div class="row">
+            <div class="field">
+              <label>Norma (NR)</label>
+              <select id="fPerguntaNR">
+                <option>NR-06 — EPI</option>
+                <option>NR-10 — Elétrica</option>
+                <option>NR-12 — Máquinas e Equip.</option>
+                <option>NR-35 — Trabalho em Altura</option>
+                <option>Outra</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Status</label>
+              <select id="fPerguntaStatus">
+                <option value="revisar">Precisa revisar</option>
+                <option value="ok">Pronta</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Pergunta</label>
+            <textarea id="fPerguntaTexto" placeholder="Digite a pergunta..."></textarea>
+          </div>
+          <div class="field">
+            <label>Resposta correta / gabarito</label>
+            <textarea id="fPerguntaResposta" placeholder="Resposta correta ou observações sobre a pergunta"></textarea>
+          </div>
+          <button class="btn" onclick="addPergunta()">+ Adicionar pergunta</button>
+        </div>
+
+        <div class="card">
+          <h2>Perguntas cadastradas <small id="perguntaCount"></small></h2>
+          <div class="field" style="margin-bottom:14px;">
+            <input type="text" id="perguntaFiltro" placeholder="Filtrar por norma ou texto..." oninput="renderPerguntas()">
+          </div>
+          <div id="perguntasList"></div>
+        </div>
+      </div>
+
+      <!-- ===================== NORMAS REGULAMENTADORAS ===================== -->
+      <div class="panel" id="panel-normas">
+        <div class="card">
+          <h2>Normas Regulamentadoras <small>fonte oficial: Ministério do Trabalho e Emprego</small></h2>
+          <div class="field nr-search">
+            <input type="text" id="nrFiltro" placeholder="Buscar por número ou assunto (ex: altura, elétrica, CIPA)..." oninput="renderNRs()">
+          </div>
+          <div class="nr-grid" id="nrGrid"></div>
+        </div>
+      </div>
+
+      <!-- ===================== CONHECIMENTO TÉCNICO ===================== -->
+      <div class="panel" id="panel-conhecimento">
+        <div class="card">
+          <h2>Nova anotação técnica</h2>
+          <div class="field">
+            <label>Título</label>
+            <input type="text" id="fNotaTitulo" placeholder="Ex: Cálculo de altitude para NR-35, checklist de vistoria de andaime...">
+          </div>
+          <div class="field">
+            <label>Conteúdo</label>
+            <textarea id="fNotaBody" style="min-height:110px;" placeholder="Anote aqui o que for útil pra consultar depois..."></textarea>
+          </div>
+          <button class="btn" onclick="addNota()">+ Salvar anotação</button>
+        </div>
+
+        <div class="card">
+          <h2>Anotações salvas</h2>
+          <div id="notasList"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   TABS
+============================================================ */
+function setTab(tab){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
+  document.getElementById('panel-'+tab).classList.add('active');
+}
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.display='block';
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer=setTimeout(()=>t.style.display='none',2400);
+}
+
+/* ============================================================
+   BANCO DE PERGUNTAS (localStorage — mesma lógica de dado do Gerador de Turmas)
+============================================================ */
+const LS_PERGUNTAS = 'safeseg_perguntas_v1';
+function loadPerguntas(){ try{ return JSON.parse(localStorage.getItem(LS_PERGUNTAS)||'[]'); }catch(e){ return []; } }
+function savePerguntas(list){ localStorage.setItem(LS_PERGUNTAS, JSON.stringify(list)); }
+
+function addPergunta(){
+  const nr = document.getElementById('fPerguntaNR').value;
+  const status = document.getElementById('fPerguntaStatus').value;
+  const texto = document.getElementById('fPerguntaTexto').value.trim();
+  const resposta = document.getElementById('fPerguntaResposta').value.trim();
+  if(!texto){ toast('Digite a pergunta primeiro'); return; }
+  const list = loadPerguntas();
+  list.unshift({ id:'P'+Date.now(), nr, status, texto, resposta, createdAt:new Date().toISOString() });
+  savePerguntas(list);
+  document.getElementById('fPerguntaTexto').value='';
+  document.getElementById('fPerguntaResposta').value='';
+  renderPerguntas();
+  toast('Pergunta adicionada');
+}
+function removePergunta(id){
+  if(!confirm('Remover esta pergunta?')) return;
+  savePerguntas(loadPerguntas().filter(p=>p.id!==id));
+  renderPerguntas();
+}
+function toggleStatusPergunta(id){
+  const list = loadPerguntas();
+  const idx = list.findIndex(p=>p.id===id);
+  if(idx===-1) return;
+  list[idx].status = list[idx].status==='ok' ? 'revisar' : 'ok';
+  savePerguntas(list);
+  renderPerguntas();
+}
+function renderPerguntas(){
+  const list = loadPerguntas();
+  const q = (document.getElementById('perguntaFiltro').value||'').toLowerCase();
+  const filtered = list.filter(p => !q || (p.nr+p.texto).toLowerCase().includes(q));
+  document.getElementById('perguntaCount').textContent = `(${list.length} no total)`;
+  const box = document.getElementById('perguntasList');
+  if(filtered.length===0){ box.innerHTML = '<div class="empty">Nenhuma pergunta cadastrada ainda.</div>'; return; }
+  box.innerHTML = filtered.map(p => `
+    <div class="pergunta-item">
+      <div class="meta-row">
+        <span class="pergunta-tag">${p.nr}</span>
+        <span class="status-pill ${p.status}" style="cursor:pointer;" onclick="toggleStatusPergunta('${p.id}')">${p.status==='ok'?'Pronta':'Precisa revisar'}</span>
+      </div>
+      <div style="font-size:13.5px; margin-bottom:6px;">${p.texto}</div>
+      ${p.resposta ? `<div style="font-size:12px; color:var(--muted);">Gabarito: ${p.resposta}</div>` : ''}
+      <div style="margin-top:8px;"><button class="btn danger small" onclick="removePergunta('${p.id}')">Remover</button></div>
+    </div>
+  `).join('');
+}
+
+/* ============================================================
+   NORMAS REGULAMENTADORAS — lista oficial (MTE), com URLs reais
+============================================================ */
+const NR_BASE = 'https://www.gov.br/trabalho-e-emprego/pt-br/acesso-a-informacao/participacao-social/conselhos-e-orgaos-colegiados/comissao-tripartite-partitaria-permanente/normas-regulamentadora/normas-regulamentadoras-vigentes/';
+const NRS = [
+  {n:1, t:'Disposições Gerais e Gerenciamento de Riscos Ocupacionais', slug:'nr-1'},
+  {n:2, t:'Inspeção Prévia', slug:'norma-regulamentadora-no-2-nr-2', revoked:true},
+  {n:3, t:'Embargo e Interdição', slug:'norma-regulamentadora-no-3-nr-3'},
+  {n:4, t:'Serviços Especializados em Segurança e em Medicina do Trabalho', slug:'norma-regulamentadora-no-4-nr-4'},
+  {n:5, t:'Comissão Interna de Prevenção de Acidentes e de Assédio (CIPA)', slug:'norma-regulamentadora-no-5-nr-5'},
+  {n:6, t:'Equipamento de Proteção Individual (EPI)', slug:'norma-regulamentadora-no-6-nr-6'},
+  {n:7, t:'Programa de Controle Médico de Saúde Ocupacional', slug:'norma-regulamentadora-no-7-nr-7'},
+  {n:8, t:'Edificações', slug:'norma-regulamentadora-no-8-nr-8'},
+  {n:9, t:'Avaliação e Controle das Exposições Ocupacionais a Agentes Físicos, Químicos e Biológicos', slug:'norma-regulamentadora-no-9-nr-9'},
+  {n:10, t:'Segurança em Instalações e Serviços em Eletricidade', slug:'norma-regulamentadora-no-10-nr-10'},
+  {n:11, t:'Transporte, Movimentação, Armazenagem e Manuseio de Materiais', slug:'norma-regulamentadora-no-11-nr-11'},
+  {n:12, t:'Segurança no Trabalho em Máquinas e Equipamentos', slug:'norma-regulamentadora-no-12-nr-12'},
+  {n:13, t:'Caldeiras, Vasos de Pressão e Tubulações e Tanques Metálicos de Armazenamento', slug:'norma-regulamentadora-no-13-nr-13'},
+  {n:14, t:'Fornos', slug:'norma-regulamentadora-no-14-nr-14'},
+  {n:15, t:'Atividades e Operações Insalubres', slug:'norma-regulamentadora-no-15-nr-15'},
+  {n:16, t:'Atividades e Operações Perigosas', slug:'norma-regulamentadora-no-16-nr-16'},
+  {n:17, t:'Ergonomia', slug:'norma-regulamentadora-no-17-nr-17'},
+  {n:18, t:'Segurança e Saúde no Trabalho na Indústria da Construção', slug:'norma-regulamentadora-no-18-nr-18'},
+  {n:19, t:'Explosivos', slug:'norma-regulamentadora-no-19-nr-19'},
+  {n:20, t:'Segurança e Saúde no Trabalho com Inflamáveis e Combustíveis', slug:'norma-regulamentadora-no-20-nr-20'},
+  {n:21, t:'Trabalhos a Céu Aberto', slug:'norma-regulamentadora-no-21-nr-21'},
+  {n:22, t:'Segurança e Saúde Ocupacional na Mineração', slug:'norma-regulamentadora-no-22-nr-22'},
+  {n:23, t:'Proteção Contra Incêndios', slug:'norma-regulamentadora-no-23-nr-23'},
+  {n:24, t:'Condições Sanitárias e de Conforto nos Locais de Trabalho', slug:'norma-regulamentadora-no-24-nr-24'},
+  {n:25, t:'Resíduos Industriais', slug:'norma-regulamentadora-no-25-nr-25'},
+  {n:26, t:'Sinalização de Segurança', slug:'norma-regulamentadora-no-26-nr-26'},
+  {n:27, t:'Registro Profissional do Técnico de Segurança do Trabalho', slug:'norma-regulamentadora-no-27-nr-27', revoked:true},
+  {n:28, t:'Fiscalização e Penalidades', slug:'norma-regulamentadora-no-28-nr-28'},
+  {n:29, t:'Segurança e Saúde no Trabalho Portuário', slug:'norma-regulamentadora-no-29-nr-29'},
+  {n:30, t:'Segurança e Saúde no Trabalho Aquaviário', slug:'norma-regulamentadora-no-30-nr-30'},
+  {n:31, t:'Segurança e Saúde no Trabalho na Agricultura, Pecuária, Silvicultura, Exploração Florestal e Aquicultura', slug:'norma-regulamentadora-no-31-nr-31'},
+  {n:32, t:'Segurança e Saúde no Trabalho em Serviços de Saúde', slug:'norma-regulamentadora-no-32-nr-32'},
+  {n:33, t:'Segurança e Saúde nos Trabalhos em Espaços Confinados', slug:'norma-regulamentadora-no-33-nr-33'},
+  {n:34, t:'Condições e Meio Ambiente de Trabalho na Indústria da Construção, Reparação e Desmonte Naval', slug:'norma-regulamentadora-no-34-nr-34'},
+  {n:35, t:'Trabalho em Altura', slug:'norma-regulamentadora-no-35-nr-35'},
+  {n:36, t:'Segurança e Saúde no Trabalho em Empresas de Abate e Processamento de Carnes e Derivados', slug:'norma-regulamentadora-no-36-nr-36'},
+  {n:37, t:'Segurança e Saúde em Plataformas de Petróleo', url:'https://www.gov.br/trabalho-e-emprego/pt-br/assuntos/inspecao-do-trabalho/seguranca-e-saude-no-trabalho/ctpp-nrs/norma-regulamentadora-no-37-nr-37'},
+  {n:38, t:'Segurança e Saúde no Trabalho nas Atividades de Limpeza Urbana e Manejo de Resíduos Sólidos', slug:'norma-regulamentadora-no-38-nr-38'},
+];
+
+function renderNRs(){
+  const q = (document.getElementById('nrFiltro').value||'').toLowerCase();
+  const grid = document.getElementById('nrGrid');
+  const filtered = NRS.filter(nr => !q || nr.t.toLowerCase().includes(q) || String(nr.n).includes(q));
+  grid.innerHTML = filtered.map(nr => {
+    const url = nr.url || (NR_BASE + nr.slug);
+    return `
+    <a class="nr-card ${nr.revoked?'revoked':''}" href="${url}" target="_blank" rel="noopener">
+      <div class="nr-num">NR-${String(nr.n).padStart(2,'0')}</div>
+      <div class="nr-title">${nr.t}${nr.revoked ? '<span class="revoked-tag">Revogada</span>' : ''}</div>
+      <svg class="nr-ext-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6M10 14L21 3"/></svg>
+    </a>`;
+  }).join('');
+}
+
+/* ============================================================
+   CONHECIMENTO TÉCNICO
+============================================================ */
+const LS_NOTAS = 'safeseg_notas_tecnicas_v1';
+function loadNotas(){ try{ return JSON.parse(localStorage.getItem(LS_NOTAS)||'[]'); }catch(e){ return []; } }
+function saveNotas(list){ localStorage.setItem(LS_NOTAS, JSON.stringify(list)); }
+
+function addNota(){
+  const titulo = document.getElementById('fNotaTitulo').value.trim();
+  const body = document.getElementById('fNotaBody').value.trim();
+  if(!titulo){ toast('Digite um título pra anotação'); return; }
+  const list = loadNotas();
+  list.unshift({ id:'N'+Date.now(), titulo, body, createdAt:new Date().toISOString() });
+  saveNotas(list);
+  document.getElementById('fNotaTitulo').value='';
+  document.getElementById('fNotaBody').value='';
+  renderNotas();
+  toast('Anotação salva');
+}
+function removeNota(id){
+  if(!confirm('Remover esta anotação?')) return;
+  saveNotas(loadNotas().filter(n=>n.id!==id));
+  renderNotas();
+}
+function renderNotas(){
+  const list = loadNotas();
+  const box = document.getElementById('notasList');
+  if(list.length===0){ box.innerHTML = '<div class="empty">Nenhuma anotação salva ainda.</div>'; return; }
+  box.innerHTML = list.map(n => `
+    <div class="nota-item">
+      <h3>${n.titulo}</h3>
+      <div class="nota-body">${n.body || '<span style="color:var(--muted)">Sem conteúdo</span>'}</div>
+      <div class="nota-actions"><button class="btn danger small" onclick="removeNota('${n.id}')">Remover</button></div>
+    </div>
+  `).join('');
+}
+
+/* ============================================================
+   INIT
+============================================================ */
+renderPerguntas();
+renderNRs();
+renderNotas();
+</script>
+
+<!-- Script de logout — independente -->
+<script type="module">
+  import { auth, signOut } from "../assets/js/firebase-init.js";
+  window.fazerLogout = async function() {
+    if (!confirm("Sair da sua conta?")) return;
+    await signOut(auth);
+    location.reload();
+  };
+</script>
+
+</body>
+</html>

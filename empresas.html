@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal SafeSeg — Empresas</title>
+<link rel="stylesheet" href="../assets/css/safeseg-design-system.css">
+<style>
+  html, body { height: 100%; }
+  .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .topbar {
+    background: #fff; border-bottom: 1px solid var(--paper-200);
+    padding: var(--space-4) var(--space-6);
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3);
+  }
+  .topbar h1 { font-size: var(--text-xl); letter-spacing: 0.03em; }
+  .topbar .sub { font-size: var(--text-sm); color: var(--graphite-600); margin-top: 2px; }
+  .content { padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-5); }
+
+  .toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3); }
+  .search-box {
+    display: flex; align-items: center; gap: 8px;
+    border: 1px solid var(--paper-200); border-radius: var(--radius-sm);
+    padding: 8px 12px; background: #fff; min-width: 240px; flex: 1; max-width: 340px;
+  }
+  .search-box input { border: none; outline: none; flex: 1; font-family: var(--font-body); font-size: var(--text-sm); }
+  .search-box svg { width: 16px; height: 16px; color: var(--graphite-600); flex-shrink: 0; }
+
+  /* Grid de empresas */
+  .empresa-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--space-4);
+  }
+  .empresa-card {
+    background: #fff; border: 1px solid var(--paper-200); border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card); padding: var(--space-5);
+    display: flex; flex-direction: column; gap: var(--space-3);
+    transition: box-shadow 0.18s ease, transform 0.18s ease;
+  }
+  .empresa-card:hover { box-shadow: var(--shadow-elevated); transform: translateY(-2px); }
+
+  .empresa-card__head { display: flex; align-items: center; gap: var(--space-3); }
+  .empresa-avatar {
+    width: 44px; height: 44px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--gold-300), var(--gold-600));
+    color: var(--graphite-900);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-size: 16px; flex-shrink: 0;
+  }
+  .empresa-nome { font-weight: 700; font-size: var(--text-base); line-height: 1.2; }
+  .empresa-cnpj { font-family: var(--font-data); font-size: 11px; color: var(--graphite-600); }
+  .empresa-setor { font-size: var(--text-xs); color: var(--graphite-600); text-transform: uppercase; letter-spacing: 0.03em; }
+
+  .empresa-stats {
+    display: flex; gap: var(--space-4);
+    padding-top: var(--space-3); border-top: 1px solid var(--paper-100);
+  }
+  .empresa-stat { flex: 1; }
+  .empresa-stat__value { font-family: var(--font-display); font-size: 1.4rem; line-height: 1; }
+  .empresa-stat__label { font-size: 10px; color: var(--graphite-600); text-transform: uppercase; letter-spacing: 0.03em; margin-top: 2px; }
+
+  .empresa-card__footer { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+  .access-tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 600; color: var(--graphite-600);
+  }
+  .access-tag svg { width: 13px; height: 13px; }
+  .access-tag.granted { color: var(--status-ok); }
+  .access-tag.none { color: var(--status-pending); }
+
+  /* Modal simples de nova empresa (visual only) */
+  .new-empresa-card {
+    border: 2px dashed var(--paper-200); border-radius: var(--radius-md);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; padding: var(--space-5); color: var(--graphite-600);
+    min-height: 180px; cursor: pointer;
+  }
+  .new-empresa-card:hover { border-color: var(--gold-400); color: var(--gold-600); }
+  .new-empresa-card svg { width: 28px; height: 28px; }
+
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr !important; }
+    .content { padding: var(--space-4) !important; }
+    .topbar { padding: var(--space-3) var(--space-4) !important; }
+    .empresa-grid { grid-template-columns: 1fr !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <nav class="sidebar">
+    <div class="sidebar__logo">
+      <img src="../assets/img/logo-dark.png" alt="SafeSeg" style="background:var(--graphite-900); border-radius:8px; padding:4px; max-width:150px; display:block;">
+    </div>
+    
+    <a class="nav-item" href="../index.html" style="background:var(--graphite-900); color:var(--gold-300); margin-bottom:4px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+      Central (Hub)
+    </a>
+    <a class="nav-item" href="dashboard.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      Dashboard
+    </a>
+    <div class="nav-section-label">Gestão Interna</div>
+    <a class="nav-item active" href="empresas.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17"/><path d="M19 21V10a1 1 0 0 0-1-1h-3"/><path d="M8 7h2M8 11h2M8 15h2"/></svg>
+      Empresas
+    </a>
+    <a class="nav-item" href="gerador-turmas.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 21h10M9 18v3M15 18v3"/></svg>
+      Gerador de Turmas
+    </a>
+    <a class="nav-item" href="tecnica.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9.5 2a2.5 2.5 0 0 0-2.5 2.5V6H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-2V4.5A2.5 2.5 0 0 0 14.5 2z"/><path d="M9 12h6M9 16h4"/></svg>
+      Central Técnica
+    </a>
+    <div class="nav-section-label">Documentos &amp; Certificação</div>
+    <a class="nav-item" href="certificados.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 16c0-5 4-9 9-9s9 4 9 9"/><path d="M2 16h20"/><path d="M9 7V4"/></svg>
+      Certificados
+    </a>
+    <a class="nav-item" href="modelos.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v4H4zM4 12h16v8H4z"/><path d="M8 16h8"/></svg>
+      Modelos
+    </a>
+
+    <a class="nav-item" href="documentos.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/></svg>
+      Documentos
+    </a>
+    <a class="nav-item" href="agenda-turmas.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="3" width="12" height="7" rx="2"/><path d="M9 10v4M15 10v4M6 14h12v7H6z"/></svg>
+      Agenda de Turmas
+    </a>
+    <a class="nav-item" href="validador.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+      Validador Público
+    </a>
+    <button class="nav-item" style="width:100%; text-align:left; border:none; background:transparent; cursor:pointer; margin-top:auto; color:var(--status-danger);" onclick="fazerLogout()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      Sair
+    </button>
+  </nav>
+
+  <div class="main">
+    <div class="hazard-stripe"></div>
+    <header class="topbar">
+      <div>
+        <h1>Empresas</h1>
+        <div class="sub" id="topbarSub">Carregando...</div>
+      </div>
+      <div class="flex gap-2">
+        <button class="btn btn--secondary" onclick="exportarEmpresasCSV()">↓ Exportar</button>
+        <a href="sincronizar-funcionarios.html" class="btn btn--secondary" style="text-decoration:none;">🔄 Sincronizar Funcionários</a>
+        <button class="btn btn--primary" onclick="abrirModalNovaEmpresa()">+ Nova Empresa</button>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <div class="toolbar">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+          <input type="text" id="buscaEmpresa" placeholder="Buscar empresa ou CNPJ..." oninput="renderEmpresasFiltradas()">
+        </div>
+      </div>
+
+      <div id="connStatus" class="text-muted" style="font-size:12px; margin-bottom:-8px;">Conectando...</div>
+
+      <div class="empresa-grid" id="empresaGrid">
+        <div class="new-empresa-card" onclick="abrirModalNovaEmpresa()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>
+          <span style="font-size:var(--text-sm); font-weight:600;">Cadastrar nova empresa</span>
+        </div>
+      </div>
+
+      <!-- MODAL NOVA EMPRESA -->
+      <div id="modalOverlay" style="display:none; position:fixed; inset:0; background:rgba(20,23,27,0.55); align-items:center; justify-content:center; z-index:50; padding:16px;">
+        <div style="background:#fff; border-radius:16px; width:100%; max-width:440px; box-shadow:0 8px 24px rgba(0,0,0,0.2);">
+          <div style="padding:20px; border-bottom:1px solid var(--paper-200); display:flex; align-items:center; justify-content:space-between;">
+            <h3 style="font-family:var(--font-display); font-size:1.2rem; margin:0;">Nova Empresa</h3>
+            <button onclick="fecharModalNovaEmpresa()" style="background:none; border:none; font-size:20px; cursor:pointer; color:var(--graphite-600);">✕</button>
+          </div>
+          <div style="padding:20px; display:flex; flex-direction:column; gap:12px;">
+            <div>
+              <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">CNPJ</label>
+              <div style="display:flex; gap:8px;">
+                <input type="text" id="novaEmpresaCnpj" placeholder="00.000.000/0000-00" style="flex:1; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+                <button type="button" class="btn btn--secondary" style="padding:9px 14px; font-size:13px; white-space:nowrap;" onclick="buscarCNPJ()">🔍 Buscar</button>
+              </div>
+              <div id="cnpjStatus" style="font-size:12px; margin-top:4px; display:none;"></div>
+            </div>
+            <div>
+              <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Nome / Razão Social</label>
+              <input type="text" id="novaEmpresaNome" placeholder="Ex: Metalúrgica Trentin Ltda" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+            </div>
+            <div style="display:flex; gap:10px;">
+              <div style="flex:1;">
+                <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Segmento</label>
+                <input type="text" id="novaEmpresaSeg" placeholder="Ex: Metalurgia" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+              </div>
+              <div style="flex:1;">
+                <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Cidade</label>
+                <input type="text" id="novaEmpresaCidade" placeholder="Ex: Dois Vizinhos" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+              </div>
+            </div>
+            <div>
+              <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Responsável</label>
+              <input type="text" id="novaEmpresaResp" placeholder="Nome do contato" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+            </div>
+            <div style="display:flex; gap:10px;">
+              <div style="flex:1;">
+                <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Telefone</label>
+                <input type="text" id="novaEmpresaTelefone" placeholder="(46) 99999-9999" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+              </div>
+              <div style="flex:1;">
+                <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">E-mail</label>
+                <input type="email" id="novaEmpresaEmail" placeholder="contato@empresa.com" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+              </div>
+            </div>
+            <div>
+              <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Endereço</label>
+              <input type="text" id="novaEmpresaEndereco" placeholder="Rua, número, bairro" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+            </div>
+            <div>
+              <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Observações</label>
+              <textarea id="novaEmpresaObs" placeholder="Anotações internas sobre essa empresa" rows="2" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px; font-family:inherit; resize:vertical;"></textarea>
+            </div>
+            <div id="novaEmpresaErro" style="color:var(--status-danger); font-size:13px; display:none;"></div>
+          </div>
+          <div style="padding:16px 20px; border-top:1px solid var(--paper-200); display:flex; justify-content:flex-end; gap:8px;">
+            <button class="btn btn--secondary" onclick="fecharModalNovaEmpresa()">Cancelar</button>
+            <button class="btn btn--primary" id="btnSalvarEmpresa" onclick="salvarNovaEmpresa()">Salvar empresa</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL GERENCIAR ACESSO (criar login de cliente) -->
+      <div id="modalAcessoOverlay" style="display:none; position:fixed; inset:0; background:rgba(20,23,27,0.55); align-items:center; justify-content:center; z-index:50; padding:16px;">
+        <div style="background:#fff; border-radius:16px; width:100%; max-width:440px; box-shadow:0 8px 24px rgba(0,0,0,0.2);">
+          <div style="padding:20px; border-bottom:1px solid var(--paper-200); display:flex; align-items:center; justify-content:space-between;">
+            <div>
+              <h3 style="font-family:var(--font-display); font-size:1.2rem; margin:0;">Gerenciar Acesso</h3>
+              <div id="acessoEmpresaNome" style="font-size:13px; color:var(--graphite-600); margin-top:2px;"></div>
+            </div>
+            <button onclick="fecharModalAcesso()" style="background:none; border:none; font-size:20px; cursor:pointer; color:var(--graphite-600);">✕</button>
+          </div>
+          <div style="padding:20px; display:flex; flex-direction:column; gap:12px;">
+
+            <!-- USUÁRIOS JÁ VINCULADOS A ESSA EMPRESA -->
+            <div>
+              <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:6px;">Acessos já criados</label>
+              <div id="acessoUsuariosList" style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px;">
+                <div class="text-muted" style="font-size:12.5px;">Carregando...</div>
+              </div>
+            </div>
+
+            <div style="border-top:1px solid var(--paper-200); padding-top:12px;">
+              <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:8px;">+ Criar novo acesso</label>
+            </div>
+
+            <div class="text-muted" style="font-size:12.5px; background:var(--paper-100); padding:10px 12px; border-radius:8px;">
+              Cria um login novo pra essa empresa acessar o Portal do Cliente. Isso não afeta sua sessão como admin.
+            </div>
+            <div>
+              <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Nome do responsável</label>
+              <input type="text" id="acessoNome" placeholder="Nome de quem vai acessar" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+            </div>
+            <div>
+              <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">E-mail de acesso</label>
+              <input type="email" id="acessoEmail" placeholder="cliente@empresa.com" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+            </div>
+            <div>
+              <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Senha inicial</label>
+              <div style="display:flex; gap:8px;">
+                <input type="text" id="acessoSenha" placeholder="Mínimo 6 caracteres" style="flex:1; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+                <button class="btn btn--secondary" style="padding:9px 12px; font-size:12px;" onclick="gerarSenhaAleatoria()">Gerar</button>
+              </div>
+            </div>
+            <div id="acessoErro" style="color:var(--status-danger); font-size:13px; display:none;"></div>
+            <div id="acessoSucesso" style="color:var(--status-ok); font-size:13px; display:none; background:var(--status-ok-bg); padding:10px 12px; border-radius:8px;"></div>
+          </div>
+          <div style="padding:16px 20px; border-top:1px solid var(--paper-200); display:flex; justify-content:flex-end; gap:8px;">
+            <button class="btn btn--secondary" onclick="fecharModalAcesso()">Fechar</button>
+            <button class="btn btn--primary" id="btnCriarAcesso" onclick="criarAcesso()">Criar acesso</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script type="module">
+  import { db, collection, getDocs, addDoc, query, where, updateDoc, deleteDoc, doc, esperarAuth, criarUsuarioCliente, registrarAuditoria } from '../assets/js/firebase-init.js';
+
+  // Schema confirmado da coleção 'empresas': nome, cnpj, seg, cidade, resp.
+  // Certificados vivem como SUBCOLEÇÃO: empresas/{id}/certificados
+  function iniciais(nome) {
+    return (nome || '?').split(' ').filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('');
+  }
+
+  async function carregarEmpresas() {
+    const status = document.getElementById('connStatus');
+    const grid = document.getElementById('empresaGrid');
+
+    // 1) Espera o Firebase confirmar a sessão antes de tentar ler qualquer coisa
+    const user = await esperarAuth();
+    if (!user) {
+      status.textContent = '🔒 Você precisa estar logado pra ver as empresas.';
+      status.style.color = 'var(--status-warn)';
+      return;
+    }
+
+    // 2) Só agora tenta ler o Firestore, com a sessão já confirmada
+    try {
+      const snap = await getDocs(collection(db, 'empresas'));
+      if (snap.empty) {
+        status.textContent = 'Nenhuma empresa cadastrada ainda. Clique em "Cadastrar nova empresa".';
+        document.getElementById('topbarSub').textContent = 'Nenhuma empresa cadastrada ainda';
+        return;
+      }
+
+      // busca todos os usuários de uma vez, pra saber quais empresas têm acesso ativo
+      const usuariosSnap = await getDocs(collection(db, 'usuarios'));
+      const empresasComAcesso = new Set();
+      usuariosSnap.forEach(u => {
+        const dt = u.data();
+        if (dt.role === 'cliente' && dt.empresaId) empresasComAcesso.add(dt.empresaId);
+      });
+
+      const empresasComContagem = await Promise.all(snap.docs.map(async docSnap => {
+        const d = docSnap.data();
+        let totalCertificados = 0, totalFuncionarios = 0;
+        try {
+          const certSnap = await getDocs(collection(db, 'empresas', docSnap.id, 'certificados'));
+          totalCertificados = certSnap.size;
+        } catch (e) { /* sem permissão ou subcoleção vazia */ }
+        try {
+          const funcSnap = await getDocs(collection(db, 'empresas', docSnap.id, 'funcionarios'));
+          totalFuncionarios = funcSnap.docs.filter(f => f.data().status !== 'inativo').length;
+        } catch (e) { /* sem permissão ou subcoleção vazia */ }
+        return { id: docSnap.id, ...d, totalCertificados, totalFuncionarios, temAcesso: empresasComAcesso.has(docSnap.id) };
+      }));
+
+      window.__empresasData = empresasComContagem;
+
+      const comAcesso = empresasComContagem.filter(e => e.temAcesso).length;
+      document.getElementById('topbarSub').textContent =
+        `${empresasComContagem.length} empresa(s) cadastrada(s) · ${comAcesso} com acesso ao portal ativo`;
+
+      renderEmpresasFiltradas();
+
+      status.textContent = `${snap.size} empresa(s) carregada(s).`;
+      status.style.color = 'var(--status-ok)';
+    } catch (err) {
+      console.error('Erro ao carregar empresas do Firestore:', err);
+      status.textContent = `⚠️ Erro ao carregar: ${err.message}`;
+      status.style.color = 'var(--status-danger)';
+    }
+  }
+
+  window.renderEmpresasFiltradas = function() {
+    const grid = document.getElementById('empresaGrid');
+    const todas = window.__empresasData || [];
+    const busca = (document.getElementById('buscaEmpresa').value || '').toLowerCase().trim();
+
+    const filtradas = busca
+      ? todas.filter(e => (e.nome||'').toLowerCase().includes(busca) || (e.cnpj||'').toLowerCase().includes(busca))
+      : todas;
+
+    grid.querySelectorAll('.empresa-card').forEach(el => el.remove());
+
+    const cardsHtml = filtradas.map(emp => `
+      <div class="empresa-card">
+        <div class="empresa-card__head" style="cursor:pointer;" onclick="location.href='empresa-detalhe.html?id=${emp.id}'">
+          <div class="empresa-avatar">${iniciais(emp.nome)}</div>
+          <div>
+            <div class="empresa-nome">${emp.nome || '(sem nome)'}</div>
+            <div class="empresa-cnpj">${emp.cnpj || '—'}</div>
+          </div>
+        </div>
+        ${emp.seg ? `<div class="empresa-setor">${emp.seg}</div>` : ''}
+        <div class="empresa-stats">
+          <div class="empresa-stat"><div class="empresa-stat__value">${emp.totalCertificados}</div><div class="empresa-stat__label">Certificados</div></div>
+          <div class="empresa-stat"><div class="empresa-stat__value">${emp.totalFuncionarios ?? '—'}</div><div class="empresa-stat__label">Funcionários</div></div>
+        </div>
+        ${(emp.cidade || emp.resp) ? `<div style="font-size:12px; color:var(--graphite-600); display:flex; justify-content:space-between;">
+          ${emp.cidade ? `<span>📍 ${emp.cidade}</span>` : '<span></span>'}
+          ${emp.resp ? `<span>👤 ${emp.resp}</span>` : ''}
+        </div>` : ''}
+        <div class="empresa-card__footer" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span class="selo selo--${emp.temAcesso ? 'ok' : 'pending'}">${emp.temAcesso ? 'Acesso ativo' : 'Sem acesso'}</span>
+          <a href="empresa-detalhe.html?id=${emp.id}" class="btn btn--secondary" style="padding:6px 10px; font-size:12px; margin-left:auto; text-decoration:none;">Ver detalhes</a>
+          <button class="btn btn--ghost" style="padding:6px 10px; font-size:12px;" onclick="abrirModalAcesso('${emp.id}', '${(emp.nome||'').replace(/'/g,"\\'")}')">Gerenciar acesso</button>
+        </div>
+      </div>
+    `);
+
+    if (filtradas.length === 0) {
+      grid.querySelector('.new-empresa-card').insertAdjacentHTML('beforebegin', '<div class="text-muted" style="padding:20px;">Nenhuma empresa encontrada com essa busca.</div>');
+    } else {
+      grid.querySelector('.new-empresa-card').insertAdjacentHTML('beforebegin', cardsHtml.join(''));
+    }
+  };
+
+  window.exportarEmpresasCSV = function() {
+    const todas = window.__empresasData || [];
+    if (todas.length === 0) { alert('Nada pra exportar ainda.'); return; }
+    const linhas = [['Nome', 'CNPJ', 'Segmento', 'Cidade', 'Responsável', 'Certificados', 'Acesso ao Portal']];
+    todas.forEach(e => linhas.push([e.nome||'', e.cnpj||'', e.seg||'', e.cidade||'', e.resp||'', e.totalCertificados, e.temAcesso ? 'Ativo' : 'Sem acesso']));
+    const csv = linhas.map(l => l.map(v => `"${(v||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `safeseg-empresas-${new Date().toISOString().slice(0,10)}.csv`;
+    link.click();
+  };
+
+  carregarEmpresas();
+
+  // ---------- Modal Nova Empresa ----------
+  document.getElementById('novaEmpresaCnpj').addEventListener('input', (e) => {
+    let v = e.target.value.replace(/\D/g, '').slice(0, 14);
+    if (v.length > 12) v = v.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{1,2})/, '$1.$2.$3/$4-$5');
+    else if (v.length > 8) v = v.replace(/(\d{2})(\d{3})(\d{3})(\d{1,4})/, '$1.$2.$3/$4');
+    else if (v.length > 5) v = v.replace(/(\d{2})(\d{3})(\d{1,3})/, '$1.$2.$3');
+    else if (v.length > 2) v = v.replace(/(\d{2})(\d{1,3})/, '$1.$2');
+    e.target.value = v;
+  });
+
+  window.buscarCNPJ = async function() {
+    const cnpjDigits = document.getElementById('novaEmpresaCnpj').value.replace(/\D/g, '');
+    const statusBox = document.getElementById('cnpjStatus');
+    statusBox.style.display = 'block';
+
+    if (cnpjDigits.length !== 14) {
+      statusBox.textContent = 'CNPJ precisa ter 14 dígitos.';
+      statusBox.style.color = 'var(--status-warn)';
+      return;
+    }
+
+    statusBox.textContent = 'Buscando...';
+    statusBox.style.color = 'var(--graphite-600)';
+
+    try {
+      // BrasilAPI — pública, gratuita, sem chave de acesso
+      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpjDigits}`);
+      if (!res.ok) throw new Error('CNPJ não encontrado na Receita Federal.');
+      const dados = await res.json();
+
+      document.getElementById('novaEmpresaNome').value = dados.razao_social || dados.nome_fantasia || '';
+      document.getElementById('novaEmpresaCidade').value = dados.municipio || '';
+      const endereco = [dados.logradouro, dados.numero, dados.bairro].filter(Boolean).join(', ');
+      const campoEndereco = document.getElementById('novaEmpresaEndereco');
+      if (campoEndereco) campoEndereco.value = endereco;
+      const campoTelefone = document.getElementById('novaEmpresaTelefone');
+      if (campoTelefone && dados.ddd_telefone_1) campoTelefone.value = dados.ddd_telefone_1;
+      const campoEmail = document.getElementById('novaEmpresaEmail');
+      if (campoEmail && dados.email) campoEmail.value = dados.email;
+      if (dados.cnae_fiscal_descricao) document.getElementById('novaEmpresaSeg').value = dados.cnae_fiscal_descricao;
+
+      statusBox.textContent = '✅ Preenchido automaticamente — confere e ajusta se precisar.';
+      statusBox.style.color = 'var(--status-ok)';
+    } catch (err) {
+      statusBox.textContent = `⚠️ ${err.message}`;
+      statusBox.style.color = 'var(--status-danger)';
+    }
+  };
+
+  window.abrirModalNovaEmpresa = function() {
+    document.getElementById('modalOverlay').style.display = 'flex';
+  };
+  window.fecharModalNovaEmpresa = function() {
+    document.getElementById('modalOverlay').style.display = 'none';
+    document.getElementById('novaEmpresaErro').style.display = 'none';
+  };
+  window.salvarNovaEmpresa = async function() {
+    const nome = document.getElementById('novaEmpresaNome').value.trim();
+    const cnpj = document.getElementById('novaEmpresaCnpj').value.trim();
+    const seg = document.getElementById('novaEmpresaSeg').value.trim();
+    const cidade = document.getElementById('novaEmpresaCidade').value.trim();
+    const resp = document.getElementById('novaEmpresaResp').value.trim();
+    const telefone = document.getElementById('novaEmpresaTelefone').value.trim();
+    const email = document.getElementById('novaEmpresaEmail').value.trim();
+    const endereco = document.getElementById('novaEmpresaEndereco').value.trim();
+    const obs = document.getElementById('novaEmpresaObs').value.trim();
+    const erroBox = document.getElementById('novaEmpresaErro');
+    const btn = document.getElementById('btnSalvarEmpresa');
+
+    if (!nome) {
+      erroBox.textContent = 'Digite o nome da empresa.';
+      erroBox.style.display = 'block';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Salvando...';
+    erroBox.style.display = 'none';
+
+    try {
+      await addDoc(collection(db, 'empresas'), { nome, cnpj, seg, cidade, resp, telefone, email, endereco, obs });
+      window.fecharModalNovaEmpresa();
+      ['novaEmpresaNome','novaEmpresaCnpj','novaEmpresaSeg','novaEmpresaCidade','novaEmpresaResp','novaEmpresaTelefone','novaEmpresaEmail','novaEmpresaEndereco','novaEmpresaObs']
+        .forEach(id => { document.getElementById(id).value = ''; });
+      // recarrega a lista já com a empresa nova
+      document.getElementById('empresaGrid').querySelectorAll('.empresa-card').forEach(el => el.remove());
+      carregarEmpresas();
+    } catch (err) {
+      console.error('Erro ao salvar empresa:', err);
+      erroBox.textContent = `Erro ao salvar: ${err.message}`;
+      erroBox.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Salvar empresa';
+    }
+  };
+
+  // ---------- Modal Gerenciar Acesso (criar login de cliente) ----------
+  let empresaAtualId = null;
+  window.abrirModalAcesso = function(empresaId, empresaNome) {
+    empresaAtualId = empresaId;
+    document.getElementById('acessoEmpresaNome').textContent = empresaNome;
+    document.getElementById('acessoNome').value = '';
+    document.getElementById('acessoEmail').value = '';
+    document.getElementById('acessoSenha').value = '';
+    document.getElementById('acessoErro').style.display = 'none';
+    document.getElementById('acessoSucesso').style.display = 'none';
+    document.getElementById('modalAcessoOverlay').style.display = 'flex';
+    carregarUsuariosDaEmpresa();
+  };
+  window.fecharModalAcesso = function() {
+    document.getElementById('modalAcessoOverlay').style.display = 'none';
+  };
+  window.gerarSenhaAleatoria = function() {
+    const senha = Math.random().toString(36).slice(-8) + Math.floor(Math.random()*90+10);
+    document.getElementById('acessoSenha').value = senha;
+  };
+
+  async function carregarUsuariosDaEmpresa() {
+    const box = document.getElementById('acessoUsuariosList');
+    box.innerHTML = '<div class="text-muted" style="font-size:12.5px;">Carregando...</div>';
+    try {
+      const snap = await getDocs(query(collection(db, 'usuarios'), where('empresaId', '==', empresaAtualId)));
+      if (snap.empty) {
+        box.innerHTML = '<div class="text-muted" style="font-size:12.5px;">Nenhum acesso criado ainda pra essa empresa.</div>';
+        return;
+      }
+      box.innerHTML = snap.docs.map(d => {
+        const u = d.data();
+        return `
+          <div style="display:flex; align-items:center; gap:8px; border:1px solid var(--paper-200); border-radius:8px; padding:8px 10px;">
+            <div style="flex:1; min-width:0;">
+              <input type="text" value="${(u.nome||'').replace(/"/g,'&quot;')}" placeholder="Nome"
+                style="width:100%; border:none; font-size:13px; font-weight:600; padding:2px 0; background:transparent;"
+                onchange="editarNomeUsuario('${d.id}', this.value)">
+              <div style="font-size:11px; color:var(--graphite-600);">${u.email || ''}</div>
+            </div>
+            <button class="btn btn--danger" style="padding:5px 9px; font-size:11px;" onclick="removerAcessoUsuario('${d.id}')">Remover</button>
+          </div>`;
+      }).join('');
+    } catch (err) {
+      box.innerHTML = `<div style="color:var(--status-danger); font-size:12.5px;">Erro ao carregar: ${err.message}</div>`;
+    }
+  }
+
+  window.editarNomeUsuario = async function(uid, novoNome) {
+    try {
+      await updateDoc(doc(db, 'usuarios', uid), { nome: novoNome });
+    } catch (err) {
+      alert('Erro ao atualizar: ' + err.message);
+    }
+  };
+
+  window.removerAcessoUsuario = async function(uid) {
+    if (!confirm('Remover o acesso desse usuário? Ele não vai mais conseguir ver os dados da empresa. (A conta de login em si continua existindo — isso só revoga o acesso; pra excluir a conta por completo, precisa ser feito direto no console do Firebase.)')) return;
+    try {
+      await deleteDoc(doc(db, 'usuarios', uid));
+      registrarAuditoria('remover_acesso_cliente', { usuarioUidRemovido: uid, empresaId: empresaAtualId });
+      carregarUsuariosDaEmpresa();
+    } catch (err) {
+      alert('Erro ao remover: ' + err.message);
+    }
+  };
+  window.criarAcesso = async function() {
+    const nome = document.getElementById('acessoNome').value.trim();
+    const email = document.getElementById('acessoEmail').value.trim();
+    const senha = document.getElementById('acessoSenha').value;
+    const erroBox = document.getElementById('acessoErro');
+    const sucessoBox = document.getElementById('acessoSucesso');
+    const btn = document.getElementById('btnCriarAcesso');
+
+    erroBox.style.display = 'none';
+    sucessoBox.style.display = 'none';
+
+    if (!email || !senha) {
+      erroBox.textContent = 'Preencha e-mail e senha.';
+      erroBox.style.display = 'block';
+      return;
+    }
+    if (senha.length < 6) {
+      erroBox.textContent = 'A senha precisa ter pelo menos 6 caracteres.';
+      erroBox.style.display = 'block';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Criando...';
+
+    const resultado = await criarUsuarioCliente({ nome, email, senha, empresaId: empresaAtualId });
+
+    btn.disabled = false;
+    btn.textContent = 'Criar acesso';
+
+    if (resultado.ok) {
+      registrarAuditoria('criar_acesso_cliente', { empresaId: empresaAtualId, email, nome });
+      sucessoBox.textContent = `✅ Acesso criado! Login: ${email} · Senha: ${senha} — anote isso, não fica salvo em outro lugar.`;
+      sucessoBox.style.display = 'block';
+      document.getElementById('acessoNome').value = '';
+      document.getElementById('acessoEmail').value = '';
+      document.getElementById('acessoSenha').value = '';
+      carregarUsuariosDaEmpresa();
+    } else {
+      erroBox.textContent = `Erro ao criar acesso: ${resultado.error}`;
+      erroBox.style.display = 'block';
+    }
+  };
+</script>
+<!-- Script de logout — independente, funciona mesmo se o resto da página falhar -->
+<script type="module">
+  import { auth, signOut } from "../assets/js/firebase-init.js";
+  window.fazerLogout = async function() {
+    if (!confirm("Sair da sua conta?")) return;
+    await signOut(auth);
+    location.reload();
+  };
+</script>
+
+</body>
+</html>

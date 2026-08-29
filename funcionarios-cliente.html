@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal SafeSeg — Funcionários</title>
+<link rel="stylesheet" href="../assets/css/safeseg-design-system.css">
+<style>
+  html, body { height: 100%; }
+  .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .topbar {
+    background: #fff; border-bottom: 1px solid var(--paper-200);
+    padding: var(--space-4) var(--space-6);
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3);
+  }
+  .topbar h1 { font-size: var(--text-xl); letter-spacing: 0.03em; }
+  .topbar .sub { font-size: var(--text-sm); color: var(--graphite-600); margin-top: 2px; }
+  .content { padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-5); max-width: 900px; }
+
+  .info-card { background: #fff; border: 1px solid var(--paper-200); border-radius: var(--radius-md); box-shadow: var(--shadow-card); padding: var(--space-5); }
+  table.func-table { width: 100%; border-collapse: collapse; }
+  table.func-table th { text-align: left; font-size: 11px; text-transform: uppercase; color: var(--graphite-600); padding: 8px 10px; border-bottom: 2px solid var(--paper-200); letter-spacing: .03em; }
+  table.func-table td { padding: 10px; border-bottom: 1px solid var(--paper-100); font-size: 13.5px; vertical-align: middle; }
+  table.func-table tr.inativo { opacity: .5; }
+
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr !important; }
+    .content { padding: var(--space-4) !important; }
+    .topbar { padding: var(--space-3) var(--space-4) !important; }
+    table.func-table { display: block; overflow-x: auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <nav class="sidebar">
+    <div class="sidebar__logo">
+      <img src="../assets/img/logo-dark.png" alt="SafeSeg" style="background:var(--graphite-900); border-radius:8px; padding:4px; max-width:150px; display:block;">
+    </div>
+    <a class="nav-item" href="dashboard-cliente.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      Dashboard
+    </a>
+    <div class="nav-section-label">Documentos &amp; Certificação</div>
+    <a class="nav-item" href="certificados-cliente.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 16c0-5 4-9 9-9s9 4 9 9"/><path d="M2 16h20"/><path d="M9 7V4"/></svg>
+      Certificados
+    </a>
+    <a class="nav-item" href="agenda-cliente.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="3" width="12" height="7" rx="2"/><path d="M9 10v4M15 10v4M6 14h12v7H6z"/></svg>
+      Agenda de Turmas
+    </a>
+    <a class="nav-item active" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Funcionários
+    </a>
+    <button class="nav-item" style="width:100%; text-align:left; border:none; background:transparent; cursor:pointer; margin-top:auto; color:var(--status-danger);" onclick="fazerLogout()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      Sair
+    </button>
+  </nav>
+
+  <div class="main">
+    <div class="hazard-stripe"></div>
+    <header class="topbar">
+      <div>
+        <h1>Funcionários</h1>
+        <div class="sub" id="topbarSub">Carregando...</div>
+      </div>
+      <button class="btn btn--primary" onclick="abrirModalFuncionario()">+ Adicionar Funcionário</button>
+    </header>
+
+    <div class="content">
+
+      <div id="connStatus" class="text-muted" style="font-size:12px;">Conectando...</div>
+
+      <div class="info-card">
+        <div style="overflow-x:auto;">
+        <table class="func-table">
+          <thead>
+            <tr><th>Nome</th><th>CPF</th><th>Função</th><th>Admissão</th><th>Status</th><th></th></tr>
+          </thead>
+          <tbody id="funcTableBody">
+            <tr><td colspan="6" class="text-muted" style="text-align:center; padding:20px;">Carregando...</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: NOVO/EDITAR FUNCIONÁRIO -->
+<div id="modalFuncOverlay" style="display:none; position:fixed; inset:0; background:rgba(20,23,27,0.55); align-items:center; justify-content:center; z-index:60; padding:16px;">
+  <div style="background:#fff; border-radius:16px; width:100%; max-width:440px; box-shadow:0 8px 24px rgba(0,0,0,0.2);">
+    <div style="padding:20px; border-bottom:1px solid var(--paper-200); display:flex; align-items:center; justify-content:space-between;">
+      <h3 style="font-family:var(--font-display); font-size:1.2rem; margin:0;" id="modalFuncTitulo">Novo Funcionário</h3>
+      <button onclick="fecharModalFuncionario()" style="background:none; border:none; font-size:20px; cursor:pointer; color:var(--graphite-600);">✕</button>
+    </div>
+    <div style="padding:20px; display:flex; flex-direction:column; gap:12px;">
+      <div style="display:flex; gap:14px; align-items:center;">
+        <img id="funcFotoPreview" src="" style="width:64px; height:64px; border-radius:50%; object-fit:cover; background:var(--paper-100); border:1px solid var(--paper-200); display:none;">
+        <div id="funcFotoPlaceholder" style="width:64px; height:64px; border-radius:50%; background:var(--paper-100); border:1px solid var(--paper-200); display:flex; align-items:center; justify-content:center; font-size:22px; color:var(--graphite-400);">👤</div>
+        <div>
+          <label class="btn btn--secondary" style="padding:6px 12px; font-size:12px; cursor:pointer;">
+            Escolher foto
+            <input type="file" id="funcFotoInput" accept="image/*" style="display:none;" onchange="processarFotoFuncionario(this)">
+          </label>
+          <div class="text-muted" style="font-size:11px; margin-top:4px;">Usada na carteirinha</div>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Nome completo</label>
+        <input type="text" id="funcNome" placeholder="Nome do colaborador" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+      </div>
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">CPF</label>
+          <input type="text" id="funcCpf" placeholder="000.000.000-00" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Função/Cargo</label>
+          <input type="text" id="funcCargo" placeholder="Ex: Operador" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+        </div>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Telefone</label>
+          <input type="text" id="funcTelefone" placeholder="(46) 99999-9999" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Admissão</label>
+          <input type="date" id="funcAdmissao" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+        </div>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">RG (opcional — pra carteirinha)</label>
+          <input type="text" id="funcRg" placeholder="0.000.000-0 SSP/PR" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Data de Nascimento (opcional)</label>
+          <input type="date" id="funcNascimento" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+        </div>
+      </div>
+      <div id="funcErro" style="color:var(--status-danger); font-size:13px; display:none;"></div>
+    </div>
+    <div style="padding:16px 20px; border-top:1px solid var(--paper-200); display:flex; justify-content:flex-end; gap:8px;">
+      <button class="btn btn--secondary" onclick="fecharModalFuncionario()">Cancelar</button>
+      <button class="btn btn--primary" id="btnSalvarFunc" onclick="salvarFuncionario()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { db, doc, updateDoc, collection, getDocs, addDoc, obterMeuPerfil } from '../assets/js/firebase-init.js';
+
+  let empresaId = null;
+  let funcionariosCache = [];
+  let editandoFuncId = null;
+
+  function renderFuncionarios() {
+    const tbody = document.getElementById('funcTableBody');
+    if (funcionariosCache.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center; padding:20px;">Nenhum funcionário cadastrado ainda. Clique em "+ Adicionar Funcionário".</td></tr>';
+      return;
+    }
+    tbody.innerHTML = funcionariosCache.map(f => `
+      <tr class="${f.status === 'inativo' ? 'inativo' : ''}">
+        <td>
+          <div style="display:flex; align-items:center; gap:8px;">
+            ${f.fotoBase64 ? `<img src="${f.fotoBase64}" style="width:28px; height:28px; border-radius:50%; object-fit:cover;">` : `<span style="width:28px; height:28px; border-radius:50%; background:var(--paper-100); display:inline-flex; align-items:center; justify-content:center; font-size:13px;">👤</span>`}
+            ${f.nome}
+          </div>
+        </td>
+        <td style="font-family:var(--font-data); font-size:12px;">${f.cpf || '—'}</td>
+        <td>${f.cargo || '—'}</td>
+        <td style="font-family:var(--font-data); font-size:12px;">${f.admissao ? f.admissao.split('-').reverse().join('/') : '—'}</td>
+        <td><span class="selo selo--${f.status === 'inativo' ? 'danger' : 'ok'}">${f.status === 'inativo' ? 'Inativo' : 'Ativo'}</span></td>
+        <td style="white-space:nowrap;">
+          <button class="btn btn--ghost" style="padding:5px 9px; font-size:11px;" onclick="editarFuncionario('${f.id}')">Editar</button>
+          <a href="carteirinha.html?empresaId=${empresaId}&funcionarioId=${f.id}" target="_blank" class="btn btn--secondary" style="padding:5px 9px; font-size:11px; text-decoration:none;">🪪 Carteirinha</a>
+          <button class="btn ${f.status === 'inativo' ? 'btn--secondary' : 'btn--danger'}" style="padding:5px 9px; font-size:11px;" onclick="alternarStatusFuncionario('${f.id}')">${f.status === 'inativo' ? 'Reativar' : 'Inativar'}</button>
+        </td>
+      </tr>`).join('');
+  }
+
+  async function carregarTudo() {
+    const status = document.getElementById('connStatus');
+    const perfil = await obterMeuPerfil();
+    if (!perfil) {
+      status.textContent = '🔒 Você precisa estar logado.';
+      status.style.color = 'var(--status-warn)';
+      return;
+    }
+    if (perfil.role !== 'cliente' || !perfil.empresaId) {
+      status.textContent = '⚠️ Este login não está configurado como acesso de cliente.';
+      status.style.color = 'var(--status-warn)';
+      return;
+    }
+    empresaId = perfil.empresaId;
+
+    try {
+      const funcSnap = await getDocs(collection(db, 'empresas', empresaId, 'funcionarios'));
+      funcionariosCache = funcSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderFuncionarios();
+
+      const ativos = funcionariosCache.filter(f => f.status !== 'inativo').length;
+      document.getElementById('topbarSub').textContent = `${ativos} funcionário(s) ativo(s) de ${funcionariosCache.length} total`;
+
+      status.textContent = '✅ Carregado.';
+      status.style.color = 'var(--status-ok)';
+    } catch (err) {
+      console.error(err);
+      status.textContent = `⚠️ Erro: ${err.message}`;
+      status.style.color = 'var(--status-danger)';
+    }
+  }
+
+  let fotoFuncionarioBase64 = null;
+
+  function atualizarPreviewFoto(base64) {
+    fotoFuncionarioBase64 = base64;
+    const img = document.getElementById('funcFotoPreview');
+    const placeholder = document.getElementById('funcFotoPlaceholder');
+    if (base64) { img.src = base64; img.style.display = 'block'; placeholder.style.display = 'none'; }
+    else { img.style.display = 'none'; placeholder.style.display = 'flex'; }
+  }
+  window.processarFotoFuncionario = function(input) {
+    const arquivo = input.files[0];
+    if (!arquivo) return;
+    const leitor = new FileReader();
+    leitor.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        const TAMANHO = 300;
+        const canvas = document.createElement('canvas');
+        canvas.width = TAMANHO; canvas.height = TAMANHO;
+        const ctx = canvas.getContext('2d');
+        const lado = Math.min(img.width, img.height);
+        const offsetX = (img.width - lado) / 2;
+        const offsetY = (img.height - lado) / 2;
+        ctx.drawImage(img, offsetX, offsetY, lado, lado, 0, 0, TAMANHO, TAMANHO);
+        atualizarPreviewFoto(canvas.toDataURL('image/jpeg', 0.82));
+      };
+      img.src = e.target.result;
+    };
+    leitor.readAsDataURL(arquivo);
+  };
+
+  window.abrirModalFuncionario = function() {
+    editandoFuncId = null;
+    document.getElementById('modalFuncTitulo').textContent = 'Novo Funcionário';
+    document.getElementById('funcNome').value = '';
+    document.getElementById('funcCpf').value = '';
+    document.getElementById('funcCargo').value = '';
+    document.getElementById('funcTelefone').value = '';
+    document.getElementById('funcAdmissao').value = '';
+    document.getElementById('funcRg').value = '';
+    document.getElementById('funcNascimento').value = '';
+    document.getElementById('funcErro').style.display = 'none';
+    atualizarPreviewFoto(null);
+    document.getElementById('modalFuncOverlay').style.display = 'flex';
+  };
+  window.fecharModalFuncionario = function() {
+    document.getElementById('modalFuncOverlay').style.display = 'none';
+  };
+  window.editarFuncionario = function(id) {
+    const f = funcionariosCache.find(x => x.id === id);
+    if (!f) return;
+    editandoFuncId = id;
+    document.getElementById('modalFuncTitulo').textContent = 'Editar Funcionário';
+    document.getElementById('funcNome').value = f.nome || '';
+    document.getElementById('funcCpf').value = f.cpf || '';
+    document.getElementById('funcCargo').value = f.cargo || '';
+    document.getElementById('funcTelefone').value = f.telefone || '';
+    document.getElementById('funcAdmissao').value = f.admissao || '';
+    document.getElementById('funcRg').value = f.rg || '';
+    document.getElementById('funcNascimento').value = f.nascimento || '';
+    document.getElementById('funcErro').style.display = 'none';
+    atualizarPreviewFoto(f.fotoBase64 || null);
+    document.getElementById('modalFuncOverlay').style.display = 'flex';
+  };
+  // Validação matemática de CPF (dígito verificador) — evita erro de
+  // digitação tipo 111.111.111-11. Não confirma se a pessoa existe de
+  // verdade, só se o número é matematicamente possível.
+  function validarCPF(cpf) {
+    cpf = (cpf || '').replace(/\D/g, '');
+    if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+    let soma = 0;
+    for (let i = 0; i < 9; i++) soma += parseInt(cpf[i]) * (10 - i);
+    let resto = (soma * 10) % 11;
+    if (resto === 10 || resto === 11) resto = 0;
+    if (resto !== parseInt(cpf[9])) return false;
+    soma = 0;
+    for (let i = 0; i < 10; i++) soma += parseInt(cpf[i]) * (11 - i);
+    resto = (soma * 10) % 11;
+    if (resto === 10 || resto === 11) resto = 0;
+    return resto === parseInt(cpf[10]);
+  }
+
+  document.getElementById('funcCpf').addEventListener('input', (e) => {
+    let v = e.target.value.replace(/\D/g, '').slice(0, 11);
+    if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+    else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+    else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+    e.target.value = v;
+  });
+
+  window.salvarFuncionario = async function() {
+    const nome = document.getElementById('funcNome').value.trim();
+    const cpf = document.getElementById('funcCpf').value.trim();
+    const cargo = document.getElementById('funcCargo').value.trim();
+    const telefone = document.getElementById('funcTelefone').value.trim();
+    const admissao = document.getElementById('funcAdmissao').value;
+    const rg = document.getElementById('funcRg').value.trim();
+    const nascimento = document.getElementById('funcNascimento').value;
+    const erroBox = document.getElementById('funcErro');
+    if (!nome) { erroBox.textContent = 'Digite o nome do funcionário.'; erroBox.style.display = 'block'; return; }
+    if (cpf && !validarCPF(cpf)) { erroBox.textContent = 'Esse CPF não é válido — confere se digitou certo.'; erroBox.style.display = 'block'; return; }
+
+    const btn = document.getElementById('btnSalvarFunc');
+    btn.disabled = true; btn.textContent = 'Salvando...';
+    try {
+      if (editandoFuncId) {
+        await updateDoc(doc(db, 'empresas', empresaId, 'funcionarios', editandoFuncId), { nome, cpf, cargo, telefone, admissao, rg, nascimento, fotoBase64: fotoFuncionarioBase64 || null });
+      } else {
+        await addDoc(collection(db, 'empresas', empresaId, 'funcionarios'), { nome, cpf, cargo, telefone, admissao, rg, nascimento, status: 'ativo', fotoBase64: fotoFuncionarioBase64 || null });
+      }
+      fecharModalFuncionario();
+      carregarTudo();
+    } catch (err) {
+      erroBox.textContent = 'Erro ao salvar: ' + err.message + (err.message.includes('permission') ? ' — pode ser que a Regra do Firestore ainda não foi atualizada, fala com o administrador.' : '');
+      erroBox.style.display = 'block';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Salvar';
+    }
+  };
+  window.alternarStatusFuncionario = async function(id) {
+    const f = funcionariosCache.find(x => x.id === id);
+    if (!f) return;
+    const novoStatus = f.status === 'inativo' ? 'ativo' : 'inativo';
+    if (!confirm(`${novoStatus === 'inativo' ? 'Inativar' : 'Reativar'} ${f.nome}?`)) return;
+    try {
+      await updateDoc(doc(db, 'empresas', empresaId, 'funcionarios', id), { status: novoStatus, atualizadoEm: new Date().toISOString() });
+      carregarTudo();
+    } catch (err) {
+      alert('Erro: ' + err.message);
+    }
+  };
+
+  carregarTudo();
+</script>
+<script type="module">
+  import { auth, signOut } from "../assets/js/firebase-init.js";
+  window.fazerLogout = async function() {
+    if (!confirm("Sair da sua conta?")) return;
+    await signOut(auth);
+    location.reload();
+  };
+</script>
+
+</body>
+</html>

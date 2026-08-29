@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal SafeSeg — Instrutores</title>
+<link rel="stylesheet" href="../assets/css/safeseg-design-system.css">
+<style>
+  html, body { height: 100%; }
+  .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .topbar { background: #fff; border-bottom: 1px solid var(--paper-200); padding: var(--space-4) var(--space-6); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:var(--space-3); }
+  .content { padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); max-width: 900px; }
+  .card { background: #fff; border: 1px solid var(--paper-200); border-radius: var(--radius-md); box-shadow: var(--shadow-card); padding: var(--space-5); }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  .field label { font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px; }
+  .field input, .field select { width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px; }
+  .registro-item { display:grid; grid-template-columns: 140px 1fr 140px 32px; gap:8px; margin-bottom:8px; align-items:center; }
+  .registro-item.tem-outro { grid-template-columns: 140px 1fr 1fr 140px 32px; }
+  .registro-item input, .registro-item select { border:1px solid var(--paper-200); border-radius:6px; padding:8px 10px; font-size:13px; }
+  .btn-remove-x { background:none; border:none; color:var(--status-danger); cursor:pointer; font-size:16px; }
+  .nr-group-title { font-size:11px; font-weight:700; text-transform:uppercase; color:var(--gold-700); margin:14px 0 6px; }
+  .nr-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap:6px; }
+  .nr-chip { display:flex; align-items:center; gap:6px; font-size:12.5px; padding:6px 8px; border:1px solid var(--paper-200); border-radius:6px; cursor:pointer; }
+  .nr-chip:has(input:checked) { background:#FFFBF0; border-color:var(--gold-400); }
+  .tag { display:inline-flex; align-items:center; gap:6px; background:var(--paper-100); border-radius:14px; padding:4px 10px; font-size:12px; margin:3px 4px 0 0; cursor:pointer; }
+  .pix-tipos { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
+  .pix-tipos label { font-size:12.5px; border:1px solid var(--paper-200); border-radius:14px; padding:5px 12px; cursor:pointer; }
+  .pix-tipos label:has(input:checked) { background:var(--graphite-900); color:#fff; border-color:var(--graphite-900); }
+  .instrutor-row { display:flex; align-items:center; gap:12px; padding:12px 14px; border:1px solid var(--paper-200); border-radius:8px; margin-bottom:8px; }
+  .instrutor-row .nome { font-weight:700; font-size:14px; }
+  .instrutor-row .sub { font-size:12px; color:var(--graphite-600); }
+  .instrutor-row .badges { display:flex; gap:4px; flex-wrap:wrap; margin-top:4px; }
+  .badge-nr { background:var(--paper-100); font-size:10.5px; padding:2px 7px; border-radius:10px; color:var(--graphite-700); }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <nav class="sidebar">
+    <div class="sidebar__logo">
+      <img src="../assets/img/logo-dark.png" alt="SafeSeg" style="background:var(--graphite-900); border-radius:8px; padding:4px; max-width:150px; display:block;">
+    </div>
+    <a class="nav-item" href="../index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+      Central (Hub)
+    </a>
+    <a class="nav-item" href="catalogo-cursos.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      Catálogo de Cursos
+    </a>
+    <a class="nav-item" style="background:var(--graphite-900); color:var(--gold-300);" href="instrutores.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Instrutores
+    </a>
+    <button class="nav-item" style="width:100%; text-align:left; border:none; background:transparent; cursor:pointer; margin-top:auto; color:var(--status-danger);" onclick="fazerLogout()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      Sair
+    </button>
+  </nav>
+
+  <div class="main">
+    <div class="hazard-stripe"></div>
+    <header class="topbar">
+      <div>
+        <h1>Instrutores</h1>
+        <div class="sub" id="topbarSub" style="font-size:13px; color:var(--graphite-600);">Cadastro completo — dados, registros profissionais e treinamentos aptos a ministrar</div>
+      </div>
+    </header>
+
+    <div class="content">
+      <div id="connStatus" class="text-muted" style="font-size:12px;">Conectando...</div>
+
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <strong id="formTitulo">Novo Instrutor</strong>
+          <button class="btn btn--secondary" id="btnCancelarEdicao" style="display:none; padding:6px 12px; font-size:12px;" onclick="cancelarEdicao()">Cancelar edição</button>
+        </div>
+
+        <div class="grid2">
+          <div class="field" style="grid-column: 1 / -1;">
+            <label>Nome completo</label>
+            <input type="text" id="fNome" placeholder="Nome do instrutor">
+          </div>
+          <div class="field">
+            <label>CPF</label>
+            <input type="text" id="fCpf" placeholder="000.000.000-00" maxlength="14">
+          </div>
+          <div class="field">
+            <label>Telefone / WhatsApp</label>
+            <input type="tel" id="fTelefone" placeholder="(00) 00000-0000">
+          </div>
+          <div class="field">
+            <label>E-mail <span style="text-transform:none; font-weight:400; color:var(--graphite-400);">— usado na assinatura eletrônica</span></label>
+            <input type="email" id="fEmail" placeholder="instrutor@email.com">
+          </div>
+        </div>
+
+        <div class="field" style="margin-top:16px;">
+          <label>Registros profissionais</label>
+          <div id="registrosLista"></div>
+          <button type="button" class="btn btn--secondary" style="padding:6px 12px; font-size:12px;" onclick="adicionarLinhaRegistro()">+ Adicionar registro</button>
+          <div class="text-muted" style="font-size:11.5px; margin-top:4px;">Adiciona quantos registros o instrutor tiver (ex: CREA e MTE ao mesmo tempo).</div>
+        </div>
+
+        <div style="margin-top:18px; padding-top:16px; border-top:1px solid var(--paper-200);">
+          <strong style="font-size:14px;">Conta bancária</strong>
+          <div class="grid2" style="margin-top:10px;">
+            <div class="field"><label>Banco</label><input type="text" id="fBanco" placeholder="Ex: Sicoob, Nubank..."></div>
+            <div class="field"><label>Agência</label><input type="text" id="fAgencia" placeholder="0000"></div>
+            <div class="field"><label>Conta</label><input type="text" id="fConta" placeholder="00000-0"></div>
+            <div class="field">
+              <label>Tipo de conta</label>
+              <select id="fTipoConta">
+                <option value="Corrente">Corrente</option>
+                <option value="Poupança">Poupança</option>
+                <option value="Pagamento">Pagamento</option>
+              </select>
+            </div>
+          </div>
+          <div class="field" style="margin-top:12px;">
+            <label>Chave PIX</label>
+            <div class="pix-tipos" id="pixTipoWrap">
+              <label><input type="radio" name="pixTipo" value="CPF" checked> CPF</label>
+              <label><input type="radio" name="pixTipo" value="Telefone"> Telefone</label>
+              <label><input type="radio" name="pixTipo" value="E-mail"> E-mail</label>
+              <label><input type="radio" name="pixTipo" value="Aleatória"> Aleatória</label>
+            </div>
+            <input type="text" id="fPixChave" placeholder="Chave PIX (deixa em branco se for igual ao CPF)">
+          </div>
+        </div>
+
+        <div style="margin-top:18px; padding-top:16px; border-top:1px solid var(--paper-200);">
+          <strong style="font-size:14px;">Treinamentos aptos a ministrar <span class="text-muted" id="nrCount" style="font-weight:400;">(0)</span></strong>
+          <div id="nrContainer"></div>
+          <div style="display:flex; gap:8px; margin-top:10px;">
+            <input type="text" id="fOutroTreinamento" placeholder="Outro treinamento não listado (opcional)" style="flex:1; border:1px solid var(--paper-200); border-radius:6px; padding:8px 10px; font-size:13px;">
+            <button type="button" class="btn btn--secondary" style="padding:6px 12px; font-size:12px;" onclick="adicionarOutroTreinamento()">Adicionar</button>
+          </div>
+          <div id="outrosTreinamentosTags" style="margin-top:6px;"></div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; margin-top:20px;">
+          <button class="btn btn--primary" onclick="salvarInstrutor()">💾 Salvar Instrutor</button>
+        </div>
+        <div id="formErro" style="color:var(--status-danger); font-size:13px; margin-top:8px; display:none;"></div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <strong>Instrutores Cadastrados</strong>
+          <input type="text" id="buscaInstrutor" placeholder="Buscar por nome, CPF ou treinamento..." style="border:1px solid var(--paper-200); border-radius:6px; padding:7px 12px; font-size:13px; width:260px;" oninput="renderLista()">
+        </div>
+        <div id="listaInstrutores"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { db, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, esperarAuth } from '../assets/js/firebase-init.js';
+
+  const NR_GROUPS = [
+    { titulo: "Normas Gerais", itens: [
+      "NR-01 - Disposições Gerais / GRO", "NR-05 - CIPA", "NR-06 - EPI",
+      "NR-07 - PCMSO", "NR-09 - Avaliação e Controle de Exposições Ocupacionais",
+      "NR-17 - Ergonomia", "NR-23 - Brigada de Incêndio"
+    ]},
+    { titulo: "Altura, Espaço Confinado e Energia", itens: [
+      "NR-10 - Segurança em Instalações Elétricas (Básico)", "NR-10 - SEP (Sistema Elétrico de Potência)",
+      "NR-12 - Segurança em Máquinas e Equipamentos", "NR-33 - Espaço Confinado (Trabalhador)",
+      "NR-33 - Espaço Confinado (Supervisor)", "NR-35 - Trabalho em Altura"
+    ]},
+    { titulo: "Construção e Indústria", itens: [
+      "NR-11 - Operação de Empilhadeira", "NR-11 - Ponte Rolante / Guindaste",
+      "NR-13 - Caldeiras e Vasos de Pressão", "NR-18 - Segurança na Construção Civil",
+      "NR-20 - Inflamáveis e Combustíveis", "NR-34 - Indústria Naval"
+    ]},
+    { titulo: "Rural, Transporte e Outros", itens: [
+      "NR-31 - Trabalho Rural", "NR-06 - PTA (Plataforma de Trabalho Aéreo)",
+      "MOPP - Movimentação de Produtos Perigosos", "Direção Defensiva", "Primeiros Socorros"
+    ]}
+  ];
+  const REGISTRO_TIPOS = ["CREA", "CRM", "COREN", "MTE", "CRP", "CRF", "Outro"];
+
+  let instrutoresCache = [];
+  let outrosTreinamentosTemp = [];
+  let editandoId = null;
+
+  function maskCPF(v) {
+    v = v.replace(/\D/g, '').slice(0, 11);
+    v = v.replace(/(\d{3})(\d)/, '$1.$2');
+    v = v.replace(/(\d{3})(\d)/, '$1.$2');
+    v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+    return v;
+  }
+  function maskTelefone(v) {
+    v = v.replace(/\D/g, '').slice(0, 11);
+    if (v.length > 10) v = v.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+    else if (v.length > 5) v = v.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
+    else if (v.length > 2) v = v.replace(/(\d{2})(\d{0,5})/, '($1) $2');
+    else v = v.replace(/(\d*)/, '($1');
+    return v;
+  }
+  document.getElementById('fCpf').addEventListener('input', e => { e.target.value = maskCPF(e.target.value); });
+  document.getElementById('fTelefone').addEventListener('input', e => { e.target.value = maskTelefone(e.target.value); });
+
+  function slug(s) { return s.replace(/[^a-zA-Z0-9]/g, '_'); }
+  const nrContainer = document.getElementById('nrContainer');
+  NR_GROUPS.forEach(grupo => {
+    const titulo = document.createElement('div');
+    titulo.className = 'nr-group-title';
+    titulo.textContent = grupo.titulo;
+    nrContainer.appendChild(titulo);
+    const grid = document.createElement('div');
+    grid.className = 'nr-grid';
+    grupo.itens.forEach(item => {
+      const id = 'nr_' + slug(item);
+      const chip = document.createElement('label');
+      chip.className = 'nr-chip';
+      chip.innerHTML = `<input type="checkbox" id="${id}" value="${item}"><span>${item}</span>`;
+      grid.appendChild(chip);
+    });
+    nrContainer.appendChild(grid);
+  });
+  nrContainer.addEventListener('change', atualizarContadorNR);
+  function atualizarContadorNR() {
+    const marcados = nrContainer.querySelectorAll('input:checked').length + outrosTreinamentosTemp.length;
+    document.getElementById('nrCount').textContent = `(${marcados})`;
+  }
+
+  window.adicionarOutroTreinamento = function() {
+    const input = document.getElementById('fOutroTreinamento');
+    const val = input.value.trim();
+    if (!val) return;
+    if (!outrosTreinamentosTemp.includes(val)) outrosTreinamentosTemp.push(val);
+    input.value = '';
+    renderOutrosTags();
+    atualizarContadorNR();
+  };
+  function renderOutrosTags() {
+    const wrap = document.getElementById('outrosTreinamentosTags');
+    wrap.innerHTML = outrosTreinamentosTemp.map((t, i) => `<span class="tag" onclick="removerOutroTreinamento(${i})">${t} ✕</span>`).join('');
+  }
+  window.removerOutroTreinamento = function(i) {
+    outrosTreinamentosTemp.splice(i, 1);
+    renderOutrosTags();
+    atualizarContadorNR();
+  };
+
+  window.adicionarLinhaRegistro = function(dados) {
+    dados = dados || { tipo: '', outroNome: '', numero: '' };
+    const lista = document.getElementById('registrosLista');
+    const item = document.createElement('div');
+    item.className = 'registro-item' + (dados.tipo === 'Outro' ? ' tem-outro' : '');
+    const opcoes = `<option value="">Tipo...</option>` + REGISTRO_TIPOS.map(t =>
+      `<option value="${t}" ${dados.tipo === t ? 'selected' : ''}>${t === 'CRP' ? 'CRP (Psicologia)' : t === 'CRF' ? 'CRF (Farmácia)' : t}</option>`
+    ).join('');
+    item.innerHTML = `
+      <select class="reg-tipo">${opcoes}</select>
+      <input type="text" class="reg-outro-nome" placeholder="Qual registro?" value="${(dados.outroNome || '').replace(/"/g,'&quot;')}">
+      <input type="text" class="reg-numero" placeholder="Número do registro" value="${(dados.numero || '').replace(/"/g,'&quot;')}">
+      <button type="button" class="btn-remove-x" title="Remover">✕</button>
+    `;
+    item.querySelector('.reg-tipo').addEventListener('change', e => {
+      item.classList.toggle('tem-outro', e.target.value === 'Outro');
+    });
+    item.querySelector('.btn-remove-x').addEventListener('click', () => item.remove());
+    lista.appendChild(item);
+  };
+  function coletarRegistros() {
+    return Array.from(document.getElementById('registrosLista').querySelectorAll('.registro-item')).map(item => ({
+      tipo: item.querySelector('.reg-tipo').value,
+      outroNome: item.querySelector('.reg-outro-nome').value.trim(),
+      numero: item.querySelector('.reg-numero').value.trim()
+    })).filter(r => r.tipo || r.numero || r.outroNome);
+  }
+
+  const pixTipoWrap = document.getElementById('pixTipoWrap');
+  pixTipoWrap.addEventListener('change', () => {
+    pixTipoWrap.querySelectorAll('label').forEach(l => l.classList.toggle('active', l.querySelector('input').checked));
+  });
+
+  function limparFormulario() {
+    editandoId = null;
+    document.getElementById('formTitulo').textContent = 'Novo Instrutor';
+    document.getElementById('btnCancelarEdicao').style.display = 'none';
+    document.getElementById('fNome').value = '';
+    document.getElementById('fCpf').value = '';
+    document.getElementById('fTelefone').value = '';
+    document.getElementById('fEmail').value = '';
+    document.getElementById('registrosLista').innerHTML = '';
+    document.getElementById('fBanco').value = '';
+    document.getElementById('fAgencia').value = '';
+    document.getElementById('fConta').value = '';
+    document.getElementById('fTipoConta').value = 'Corrente';
+    document.getElementById('fPixChave').value = '';
+    document.querySelector('input[name="pixTipo"][value="CPF"]').checked = true;
+    nrContainer.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = false);
+    outrosTreinamentosTemp = [];
+    renderOutrosTags();
+    atualizarContadorNR();
+    document.getElementById('formErro').style.display = 'none';
+  }
+  window.cancelarEdicao = limparFormulario;
+
+  async function carregar() {
+    const status = document.getElementById('connStatus');
+    await esperarAuth();
+    try {
+      const snap = await getDocs(collection(db, 'instrutores'));
+      instrutoresCache = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
+      renderLista();
+      status.textContent = '✅ Carregado.';
+      status.style.color = 'var(--status-ok)';
+    } catch (err) {
+      status.textContent = '⚠️ Erro: ' + err.message;
+      console.error(err);
+    }
+  }
+
+  window.salvarInstrutor = async function() {
+    const erroBox = document.getElementById('formErro');
+    const nome = document.getElementById('fNome').value.trim();
+    const cpf = document.getElementById('fCpf').value.trim();
+    if (!nome) { erroBox.textContent = 'Preenche o nome.'; erroBox.style.display = 'block'; return; }
+    if (!cpf) { erroBox.textContent = 'Preenche o CPF.'; erroBox.style.display = 'block'; return; }
+
+    const nrsMarcados = Array.from(nrContainer.querySelectorAll('input:checked')).map(c => c.value);
+    const treinamentos = [...nrsMarcados, ...outrosTreinamentosTemp];
+
+    const dadosInstrutor = {
+      nome,
+      cpf,
+      telefone: document.getElementById('fTelefone').value.trim(),
+      email: document.getElementById('fEmail').value.trim(),
+      registros: coletarRegistros(),
+      banco: document.getElementById('fBanco').value.trim(),
+      agencia: document.getElementById('fAgencia').value.trim(),
+      conta: document.getElementById('fConta').value.trim(),
+      tipoConta: document.getElementById('fTipoConta').value,
+      pixTipo: document.querySelector('input[name="pixTipo"]:checked').value,
+      pixChave: document.getElementById('fPixChave').value.trim(),
+      treinamentos
+    };
+
+    try {
+      if (editandoId) {
+        await updateDoc(doc(db, 'instrutores', editandoId), dadosInstrutor);
+      } else {
+        await addDoc(collection(db, 'instrutores'), dadosInstrutor);
+      }
+      limparFormulario();
+      carregar();
+    } catch (err) {
+      erroBox.textContent = 'Erro: ' + err.message;
+      erroBox.style.display = 'block';
+    }
+  };
+
+  window.editarInstrutor = function(id) {
+    const inst = instrutoresCache.find(i => i.id === id);
+    if (!inst) return;
+    editandoId = id;
+    document.getElementById('formTitulo').textContent = 'Editar Instrutor';
+    document.getElementById('btnCancelarEdicao').style.display = 'inline-block';
+    document.getElementById('fNome').value = inst.nome || '';
+    document.getElementById('fCpf').value = inst.cpf || '';
+    document.getElementById('fTelefone').value = inst.telefone || '';
+    document.getElementById('fEmail').value = inst.email || '';
+    document.getElementById('registrosLista').innerHTML = '';
+    (inst.registros || []).forEach(r => window.adicionarLinhaRegistro(r));
+    document.getElementById('fBanco').value = inst.banco || '';
+    document.getElementById('fAgencia').value = inst.agencia || '';
+    document.getElementById('fConta').value = inst.conta || '';
+    document.getElementById('fTipoConta').value = inst.tipoConta || 'Corrente';
+    document.getElementById('fPixChave').value = inst.pixChave || '';
+    const radioSel = document.querySelector(`input[name="pixTipo"][value="${inst.pixTipo || 'CPF'}"]`);
+    if (radioSel) radioSel.checked = true;
+
+    const listaNR = NR_GROUPS.flatMap(g => g.itens);
+    outrosTreinamentosTemp = (inst.treinamentos || []).filter(t => !listaNR.includes(t));
+    nrContainer.querySelectorAll('input[type=checkbox]').forEach(c => {
+      c.checked = (inst.treinamentos || []).includes(c.value);
+    });
+    renderOutrosTags();
+    atualizarContadorNR();
+    document.getElementById('formErro').style.display = 'none';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  window.excluirInstrutor = async function(id, nome) {
+    if (!confirm(`Excluir o instrutor "${nome}"? Isso não afeta certificados já emitidos.`)) return;
+    try {
+      await deleteDoc(doc(db, 'instrutores', id));
+      carregar();
+    } catch (err) { alert('Erro: ' + err.message); }
+  };
+
+  function renderLista() {
+    const busca = document.getElementById('buscaInstrutor').value.toLowerCase().trim();
+    const box = document.getElementById('listaInstrutores');
+    const filtrados = instrutoresCache.filter(i => {
+      if (!busca) return true;
+      const alvo = [(i.nome||''), (i.cpf||''), ...(i.treinamentos||[])].join(' ').toLowerCase();
+      return alvo.includes(busca);
+    });
+    if (filtrados.length === 0) {
+      box.innerHTML = `<div class="text-muted" style="text-align:center; padding:24px;">${instrutoresCache.length === 0 ? 'Nenhum instrutor cadastrado ainda — preenche o formulário acima.' : 'Nenhum resultado pra essa busca.'}</div>`;
+      return;
+    }
+    box.innerHTML = filtrados.map(i => `
+      <div class="instrutor-row">
+        <div style="flex:1; min-width:0;">
+          <div class="nome">${i.nome}</div>
+          <div class="sub">${i.cpf || '—'} ${i.telefone ? '· ' + i.telefone : ''} ${i.email ? '· ' + i.email : ''}</div>
+          <div class="badges">${(i.treinamentos||[]).slice(0,6).map(t => `<span class="badge-nr">${t}</span>`).join('')}${(i.treinamentos||[]).length > 6 ? `<span class="badge-nr">+${i.treinamentos.length - 6}</span>` : ''}</div>
+        </div>
+        <button class="btn btn--secondary" style="padding:6px 12px; font-size:12px;" onclick="editarInstrutor('${i.id}')">Editar</button>
+        <button class="btn btn--danger" style="padding:6px 12px; font-size:12px;" onclick="excluirInstrutor('${i.id}', '${i.nome.replace(/'/g,"\\'")}')">Excluir</button>
+      </div>`).join('');
+  }
+
+  carregar();
+</script>
+<script type="module">
+  import { auth, signOut } from "../assets/js/firebase-init.js";
+  window.fazerLogout = async function() {
+    if (!confirm("Sair da sua conta?")) return;
+    await signOut(auth);
+    location.reload();
+  };
+</script>
+
+</body>
+</html>

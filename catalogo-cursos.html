@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal SafeSeg — Catálogo de Cursos</title>
+<link rel="stylesheet" href="../assets/css/safeseg-design-system.css">
+<style>
+  html, body { height: 100%; }
+  .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .topbar { background: #fff; border-bottom: 1px solid var(--paper-200); padding: var(--space-4) var(--space-6); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:var(--space-3); }
+  .topbar h1 { font-size: var(--text-xl); letter-spacing: 0.03em; }
+  .content { padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); max-width: 1100px; }
+  .card { background: #fff; border: 1px solid var(--paper-200); border-radius: var(--radius-md); box-shadow: var(--shadow-card); padding: var(--space-5); }
+  .aviso { background: #EAF6EC; border-radius: 8px; padding: 12px 16px; font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 11px; text-transform: uppercase; color: var(--graphite-600); padding: 8px 10px; border-bottom: 2px solid var(--paper-200); }
+  td { padding: 8px 10px; border-bottom: 1px solid var(--paper-100); font-size: 13px; vertical-align: middle; }
+  tr.inativo { opacity: .45; }
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr !important; }
+    .content { padding: var(--space-4) !important; }
+    table { display: block; overflow-x: auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <nav class="sidebar">
+    <div class="sidebar__logo">
+      <img src="../assets/img/logo-dark.png" alt="SafeSeg" style="background:var(--graphite-900); border-radius:8px; padding:4px; max-width:150px; display:block;">
+    </div>
+    <a class="nav-item" href="../index.html" style="background:var(--graphite-900); color:var(--gold-300); margin-bottom:4px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+      Central (Hub)
+    </a>
+    <a class="nav-item" href="dashboard.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      Dashboard
+    </a>
+    <div class="nav-section-label">Comercial (CRM)</div>
+    <a class="nav-item" href="leads.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+      Leads (Funil)
+    </a>
+    <a class="nav-item" href="propostas.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15h6M9 11h3"/></svg>
+      Propostas
+    </a>
+    <a class="nav-item active" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      Catálogo de Cursos
+    </a>
+    <a class="nav-item" href="instrutores.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Instrutores
+    </a>
+    <a class="nav-item" href="mensagens.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Central de Mensagens
+    </a>
+    <a class="nav-item" href="empresas.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17"/><path d="M19 21V10a1 1 0 0 0-1-1h-3"/><path d="M8 7h2M8 11h2M8 15h2"/></svg>
+      Empresas (clientes)
+    </a>
+    <div class="nav-section-label">Financeiro</div>
+    <a class="nav-item" href="financeiro.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Financeiro
+    </a>
+    <button class="nav-item" style="width:100%; text-align:left; border:none; background:transparent; cursor:pointer; margin-top:auto; color:var(--status-danger);" onclick="fazerLogout()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      Sair
+    </button>
+  </nav>
+
+  <div class="main">
+    <div class="hazard-stripe"></div>
+    <header class="topbar">
+      <div>
+        <h1>Catálogo de Cursos</h1>
+        <div class="sub" id="topbarSub" style="font-size:13px; color:var(--graphite-600);">Carregando...</div>
+      </div>
+      <button class="btn btn--primary" onclick="abrirModalCurso()">+ Novo Curso</button>
+    </header>
+
+    <div class="content">
+      <div id="importarBox" class="aviso" style="display:none;">
+        📋 O catálogo está vazio. <button class="btn btn--secondary" style="padding:6px 12px; font-size:12px; margin-left:8px;" onclick="importarCatalogoPadrao()">Importar catálogo padrão SafeSeg (83 cursos)</button>
+      </div>
+
+      <div id="connStatus" class="text-muted" style="font-size:12px;">Conectando...</div>
+
+      <div class="card">
+        <input type="text" id="buscaCursoCatalogo" placeholder="Buscar curso..." oninput="renderCursos()" style="width:100%; border:1px solid var(--paper-200); border-radius:8px; padding:10px 14px; font-size:14px; margin-bottom:14px;">
+        <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>Curso</th><th>Carga h.</th><th>Modalidade</th><th>Valor</th><th>Validade</th><th>Status</th><th></th></tr></thead>
+          <tbody id="cursosBody"></tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: NOVO/EDITAR CURSO -->
+<div id="modalCursoOverlay" style="display:none; position:fixed; inset:0; background:rgba(20,23,27,0.55); align-items:center; justify-content:center; z-index:60; padding:16px;">
+  <div style="background:#fff; border-radius:16px; width:100%; max-width:520px; max-height:85vh; overflow-y:auto; box-shadow:0 8px 24px rgba(0,0,0,0.2);">
+    <div style="padding:20px; border-bottom:1px solid var(--paper-200); display:flex; align-items:center; justify-content:space-between;">
+      <h3 style="font-family:var(--font-display); font-size:1.2rem; margin:0;" id="modalCursoTitulo">Novo Curso</h3>
+      <button onclick="fecharModalCurso()" style="background:none; border:none; font-size:20px; cursor:pointer;">✕</button>
+    </div>
+    <div style="padding:20px; display:flex; flex-direction:column; gap:12px;">
+      <div>
+        <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Nome do curso</label>
+        <input type="text" id="cursoNome" placeholder="Ex: NR-35 - Trabalho em Altura" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+      </div>
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Carga Horária</label>
+          <input type="text" id="cursoCh" placeholder="Ex: 8h" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Modalidade</label>
+          <select id="cursoMod" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+            <option>Online</option><option>Presencial</option><option>Semipresencial</option><option>Consultoria</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Valor (R$)</label>
+          <input type="number" id="cursoValor" step="0.01" placeholder="0,00" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Validade</label>
+          <input type="text" id="cursoValidade" placeholder="Ex: 1 ano" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px;">
+        </div>
+      </div>
+      <div>
+        <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px;">Conteúdo programático (opcional)</label>
+        <textarea id="cursoProg" rows="4" style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:13px; font-family:inherit; resize:vertical;"></textarea>
+      </div>
+      <label style="display:flex; align-items:center; gap:8px; font-size:13px;">
+        <input type="checkbox" id="cursoAtivo" checked> Ativo (aparece na busca de curso das Propostas)
+      </label>
+      <div id="cursoErro" style="color:var(--status-danger); font-size:13px; display:none;"></div>
+    </div>
+    <div style="padding:16px 20px; border-top:1px solid var(--paper-200); display:flex; justify-content:space-between; gap:8px;">
+      <button class="btn btn--danger" id="btnExcluirCurso" style="display:none;" onclick="excluirCurso()">Excluir</button>
+      <div style="display:flex; gap:8px; margin-left:auto;">
+        <button class="btn btn--secondary" onclick="fecharModalCurso()">Cancelar</button>
+        <button class="btn btn--primary" onclick="salvarCurso()">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+const DEFAULT_COURSES = [
+  {
+    "nome": "Aspectos Psicossociais - Online",
+    "ch": "1h",
+    "mod": "Online",
+    "valor": 76.0,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – FATORES PSICOSSOCIAIS\nNR-01 e riscos psicossociais;\nIdentificação e avaliação.\n\nMÓDULO II – GESTÃO E PREVENÇÃO\nMedidas de controle;\nSaúde mental no trabalho."
+  },
+  {
+    "nome": "Aspectos Psicossociais para Profissionais de SST e DP",
+    "ch": "3h20",
+    "mod": "Online",
+    "valor": 378.1,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – FATORES PSICOSSOCIAIS\nNR-01 e riscos psicossociais;\nIdentificação e avaliação.\n\nMÓDULO II – GESTÃO E PREVENÇÃO\nMedidas de controle;\nSaúde mental no trabalho."
+  },
+  {
+    "nome": "Benzeno - NR20",
+    "ch": "4h",
+    "mod": "Online",
+    "valor": 112.1,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – LEGISLAÇÃO\nNR-20 e Anexo 13-A; PPEOB;\nToxicologia do benzeno.\n\nMÓDULO II – CONTROLE\nMonitoramento e medidas de proteção;\nVigilância da saúde."
+  },
+  {
+    "nome": "Comissão Interna de Prevenção de Acidentes e de Assédio na Mineração (CIPAMIN)",
+    "ch": "40h",
+    "mod": "Online",
+    "valor": 169.1,
+    "validade": "1 ano (mandato)",
+    "prog": "MÓDULO I – CIPAMIN\nComissão na mineração;\nOrganização, eleição e mandato.\n\nMÓDULO II – PREVENÇÃO\nMapa de riscos na mineração;\nAssédio e saúde do trabalhador."
+  },
+  {
+    "nome": "Noções de Primeiros Socorros",
+    "ch": "2h",
+    "mod": "Online",
+    "valor": 83.6,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – PRINCÍPIOS\nAvaliação da cena e da vítima;\nAcionamento do socorro (SAMU/Bombeiros).\n\nMÓDULO II – ATENDIMENTO\nRCP e desobstrução de vias aéreas;\nHemorragias, fraturas e queimaduras.\n\nMÓDULO III – PRÁTICA\nSimulação de atendimento."
+  },
+  {
+    "nome": "Noções de Primeiros Socorros",
+    "ch": "4h",
+    "mod": "Online",
+    "valor": 102.6,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – PRINCÍPIOS\nAvaliação da cena e da vítima;\nAcionamento do socorro (SAMU/Bombeiros).\n\nMÓDULO II – ATENDIMENTO\nRCP e desobstrução de vias aéreas;\nHemorragias, fraturas e queimaduras.\n\nMÓDULO III – PRÁTICA\nSimulação de atendimento."
+  },
+  {
+    "nome": "NR 05 - CIPA Assédio [Grau de Risco 3]",
+    "ch": "16h",
+    "mod": "Online",
+    "valor": 89.3,
+    "validade": "1 ano (mandato)",
+    "prog": "MÓDULO I – LEGISLAÇÃO E CIPA\nNR-05: objetivos e organização da CIPA;\nLei nº 14.457 (assédio) e atribuições;\nProcesso eleitoral e mandato.\n\nMÓDULO II – PREVENÇÃO DE ACIDENTES\nConceito de acidente e mapa de riscos;\nInvestigação e análise de acidentes;\nMedidas de controle.\n\nMÓDULO III – SAÚDE E ASSÉDIO\nNoções de saúde do trabalhador;\nPrevenção ao assédio moral e sexual;\nCanais de denúncia e acolhimento.\n\nMÓDULO IV – PRÁTICA\nElaboração do mapa de riscos;\nPlano de trabalho da CIPA."
+  },
+  {
+    "nome": "NR 05 - CIPA Assédio [Grau de Risco 1]",
+    "ch": "8h",
+    "mod": "Online",
+    "valor": 89.3,
+    "validade": "1 ano (mandato)",
+    "prog": "MÓDULO I – LEGISLAÇÃO E CIPA\nNR-05: objetivos e organização da CIPA;\nLei nº 14.457 (assédio) e atribuições;\nProcesso eleitoral e mandato.\n\nMÓDULO II – PREVENÇÃO DE ACIDENTES\nConceito de acidente e mapa de riscos;\nInvestigação e análise de acidentes;\nMedidas de controle.\n\nMÓDULO III – SAÚDE E ASSÉDIO\nNoções de saúde do trabalhador;\nPrevenção ao assédio moral e sexual;\nCanais de denúncia e acolhimento.\n\nMÓDULO IV – PRÁTICA\nElaboração do mapa de riscos;\nPlano de trabalho da CIPA."
+  },
+  {
+    "nome": "NR 05 - CIPA Assédio [Grau de Risco 2]",
+    "ch": "12h",
+    "mod": "Online",
+    "valor": 89.3,
+    "validade": "1 ano (mandato)",
+    "prog": "MÓDULO I – LEGISLAÇÃO E CIPA\nNR-05: objetivos e organização da CIPA;\nLei nº 14.457 (assédio) e atribuições;\nProcesso eleitoral e mandato.\n\nMÓDULO II – PREVENÇÃO DE ACIDENTES\nConceito de acidente e mapa de riscos;\nInvestigação e análise de acidentes;\nMedidas de controle.\n\nMÓDULO III – SAÚDE E ASSÉDIO\nNoções de saúde do trabalhador;\nPrevenção ao assédio moral e sexual;\nCanais de denúncia e acolhimento.\n\nMÓDULO IV – PRÁTICA\nElaboração do mapa de riscos;\nPlano de trabalho da CIPA."
+  },
+  {
+    "nome": "NR 05 - CIPA Assédio [Grau de Risco 4]",
+    "ch": "20h",
+    "mod": "Online",
+    "valor": 89.3,
+    "validade": "1 ano (mandato)",
+    "prog": "MÓDULO I – LEGISLAÇÃO E CIPA\nNR-05: objetivos e organização da CIPA;\nLei nº 14.457 (assédio) e atribuições;\nProcesso eleitoral e mandato.\n\nMÓDULO II – PREVENÇÃO DE ACIDENTES\nConceito de acidente e mapa de riscos;\nInvestigação e análise de acidentes;\nMedidas de controle.\n\nMÓDULO III – SAÚDE E ASSÉDIO\nNoções de saúde do trabalhador;\nPrevenção ao assédio moral e sexual;\nCanais de denúncia e acolhimento.\n\nMÓDULO IV – PRÁTICA\nElaboração do mapa de riscos;\nPlano de trabalho da CIPA."
+  },
+  {
+    "nome": "NR 05 - CIPA Assédio [Grau de Risco 3]",
+    "ch": "16h",
+    "mod": "Presencial",
+    "valor": 200.0,
+    "validade": "1 ano (mandato)",
+    "prog": "MÓDULO I – LEGISLAÇÃO E CIPA\nNR-05: objetivos e organização da CIPA;\nLei nº 14.457 (assédio) e atribuições;\nProcesso eleitoral e mandato.\n\nMÓDULO II – PREVENÇÃO DE ACIDENTES\nConceito de acidente e mapa de riscos;\nInvestigação e análise de acidentes;\nMedidas de controle.\n\nMÓDULO III – SAÚDE E ASSÉDIO\nNoções de saúde do trabalhador;\nPrevenção ao assédio moral e sexual;\nCanais de denúncia e acolhimento.\n\nMÓDULO IV – PRÁTICA\nElaboração do mapa de riscos;\nPlano de trabalho da CIPA."
+  },
+  {
+    "nome": "NR 05 - CIPA Assédio [Grau de Risco 1]",
+    "ch": "8h",
+    "mod": "Presencial",
+    "valor": 150.0,
+    "validade": "1 ano (mandato)",
+    "prog": "MÓDULO I – LEGISLAÇÃO E CIPA\nNR-05: objetivos e organização da CIPA;\nLei nº 14.457 (assédio) e atribuições;\nProcesso eleitoral e mandato.\n\nMÓDULO II – PREVENÇÃO DE ACIDENTES\nConceito de acidente e mapa de riscos;\nInvestigação e análise de acidentes;\nMedidas de controle.\n\nMÓDULO III – SAÚDE E ASSÉDIO\nNoções de saúde do trabalhador;\nPrevenção ao assédio moral e sexual;\nCanais de denúncia e acolhimento.\n\nMÓDULO IV – PRÁTICA\nElaboração do mapa de riscos;\nPlano de trabalho da CIPA."
+  },
+  {
+    "nome": "NR 05 - CIPA Assédio [Grau de Risco 2]",
+    "ch": "12h",
+    "mod": "Presencial",
+    "valor": 180.0,
+    "validade": "1 ano (mandato)",
+    "prog": "MÓDULO I – LEGISLAÇÃO E CIPA\nNR-05: objetivos e organização da CIPA;\nLei nº 14.457 (assédio) e atribuições;\nProcesso eleitoral e mandato.\n\nMÓDULO II – PREVENÇÃO DE ACIDENTES\nConceito de acidente e mapa de riscos;\nInvestigação e análise de acidentes;\nMedidas de controle.\n\nMÓDULO III – SAÚDE E ASSÉDIO\nNoções de saúde do trabalhador;\nPrevenção ao assédio moral e sexual;\nCanais de denúncia e acolhimento.\n\nMÓDULO IV – PRÁTICA\nElaboração do mapa de riscos;\nPlano de trabalho da CIPA."
+  },
+  {
+    "nome": "NR 05 - CIPA Assédio [Grau de Risco 4]",
+    "ch": "20h",
+    "mod": "Presencial",
+    "valor": 250.0,
+    "validade": "1 ano (mandato)",
+    "prog": "MÓDULO I – LEGISLAÇÃO E CIPA\nNR-05: objetivos e organização da CIPA;\nLei nº 14.457 (assédio) e atribuições;\nProcesso eleitoral e mandato.\n\nMÓDULO II – PREVENÇÃO DE ACIDENTES\nConceito de acidente e mapa de riscos;\nInvestigação e análise de acidentes;\nMedidas de controle.\n\nMÓDULO III – SAÚDE E ASSÉDIO\nNoções de saúde do trabalhador;\nPrevenção ao assédio moral e sexual;\nCanais de denúncia e acolhimento.\n\nMÓDULO IV – PRÁTICA\nElaboração do mapa de riscos;\nPlano de trabalho da CIPA."
+  },
+  {
+    "nome": "NR 06 - Equipamentos de Proteção Hospitalar",
+    "ch": "2h",
+    "mod": "Online",
+    "valor": 68.4,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – EPI E LEGISLAÇÃO\nNR-06: definições e Certificado de Aprovação (CA);\nResponsabilidades do empregador e empregado.\n\nMÓDULO II – SELEÇÃO E USO\nTipos de EPI por risco;\nGuarda, higienização e conservação;\nDescarte e substituição."
+  },
+  {
+    "nome": "NR 06 - Equipamentos de Proteção Individual",
+    "ch": "2h",
+    "mod": "Online",
+    "valor": 68.4,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – EPI E LEGISLAÇÃO\nNR-06: definições e Certificado de Aprovação (CA);\nResponsabilidades do empregador e empregado.\n\nMÓDULO II – SELEÇÃO E USO\nTipos de EPI por risco;\nGuarda, higienização e conservação;\nDescarte e substituição."
+  },
+  {
+    "nome": "NR 10 - Reciclagem SEP Alta Tensão",
+    "ch": "20h",
+    "mod": "Online",
+    "valor": 146.3,
+    "validade": "conforme NR",
+    "prog": "MÓDULO I – INTRODUÇÃO E LEGISLAÇÃO\nNR-10: objetivo e campo de aplicação;\nRiscos elétricos: choque, arco, campos.\n\nMÓDULO II – TÉCNICAS DE PROTEÇÃO\nDesenergização e reenergização;\nAterramento e EPIs/EPCs.\n\nMÓDULO III – PROCEDIMENTOS\nProntuário e documentação;\nPermissão de trabalho e sinalização.\n\nMÓDULO IV – EMERGÊNCIA\nPrimeiros socorros para acidentes elétricos;\nCombate a princípio de incêndio."
+  },
+  {
+    "nome": "NR 10 - Reciclagem SEP Alta Tensão",
+    "ch": "20h",
+    "mod": "Presencial",
+    "valor": 300.0,
+    "validade": "conforme NR",
+    "prog": "MÓDULO I – INTRODUÇÃO E LEGISLAÇÃO\nNR-10: objetivo e campo de aplicação;\nRiscos elétricos: choque, arco, campos.\n\nMÓDULO II – TÉCNICAS DE PROTEÇÃO\nDesenergização e reenergização;\nAterramento e EPIs/EPCs.\n\nMÓDULO III – PROCEDIMENTOS\nProntuário e documentação;\nPermissão de trabalho e sinalização.\n\nMÓDULO IV – EMERGÊNCIA\nPrimeiros socorros para acidentes elétricos;\nCombate a princípio de incêndio."
+  },
+  {
+    "nome": "NR 10 - Reciclagem SEP Alta Tensão 8h",
+    "ch": "8h",
+    "mod": "Online",
+    "valor": 127.3,
+    "validade": "conforme NR",
+    "prog": "MÓDULO I – INTRODUÇÃO E LEGISLAÇÃO\nNR-10: objetivo e campo de aplicação;\nRiscos elétricos: choque, arco, campos.\n\nMÓDULO II – TÉCNICAS DE PROTEÇÃO\nDesenergização e reenergização;\nAterramento e EPIs/EPCs.\n\nMÓDULO III – PROCEDIMENTOS\nProntuário e documentação;\nPermissão de trabalho e sinalização.\n\nMÓDULO IV – EMERGÊNCIA\nPrimeiros socorros para acidentes elétricos;\nCombate a princípio de incêndio."
+  },
+  {
+    "nome": "NR 10 - Reciclagem SEP Alta Tensão 8h",
+    "ch": "8h",
+    "mod": "Presencial",
+    "valor": 250.0,
+    "validade": "conforme NR",
+    "prog": "MÓDULO I – INTRODUÇÃO E LEGISLAÇÃO\nNR-10: objetivo e campo de aplicação;\nRiscos elétricos: choque, arco, campos.\n\nMÓDULO II – TÉCNICAS DE PROTEÇÃO\nDesenergização e reenergização;\nAterramento e EPIs/EPCs.\n\nMÓDULO III – PROCEDIMENTOS\nProntuário e documentação;\nPermissão de trabalho e sinalização.\n\nMÓDULO IV – EMERGÊNCIA\nPrimeiros socorros para acidentes elétricos;\nCombate a princípio de incêndio."
+  },
+  {
+    "nome": "NR 10 - Reciclagem Instalações Elétricas e Serviços",
+    "ch": "16h",
+    "mod": "Online",
+    "valor": 146.3,
+    "validade": "conforme NR",
+    "prog": "MÓDULO I – INTRODUÇÃO E LEGISLAÇÃO\nNR-10: objetivo e campo de aplicação;\nRiscos elétricos: choque, arco, campos.\n\nMÓDULO II – TÉCNICAS DE PROTEÇÃO\nDesenergização e reenergização;\nAterramento e EPIs/EPCs.\n\nMÓDULO III – PROCEDIMENTOS\nProntuário e documentação;\nPermissão de trabalho e sinalização.\n\nMÓDULO IV – EMERGÊNCIA\nPrimeiros socorros para acidentes elétricos;\nCombate a princípio de incêndio."
+  },
+  {
+    "nome": "NR 10 - Reciclagem Instalações Elétricas e Serviços",
+    "ch": "16h",
+    "mod": "Presencial",
+    "valor": 200.0,
+    "validade": "conforme NR",
+    "prog": "MÓDULO I – INTRODUÇÃO E LEGISLAÇÃO\nNR-10: objetivo e campo de aplicação;\nRiscos elétricos: choque, arco, campos.\n\nMÓDULO II – TÉCNICAS DE PROTEÇÃO\nDesenergização e reenergização;\nAterramento e EPIs/EPCs.\n\nMÓDULO III – PROCEDIMENTOS\nProntuário e documentação;\nPermissão de trabalho e sinalização.\n\nMÓDULO IV – EMERGÊNCIA\nPrimeiros socorros para acidentes elétricos;\nCombate a princípio de incêndio."
+  },
+  {
+    "nome": "NR 10 - Reciclagem Instalações Elétricas e Serviços I",
+    "ch": "8h",
+    "mod": "Online",
+    "valor": 127.3,
+    "validade": "conforme NR",
+    "prog": "MÓDULO I – INTRODUÇÃO E LEGISLAÇÃO\nNR-10: objetivo e campo de aplicação;\nRiscos elétricos: choque, arco, campos.\n\nMÓDULO II – TÉCNICAS DE PROTEÇÃO\nDesenergização e reenergização;\nAterramento e EPIs/EPCs.\n\nMÓDULO III – PROCEDIMENTOS\nProntuário e documentação;\nPermissão de trabalho e sinalização.\n\nMÓDULO IV – EMERGÊNCIA\nPrimeiros socorros para acidentes elétricos;\nCombate a princípio de incêndio."
+  },
+  {
+    "nome": "NR 10 - Reciclagem Instalações Elétricas e Serviços I",
+    "ch": "8h",
+    "mod": "Presencial",
+    "valor": 150.0,
+    "validade": "conforme NR",
+    "prog": "MÓDULO I – INTRODUÇÃO E LEGISLAÇÃO\nNR-10: objetivo e campo de aplicação;\nRiscos elétricos: choque, arco, campos.\n\nMÓDULO II – TÉCNICAS DE PROTEÇÃO\nDesenergização e reenergização;\nAterramento e EPIs/EPCs.\n\nMÓDULO III – PROCEDIMENTOS\nProntuário e documentação;\nPermissão de trabalho e sinalização.\n\nMÓDULO IV – EMERGÊNCIA\nPrimeiros socorros para acidentes elétricos;\nCombate a princípio de incêndio."
+  },
+  {
+    "nome": "NR 10 - Reciclagem Instalações Elétricas e Serviços I 20h",
+    "ch": "20h",
+    "mod": "Online",
+    "valor": 171.0,
+    "validade": "conforme NR",
+    "prog": "MÓDULO I – INTRODUÇÃO E LEGISLAÇÃO\nNR-10: objetivo e campo de aplicação;\nRiscos elétricos: choque, arco, campos.\n\nMÓDULO II – TÉCNICAS DE PROTEÇÃO\nDesenergização e reenergização;\nAterramento e EPIs/EPCs.\n\nMÓDULO III – PROCEDIMENTOS\nProntuário e documentação;\nPermissão de trabalho e sinalização.\n\nMÓDULO IV – EMERGÊNCIA\nPrimeiros socorros para acidentes elétricos;\nCombate a princípio de incêndio."
+  },
+  {
+    "nome": "NR 10 - Reciclagem Instalações Elétricas e Serviços I 20h",
+    "ch": "20h",
+    "mod": "Presencial",
+    "valor": 250.0,
+    "validade": "conforme NR",
+    "prog": "MÓDULO I – INTRODUÇÃO E LEGISLAÇÃO\nNR-10: objetivo e campo de aplicação;\nRiscos elétricos: choque, arco, campos.\n\nMÓDULO II – TÉCNICAS DE PROTEÇÃO\nDesenergização e reenergização;\nAterramento e EPIs/EPCs.\n\nMÓDULO III – PROCEDIMENTOS\nProntuário e documentação;\nPermissão de trabalho e sinalização.\n\nMÓDULO IV – EMERGÊNCIA\nPrimeiros socorros para acidentes elétricos;\nCombate a princípio de incêndio."
+  },
+  {
+    "nome": "NR 10 - Segurança Elétrica em Instalações e Serviços",
+    "ch": "40h",
+    "mod": "Semipresencial",
+    "valor": 169.1,
+    "validade": "2 anos",
+    "prog": "MÓDULO I – INTRODUÇÃO E LEGISLAÇÃO\nNR-10: objetivo e campo de aplicação;\nRiscos elétricos: choque, arco, campos.\n\nMÓDULO II – TÉCNICAS DE PROTEÇÃO\nDesenergização e reenergização;\nAterramento e EPIs/EPCs.\n\nMÓDULO III – PROCEDIMENTOS\nProntuário e documentação;\nPermissão de trabalho e sinalização.\n\nMÓDULO IV – EMERGÊNCIA\nPrimeiros socorros para acidentes elétricos;\nCombate a princípio de incêndio."
+  },
+  {
+    "nome": "NR 10 - Segurança Elétrica em Instalações e Serviços",
+    "ch": "40h",
+    "mod": "Presencial",
+    "valor": 400.0,
+    "validade": "2 anos",
+    "prog": "MÓDULO I – INTRODUÇÃO E LEGISLAÇÃO\nNR-10: objetivo e campo de aplicação;\nRiscos elétricos: choque, arco, campos.\n\nMÓDULO II – TÉCNICAS DE PROTEÇÃO\nDesenergização e reenergização;\nAterramento e EPIs/EPCs.\n\nMÓDULO III – PROCEDIMENTOS\nProntuário e documentação;\nPermissão de trabalho e sinalização.\n\nMÓDULO IV – EMERGÊNCIA\nPrimeiros socorros para acidentes elétricos;\nCombate a princípio de incêndio."
+  },
+  {
+    "nome": "NR 10 - SEP Alta Tensão (Formação)",
+    "ch": "40h",
+    "mod": "Semipresencial",
+    "valor": 169.1,
+    "validade": "2 anos",
+    "prog": "MÓDULO I – INTRODUÇÃO E LEGISLAÇÃO\nNR-10: objetivo e campo de aplicação;\nRiscos elétricos: choque, arco, campos.\n\nMÓDULO II – TÉCNICAS DE PROTEÇÃO\nDesenergização e reenergização;\nAterramento e EPIs/EPCs.\n\nMÓDULO III – PROCEDIMENTOS\nProntuário e documentação;\nPermissão de trabalho e sinalização.\n\nMÓDULO IV – EMERGÊNCIA\nPrimeiros socorros para acidentes elétricos;\nCombate a princípio de incêndio."
+  },
+  {
+    "nome": "NR 10 - SEP Alta Tensão (Formação)",
+    "ch": "40h",
+    "mod": "Presencial",
+    "valor": 450.0,
+    "validade": "2 anos",
+    "prog": "MÓDULO I – INTRODUÇÃO E LEGISLAÇÃO\nNR-10: objetivo e campo de aplicação;\nRiscos elétricos: choque, arco, campos.\n\nMÓDULO II – TÉCNICAS DE PROTEÇÃO\nDesenergização e reenergização;\nAterramento e EPIs/EPCs.\n\nMÓDULO III – PROCEDIMENTOS\nProntuário e documentação;\nPermissão de trabalho e sinalização.\n\nMÓDULO IV – EMERGÊNCIA\nPrimeiros socorros para acidentes elétricos;\nCombate a princípio de incêndio."
+  },
+  {
+    "nome": "NR 11 e NR 12",
+    "ch": "12h",
+    "mod": "Online",
+    "valor": 237.5,
+    "validade": "conforme NR",
+    "prog": "MÓDULO I – LEGISLAÇÃO E EQUIPAMENTOS\nNR-11: transporte e movimentação de materiais;\nTipos de equipamentos e componentes.\n\nMÓDULO II – SEGURANÇA E ESTABILIDADE\nCapacidade de carga e estabilidade;\nFatores de tombamento; EPIs.\n\nMÓDULO III – OPERAÇÃO\nInspeção pré-operação (checklist);\nRegras de trânsito interno.\n\nMÓDULO IV – PRÁTICA OPERACIONAL\nManobras, empilhamento e desempilhamento;\nEstacionamento seguro."
+  },
+  {
+    "nome": "NR 11 Empilhadeira",
+    "ch": "16h",
+    "mod": "Presencial",
+    "valor": 200.0,
+    "validade": "conforme NR",
+    "prog": "MÓDULO I – LEGISLAÇÃO E EQUIPAMENTOS\nNR-11: transporte e movimentação de materiais;\nTipos de equipamentos e componentes.\n\nMÓDULO II – SEGURANÇA E ESTABILIDADE\nCapacidade de carga e estabilidade;\nFatores de tombamento; EPIs.\n\nMÓDULO III – OPERAÇÃO\nInspeção pré-operação (checklist);\nRegras de trânsito interno.\n\nMÓDULO IV – PRÁTICA OPERACIONAL\nManobras, empilhamento e desempilhamento;\nEstacionamento seguro."
+  },
+  {
+    "nome": "NR 11 Trator/Pá Carregadeira",
+    "ch": "16h",
+    "mod": "Presencial",
+    "valor": 450.0,
+    "validade": "conforme NR",
+    "prog": "MÓDULO I – LEGISLAÇÃO E EQUIPAMENTOS\nNR-11: transporte e movimentação de materiais;\nTipos de equipamentos e componentes.\n\nMÓDULO II – SEGURANÇA E ESTABILIDADE\nCapacidade de carga e estabilidade;\nFatores de tombamento; EPIs.\n\nMÓDULO III – OPERAÇÃO\nInspeção pré-operação (checklist);\nRegras de trânsito interno.\n\nMÓDULO IV – PRÁTICA OPERACIONAL\nManobras, empilhamento e desempilhamento;\nEstacionamento seguro."
+  },
+  {
+    "nome": "NR 11 Ponte Rolante",
+    "ch": "16h",
+    "mod": "Presencial",
+    "valor": 400.0,
+    "validade": "conforme NR",
+    "prog": "MÓDULO I – LEGISLAÇÃO E EQUIPAMENTOS\nNR-11: transporte e movimentação de materiais;\nTipos de equipamentos e componentes.\n\nMÓDULO II – SEGURANÇA E ESTABILIDADE\nCapacidade de carga e estabilidade;\nFatores de tombamento; EPIs.\n\nMÓDULO III – OPERAÇÃO\nInspeção pré-operação (checklist);\nRegras de trânsito interno.\n\nMÓDULO IV – PRÁTICA OPERACIONAL\nManobras, empilhamento e desempilhamento;\nEstacionamento seguro."
+  },
+  {
+    "nome": "NR 11 - Transporte, Movimentação, Armazenagem e Manuseio de Materiais",
+    "ch": "6h",
+    "mod": "Online",
+    "valor": 104.5,
+    "validade": "conforme NR",
+    "prog": "MÓDULO I – LEGISLAÇÃO E EQUIPAMENTOS\nNR-11: transporte e movimentação de materiais;\nTipos de equipamentos e componentes.\n\nMÓDULO II – SEGURANÇA E ESTABILIDADE\nCapacidade de carga e estabilidade;\nFatores de tombamento; EPIs.\n\nMÓDULO III – OPERAÇÃO\nInspeção pré-operação (checklist);\nRegras de trânsito interno.\n\nMÓDULO IV – PRÁTICA OPERACIONAL\nManobras, empilhamento e desempilhamento;\nEstacionamento seguro."
+  },
+  {
+    "nome": "NR 11 - Transporte, Movimentação, Armazenagem e Manuseio de Materiais 8h",
+    "ch": "8h",
+    "mod": "Online",
+    "valor": 133.0,
+    "validade": "conforme NR",
+    "prog": "MÓDULO I – LEGISLAÇÃO E EQUIPAMENTOS\nNR-11: transporte e movimentação de materiais;\nTipos de equipamentos e componentes.\n\nMÓDULO II – SEGURANÇA E ESTABILIDADE\nCapacidade de carga e estabilidade;\nFatores de tombamento; EPIs.\n\nMÓDULO III – OPERAÇÃO\nInspeção pré-operação (checklist);\nRegras de trânsito interno.\n\nMÓDULO IV – PRÁTICA OPERACIONAL\nManobras, empilhamento e desempilhamento;\nEstacionamento seguro."
+  },
+  {
+    "nome": "NR 12 - Segurança em Máquinas e Equipamentos",
+    "ch": "4h",
+    "mod": "Semipresencial",
+    "valor": 104.5,
+    "validade": "conforme NR",
+    "prog": "MÓDULO I – LEGISLAÇÃO\nNR-12: segurança em máquinas e equipamentos;\nPrincípios e responsabilidades.\n\nMÓDULO II – PROTEÇÕES E RISCOS\nDispositivos de proteção e segurança;\nZonas de perigo e bloqueio.\n\nMÓDULO III – OPERAÇÃO SEGURA\nProcedimentos de trabalho e manutenção;\nSinalização e capacitação."
+  },
+  {
+    "nome": "NR 12 - Segurança em Máquinas e Equipamentos",
+    "ch": "4h",
+    "mod": "Presencial",
+    "valor": 200.0,
+    "validade": "conforme NR",
+    "prog": "MÓDULO I – LEGISLAÇÃO\nNR-12: segurança em máquinas e equipamentos;\nPrincípios e responsabilidades.\n\nMÓDULO II – PROTEÇÕES E RISCOS\nDispositivos de proteção e segurança;\nZonas de perigo e bloqueio.\n\nMÓDULO III – OPERAÇÃO SEGURA\nProcedimentos de trabalho e manutenção;\nSinalização e capacitação."
+  },
+  {
+    "nome": "NR 17 - Ergonomia - Operadores de Checkout",
+    "ch": "2h",
+    "mod": "Online",
+    "valor": 131.1,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – ERGONOMIA\nNR-17: princípios de ergonomia;\nPostos de trabalho e checkout.\n\nMÓDULO II – PREVENÇÃO\nPrevenção de LER/DORT;\nOrganização do trabalho."
+  },
+  {
+    "nome": "NR 18 - Periódico Indústria da Edificação",
+    "ch": "6h",
+    "mod": "Online",
+    "valor": 55.1,
+    "validade": "conforme NR",
+    "prog": "MÓDULO I – LEGISLAÇÃO\nNR-18: indústria da construção;\nPCMAT/PGR e responsabilidades.\n\nMÓDULO II – RISCOS E PREVENÇÃO\nRiscos na edificação;\nMedidas de proteção coletiva e individual."
+  },
+  {
+    "nome": "NR 18 - Inicial Indústria da Edificação",
+    "ch": "4h",
+    "mod": "Online",
+    "valor": 74.1,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – LEGISLAÇÃO\nNR-18: indústria da construção;\nPCMAT/PGR e responsabilidades.\n\nMÓDULO II – RISCOS E PREVENÇÃO\nRiscos na edificação;\nMedidas de proteção coletiva e individual."
+  },
+  {
+    "nome": "NR 20 - Básico (Classe I)",
+    "ch": "4h",
+    "mod": "Semipresencial",
+    "valor": 74.1,
+    "validade": "conforme classe",
+    "prog": "MÓDULO I – LEGISLAÇÃO\nNR-20: inflamáveis e combustíveis;\nClassificação de instalações.\n\nMÓDULO II – RISCOS E CONTROLE\nPropriedades de inflamáveis;\nPrevenção e controle de vazamentos.\n\nMÓDULO III – EMERGÊNCIA\nPlano de resposta a emergências;\nCombate a incêndio."
+  },
+  {
+    "nome": "NR 20 - Básico (Classe III)",
+    "ch": "8h",
+    "mod": "Semipresencial",
+    "valor": 74.1,
+    "validade": "conforme classe",
+    "prog": "MÓDULO I – LEGISLAÇÃO\nNR-20: inflamáveis e combustíveis;\nClassificação de instalações.\n\nMÓDULO II – RISCOS E CONTROLE\nPropriedades de inflamáveis;\nPrevenção e controle de vazamentos.\n\nMÓDULO III – EMERGÊNCIA\nPlano de resposta a emergências;\nCombate a incêndio."
+  },
+  {
+    "nome": "NR 20 - Intermediário (Classe III)",
+    "ch": "16h",
+    "mod": "Semipresencial",
+    "valor": 131.1,
+    "validade": "conforme classe",
+    "prog": "MÓDULO I – LEGISLAÇÃO\nNR-20: inflamáveis e combustíveis;\nClassificação de instalações.\n\nMÓDULO II – RISCOS E CONTROLE\nPropriedades de inflamáveis;\nPrevenção e controle de vazamentos.\n\nMÓDULO III – EMERGÊNCIA\nPlano de resposta a emergências;\nCombate a incêndio."
+  },
+  {
+    "nome": "NR 22 - Mineração a Céu Aberto",
+    "ch": "16h",
+    "mod": "Semipresencial",
+    "valor": 142.5,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – LEGISLAÇÃO\nNR-22: segurança na mineração;\nResponsabilidades e PGR.\n\nMÓDULO II – RISCOS\nRiscos físicos, químicos e mecânicos;\nVentilação e controle.\n\nMÓDULO III – EMERGÊNCIA\nPlano de emergência;\nPrimeiros socorros."
+  },
+  {
+    "nome": "NR 22 - Mineração em Subsolo",
+    "ch": "24h",
+    "mod": "Semipresencial",
+    "valor": 142.5,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – LEGISLAÇÃO\nNR-22: segurança na mineração;\nResponsabilidades e PGR.\n\nMÓDULO II – RISCOS\nRiscos físicos, químicos e mecânicos;\nVentilação e controle.\n\nMÓDULO III – EMERGÊNCIA\nPlano de emergência;\nPrimeiros socorros."
+  },
+  {
+    "nome": "NR 23 - Prevenção e Combate a Incêndio",
+    "ch": "8h",
+    "mod": "Online",
+    "valor": 74.1,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – TEORIA DO FOGO\nTriângulo e tetraedro do fogo;\nClasses de incêndio e extinção.\n\nMÓDULO II – EQUIPAMENTOS\nExtintores, hidrantes e mangueiras;\nAlarme e detecção.\n\nMÓDULO III – PREVENÇÃO E ABANDONO\nPrevenção; plano de abandono;\nRotas de fuga."
+  },
+  {
+    "nome": "NR 26 - Sinalização de Segurança (Produtos Químicos)",
+    "ch": "4h",
+    "mod": "Online",
+    "valor": 66.5,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – SINALIZAÇÃO\nNR-26: cores e sinalização de segurança;\nRotulagem GHS de produtos químicos.\n\nMÓDULO II – PRODUTOS QUÍMICOS\nFISPQ/FDS;\nManuseio seguro."
+  },
+  {
+    "nome": "NR 29 - Segurança no Trabalho Portuário",
+    "ch": "5h",
+    "mod": "Online",
+    "valor": 123.5,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – TRABALHO PORTUÁRIO\nNR-29: segurança no trabalho portuário;\nRiscos e responsabilidades.\n\nMÓDULO II – PREVENÇÃO\nMovimentação de cargas;\nEPIs e procedimentos."
+  },
+  {
+    "nome": "NR 31 - Segurança e Saúde no Trabalho Rural",
+    "ch": "20h",
+    "mod": "Online",
+    "valor": 98.8,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – TRABALHO RURAL\nNR-31: segurança no meio rural;\nAgrotóxicos e máquinas.\n\nMÓDULO II – PREVENÇÃO\nRiscos rurais;\nMedidas de proteção."
+  },
+  {
+    "nome": "NR 32 - Segurança e Saúde em Serviços de Saúde",
+    "ch": "4h",
+    "mod": "Online",
+    "valor": 74.1,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – SERVIÇOS DE SAÚDE\nNR-32: riscos biológicos, químicos e radiações;\nResponsabilidades.\n\nMÓDULO II – PREVENÇÃO\nPrecauções e EPIs;\nGerenciamento de resíduos."
+  },
+  {
+    "nome": "NR 33 - Espaços Confinados (Supervisor de Entrada)",
+    "ch": "40h",
+    "mod": "Presencial",
+    "valor": 400.0,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – CONCEITOS E LEGISLAÇÃO\nNR-33: definições de espaço confinado;\nFunções: autorizado, vigia, supervisor.\n\nMÓDULO II – RISCOS\nRiscos atmosféricos e físicos;\nMonitoramento atmosférico.\n\nMÓDULO III – CONTROLE E EQUIPAMENTOS\nVentilação, bloqueio e etiquetagem;\nEPIs/EPCs e comunicação.\n\nMÓDULO IV – EMERGÊNCIA E PRÁTICA\nPlano de resgate;\nSimulação de entrada e resgate."
+  },
+  {
+    "nome": "NR 33 - Espaços Confinados PERIÓDICO (Supervisor)",
+    "ch": "8h",
+    "mod": "Semipresencial",
+    "valor": 89.3,
+    "validade": "conforme NR",
+    "prog": "MÓDULO I – CONCEITOS E LEGISLAÇÃO\nNR-33: definições de espaço confinado;\nFunções: autorizado, vigia, supervisor.\n\nMÓDULO II – RISCOS\nRiscos atmosféricos e físicos;\nMonitoramento atmosférico.\n\nMÓDULO III – CONTROLE E EQUIPAMENTOS\nVentilação, bloqueio e etiquetagem;\nEPIs/EPCs e comunicação.\n\nMÓDULO IV – EMERGÊNCIA E PRÁTICA\nPlano de resgate;\nSimulação de entrada e resgate."
+  },
+  {
+    "nome": "NR 33 - Espaços Confinados PERIÓDICO (Supervisor)",
+    "ch": "8h",
+    "mod": "Presencial",
+    "valor": 150.0,
+    "validade": "conforme NR",
+    "prog": "MÓDULO I – CONCEITOS E LEGISLAÇÃO\nNR-33: definições de espaço confinado;\nFunções: autorizado, vigia, supervisor.\n\nMÓDULO II – RISCOS\nRiscos atmosféricos e físicos;\nMonitoramento atmosférico.\n\nMÓDULO III – CONTROLE E EQUIPAMENTOS\nVentilação, bloqueio e etiquetagem;\nEPIs/EPCs e comunicação.\n\nMÓDULO IV – EMERGÊNCIA E PRÁTICA\nPlano de resgate;\nSimulação de entrada e resgate."
+  },
+  {
+    "nome": "NR 33 - Espaços Confinados PERIÓDICO (Autorizados e Vigias)",
+    "ch": "8h",
+    "mod": "Semipresencial",
+    "valor": 89.3,
+    "validade": "conforme NR",
+    "prog": "MÓDULO I – CONCEITOS E LEGISLAÇÃO\nNR-33: definições de espaço confinado;\nFunções: autorizado, vigia, supervisor.\n\nMÓDULO II – RISCOS\nRiscos atmosféricos e físicos;\nMonitoramento atmosférico.\n\nMÓDULO III – CONTROLE E EQUIPAMENTOS\nVentilação, bloqueio e etiquetagem;\nEPIs/EPCs e comunicação.\n\nMÓDULO IV – EMERGÊNCIA E PRÁTICA\nPlano de resgate;\nSimulação de entrada e resgate."
+  },
+  {
+    "nome": "NR 33 - Espaços Confinados PERIÓDICO (Autorizados e Vigias)",
+    "ch": "8h",
+    "mod": "Presencial",
+    "valor": 100.0,
+    "validade": "conforme NR",
+    "prog": "MÓDULO I – CONCEITOS E LEGISLAÇÃO\nNR-33: definições de espaço confinado;\nFunções: autorizado, vigia, supervisor.\n\nMÓDULO II – RISCOS\nRiscos atmosféricos e físicos;\nMonitoramento atmosférico.\n\nMÓDULO III – CONTROLE E EQUIPAMENTOS\nVentilação, bloqueio e etiquetagem;\nEPIs/EPCs e comunicação.\n\nMÓDULO IV – EMERGÊNCIA E PRÁTICA\nPlano de resgate;\nSimulação de entrada e resgate."
+  },
+  {
+    "nome": "NR 33 - Espaços Confinados (Autorizados e Vigias) Formação",
+    "ch": "16h",
+    "mod": "Semipresencial",
+    "valor": 136.8,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – CONCEITOS E LEGISLAÇÃO\nNR-33: definições de espaço confinado;\nFunções: autorizado, vigia, supervisor.\n\nMÓDULO II – RISCOS\nRiscos atmosféricos e físicos;\nMonitoramento atmosférico.\n\nMÓDULO III – CONTROLE E EQUIPAMENTOS\nVentilação, bloqueio e etiquetagem;\nEPIs/EPCs e comunicação.\n\nMÓDULO IV – EMERGÊNCIA E PRÁTICA\nPlano de resgate;\nSimulação de entrada e resgate."
+  },
+  {
+    "nome": "NR 33 - Espaços Confinados (Autorizados e Vigias) Formação",
+    "ch": "16h",
+    "mod": "Presencial",
+    "valor": 180.0,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – CONCEITOS E LEGISLAÇÃO\nNR-33: definições de espaço confinado;\nFunções: autorizado, vigia, supervisor.\n\nMÓDULO II – RISCOS\nRiscos atmosféricos e físicos;\nMonitoramento atmosférico.\n\nMÓDULO III – CONTROLE E EQUIPAMENTOS\nVentilação, bloqueio e etiquetagem;\nEPIs/EPCs e comunicação.\n\nMÓDULO IV – EMERGÊNCIA E PRÁTICA\nPlano de resgate;\nSimulação de entrada e resgate."
+  },
+  {
+    "nome": "NR 35 - Trabalho em Altura",
+    "ch": "8h",
+    "mod": "Semipresencial",
+    "valor": 81.7,
+    "validade": "2 anos",
+    "prog": "MÓDULO I – NORMAS E RESPONSABILIDADES\nNR-35: campo de aplicação;\nAnálise de risco e PT.\n\nMÓDULO II – RISCOS E EPIs\nRiscos do trabalho em altura;\nCinturão, talabarte e trava-quedas.\n\nMÓDULO III – SISTEMAS E EMERGÊNCIA\nAncoragem e resgate;\nPrimeiros socorros.\n\nMÓDULO IV – PRÁTICA\nUso do conjunto de proteção;\nMovimentação segura."
+  },
+  {
+    "nome": "NR 35 - Trabalho em Altura",
+    "ch": "8h",
+    "mod": "Presencial",
+    "valor": 150.0,
+    "validade": "2 anos",
+    "prog": "MÓDULO I – NORMAS E RESPONSABILIDADES\nNR-35: campo de aplicação;\nAnálise de risco e PT.\n\nMÓDULO II – RISCOS E EPIs\nRiscos do trabalho em altura;\nCinturão, talabarte e trava-quedas.\n\nMÓDULO III – SISTEMAS E EMERGÊNCIA\nAncoragem e resgate;\nPrimeiros socorros.\n\nMÓDULO IV – PRÁTICA\nUso do conjunto de proteção;\nMovimentação segura."
+  },
+  {
+    "nome": "NR 38 - Limpeza Urbana e Manejo de Resíduos Sólidos",
+    "ch": "4h30",
+    "mod": "Online",
+    "valor": 129.2,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – LIMPEZA URBANA\nNR-38: manejo de resíduos sólidos;\nRiscos da atividade.\n\nMÓDULO II – PREVENÇÃO\nEPIs e procedimentos;\nMedidas de controle."
+  },
+  {
+    "nome": "Permissão de Trabalho Básico",
+    "ch": "4h",
+    "mod": "Online",
+    "valor": 66.5,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – PT\nObjetivo da Permissão de Trabalho;\nResponsáveis e fluxo de aprovação.\n\nMÓDULO II – APLICAÇÃO\nAnálise de risco da tarefa;\nLiberação e encerramento."
+  },
+  {
+    "nome": "Proteção Respiratória",
+    "ch": "2h",
+    "mod": "Online",
+    "valor": 66.5,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – PROTEÇÃO RESPIRATÓRIA\nTipos de respiradores;\nSeleção conforme o risco.\n\nMÓDULO II – USO E MANUTENÇÃO\nVedação, higienização e guarda;\nProgramas de proteção respiratória."
+  },
+  {
+    "nome": "RAC 1 - Trabalho em Altura",
+    "ch": "1h",
+    "mod": "Online",
+    "valor": 47.5,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – OBJETIVO E APLICAÇÃO\nRequisitos de Atividade Crítica (RAC);\nQuando se aplica e responsabilidades.\n\nMÓDULO II – REQUISITOS E CONTROLES\nRequisitos mínimos de segurança;\nVerificações e barreiras."
+  },
+  {
+    "nome": "RAC 2 - Veículos Automotores",
+    "ch": "1h",
+    "mod": "Online",
+    "valor": 47.5,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – OBJETIVO E APLICAÇÃO\nRequisitos de Atividade Crítica (RAC);\nQuando se aplica e responsabilidades.\n\nMÓDULO II – REQUISITOS E CONTROLES\nRequisitos mínimos de segurança;\nVerificações e barreiras."
+  },
+  {
+    "nome": "RAC 3 - Operação de Equipamentos Móveis",
+    "ch": "1h",
+    "mod": "Online",
+    "valor": 47.5,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – OBJETIVO E APLICAÇÃO\nRequisitos de Atividade Crítica (RAC);\nQuando se aplica e responsabilidades.\n\nMÓDULO II – REQUISITOS E CONTROLES\nRequisitos mínimos de segurança;\nVerificações e barreiras."
+  },
+  {
+    "nome": "RAC 4 - Bloqueio, Identificação e Zero Energia",
+    "ch": "1h",
+    "mod": "Online",
+    "valor": 47.5,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – OBJETIVO E APLICAÇÃO\nRequisitos de Atividade Crítica (RAC);\nQuando se aplica e responsabilidades.\n\nMÓDULO II – REQUISITOS E CONTROLES\nRequisitos mínimos de segurança;\nVerificações e barreiras."
+  },
+  {
+    "nome": "RAC 5 - Içamento de Carga",
+    "ch": "1h",
+    "mod": "Online",
+    "valor": 47.5,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – OBJETIVO E APLICAÇÃO\nRequisitos de Atividade Crítica (RAC);\nQuando se aplica e responsabilidades.\n\nMÓDULO II – REQUISITOS E CONTROLES\nRequisitos mínimos de segurança;\nVerificações e barreiras."
+  },
+  {
+    "nome": "RAC 6 - Espaço Confinado",
+    "ch": "2h",
+    "mod": "Online",
+    "valor": 47.5,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – OBJETIVO E APLICAÇÃO\nRequisitos de Atividade Crítica (RAC);\nQuando se aplica e responsabilidades.\n\nMÓDULO II – REQUISITOS E CONTROLES\nRequisitos mínimos de segurança;\nVerificações e barreiras."
+  },
+  {
+    "nome": "RAC 7 - Proteção de Máquinas",
+    "ch": "2h",
+    "mod": "Online",
+    "valor": 47.5,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – OBJETIVO E APLICAÇÃO\nRequisitos de Atividade Crítica (RAC);\nQuando se aplica e responsabilidades.\n\nMÓDULO II – REQUISITOS E CONTROLES\nRequisitos mínimos de segurança;\nVerificações e barreiras."
+  },
+  {
+    "nome": "RAC 8 - Atividades em Terreno",
+    "ch": "2h",
+    "mod": "Online",
+    "valor": 47.5,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – OBJETIVO E APLICAÇÃO\nRequisitos de Atividade Crítica (RAC);\nQuando se aplica e responsabilidades.\n\nMÓDULO II – REQUISITOS E CONTROLES\nRequisitos mínimos de segurança;\nVerificações e barreiras."
+  },
+  {
+    "nome": "Treinamento em Bloqueio e Etiquetagem",
+    "ch": "9h",
+    "mod": "Online",
+    "valor": 66.5,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – LOTO\nBloqueio e etiquetagem (Lockout/Tagout);\nEnergias perigosas e zero energia.\n\nMÓDULO II – PROCEDIMENTO\nEtapas de bloqueio e desbloqueio;\nVerificação e responsabilidades."
+  },
+  {
+    "nome": "Treinamento em Bloqueio e Etiquetagem",
+    "ch": "4h",
+    "mod": "Presencial",
+    "valor": 80.0,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – LOTO\nBloqueio e etiquetagem (Lockout/Tagout);\nEnergias perigosas e zero energia.\n\nMÓDULO II – PROCEDIMENTO\nEtapas de bloqueio e desbloqueio;\nVerificação e responsabilidades."
+  },
+  {
+    "nome": "Treinamento em Direção Defensiva",
+    "ch": "5h",
+    "mod": "Semipresencial",
+    "valor": 66.5,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – FUNDAMENTOS\nLegislação de trânsito;\nDireção defensiva e preventiva.\n\nMÓDULO II – RISCOS E CONDUTA\nCondições adversas;\nPrevenção de acidentes."
+  },
+  {
+    "nome": "Treinamento em Direção Defensiva 16h",
+    "ch": "16h",
+    "mod": "Semipresencial",
+    "valor": 125.4,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – FUNDAMENTOS\nLegislação de trânsito;\nDireção defensiva e preventiva.\n\nMÓDULO II – RISCOS E CONDUTA\nCondições adversas;\nPrevenção de acidentes."
+  },
+  {
+    "nome": "Trabalho em Áreas Classificadas",
+    "ch": "2h",
+    "mod": "Online",
+    "valor": 66.5,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – ÁREAS CLASSIFICADAS\nClassificação de áreas (zonas);\nEquipamentos Ex.\n\nMÓDULO II – SEGURANÇA\nMedidas de prevenção;\nProcedimentos de trabalho."
+  },
+  {
+    "nome": "Trabalho a Quente NR-34",
+    "ch": "6h",
+    "mod": "Online",
+    "valor": 129.2,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – CONTEÚDO\nConteúdo programático a definir;\nEdite este campo na aba Cursos."
+  },
+  {
+    "nome": "Trabalho a Quente NR-34",
+    "ch": "6h",
+    "mod": "Presencial",
+    "valor": 120.0,
+    "validade": "1 ano",
+    "prog": "MÓDULO I – CONTEÚDO\nConteúdo programático a definir;\nEdite este campo na aba Cursos."
+  },
+  {
+    "nome": "Consultoria Grau de Risco 1",
+    "ch": "",
+    "mod": "Consultoria",
+    "valor": 700.0,
+    "validade": "-",
+    "prog": "ESCOPO DO SERVIÇO\nLevantamento inicial e diagnóstico;\nElaboração dos documentos e laudos aplicáveis;\nEntrega e orientações de implementação.\n\nOBSERVAÇÃO\nConteúdo detalhado conforme escopo contratado."
+  },
+  {
+    "nome": "Consultoria Grau de Risco 2",
+    "ch": "",
+    "mod": "Consultoria",
+    "valor": 750.0,
+    "validade": "-",
+    "prog": "ESCOPO DO SERVIÇO\nLevantamento inicial e diagnóstico;\nElaboração dos documentos e laudos aplicáveis;\nEntrega e orientações de implementação.\n\nOBSERVAÇÃO\nConteúdo detalhado conforme escopo contratado."
+  },
+  {
+    "nome": "Consultoria Grau de Risco 3",
+    "ch": "",
+    "mod": "Consultoria",
+    "valor": 1200.0,
+    "validade": "-",
+    "prog": "ESCOPO DO SERVIÇO\nLevantamento inicial e diagnóstico;\nElaboração dos documentos e laudos aplicáveis;\nEntrega e orientações de implementação.\n\nOBSERVAÇÃO\nConteúdo detalhado conforme escopo contratado."
+  },
+  {
+    "nome": "Consultoria Grau de Risco 4",
+    "ch": "",
+    "mod": "Consultoria",
+    "valor": 1500.0,
+    "validade": "-",
+    "prog": "ESCOPO DO SERVIÇO\nLevantamento inicial e diagnóstico;\nElaboração dos documentos e laudos aplicáveis;\nEntrega e orientações de implementação.\n\nOBSERVAÇÃO\nConteúdo detalhado conforme escopo contratado."
+  },
+  {
+    "nome": "Documentação PGR/PCMSO/LTCAT",
+    "ch": "",
+    "mod": "Consultoria",
+    "valor": 1500.0,
+    "validade": "-",
+    "prog": "ESCOPO DO SERVIÇO\nLevantamento inicial e diagnóstico;\nElaboração dos documentos e laudos aplicáveis;\nEntrega e orientações de implementação.\n\nOBSERVAÇÃO\nConteúdo detalhado conforme escopo contratado."
+  }
+];
+  import { db, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, esperarAuth } from '../assets/js/firebase-init.js';
+
+  let cursosCache = [];
+  let editandoId = null;
+
+  function money(v) { return "R$ " + (Number(v)||0).toLocaleString('pt-BR', {minimumFractionDigits:2}); }
+
+  async function carregarCursos() {
+    const status = document.getElementById('connStatus');
+    await esperarAuth();
+    try {
+      const snap = await getDocs(collection(db, 'catalogoCursos'));
+      cursosCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      document.getElementById('importarBox').style.display = cursosCache.length === 0 ? 'block' : 'none';
+      renderCursos();
+      status.textContent = `✅ ${cursosCache.length} curso(s) carregado(s).`;
+      status.style.color = 'var(--status-ok)';
+    } catch (err) {
+      status.textContent = `⚠️ Erro: ${err.message}`;
+      status.style.color = 'var(--status-danger)';
+    }
+  }
+
+  function renderCursos() {
+    const busca = (document.getElementById('buscaCursoCatalogo').value || '').toLowerCase().trim();
+    const lista = cursosCache
+      .filter(c => !busca || (c.nome||'').toLowerCase().includes(busca))
+      .sort((a,b) => (a.nome||'').localeCompare(b.nome||''));
+
+    document.getElementById('topbarSub').textContent = `${cursosCache.length} curso(s) no catálogo`;
+
+    const box = document.getElementById('cursosBody');
+    if (lista.length === 0) {
+      box.innerHTML = '<tr><td colspan="7" class="text-muted" style="text-align:center; padding:20px;">Nenhum curso encontrado.</td></tr>';
+      return;
+    }
+    box.innerHTML = lista.map(c => `
+      <tr class="${c.ativo === false ? 'inativo' : ''}">
+        <td>${c.nome}</td>
+        <td>${c.ch || '—'}</td>
+        <td>${c.mod || '—'}</td>
+        <td>${money(c.valor)}</td>
+        <td>${c.validade || '—'}</td>
+        <td><span class="selo selo--${c.ativo === false ? 'danger' : 'ok'}">${c.ativo === false ? 'Inativo' : 'Ativo'}</span></td>
+        <td style="white-space:nowrap;">
+          <button class="btn btn--ghost" style="padding:5px 9px; font-size:11px;" onclick="editarCurso('${c.id}')">Editar</button>
+          <button class="btn btn--secondary" style="padding:5px 9px; font-size:11px;" onclick="duplicarCurso('${c.id}')">Duplicar</button>
+        </td>
+      </tr>`).join('');
+  }
+
+  window.abrirModalCurso = function() {
+    editandoId = null;
+    document.getElementById('modalCursoTitulo').textContent = 'Novo Curso';
+    document.getElementById('cursoNome').value = '';
+    document.getElementById('cursoCh').value = '';
+    document.getElementById('cursoMod').value = 'Online';
+    document.getElementById('cursoValor').value = '';
+    document.getElementById('cursoValidade').value = '1 ano';
+    document.getElementById('cursoProg').value = '';
+    document.getElementById('cursoAtivo').checked = true;
+    document.getElementById('btnExcluirCurso').style.display = 'none';
+    document.getElementById('cursoErro').style.display = 'none';
+    document.getElementById('modalCursoOverlay').style.display = 'flex';
+  };
+  window.fecharModalCurso = function() {
+    document.getElementById('modalCursoOverlay').style.display = 'none';
+  };
+  window.editarCurso = function(id) {
+    const c = cursosCache.find(x => x.id === id);
+    if (!c) return;
+    editandoId = id;
+    document.getElementById('modalCursoTitulo').textContent = 'Editar Curso';
+    document.getElementById('cursoNome').value = c.nome || '';
+    document.getElementById('cursoCh').value = c.ch || '';
+    document.getElementById('cursoMod').value = c.mod || 'Online';
+    document.getElementById('cursoValor').value = c.valor || '';
+    document.getElementById('cursoValidade').value = c.validade || '';
+    document.getElementById('cursoProg').value = c.prog || '';
+    document.getElementById('cursoAtivo').checked = c.ativo !== false;
+    document.getElementById('btnExcluirCurso').style.display = 'inline-block';
+    document.getElementById('cursoErro').style.display = 'none';
+    document.getElementById('modalCursoOverlay').style.display = 'flex';
+  };
+  window.duplicarCurso = async function(id) {
+    const c = cursosCache.find(x => x.id === id);
+    if (!c) return;
+    try {
+      await addDoc(collection(db, 'catalogoCursos'), {
+        nome: c.nome + ' (cópia)', ch: c.ch || '', mod: c.mod || 'Online',
+        valor: c.valor || 0, validade: c.validade || '', prog: c.prog || '', ativo: true
+      });
+      carregarCursos();
+    } catch (err) { alert('Erro: ' + err.message); }
+  };
+  window.salvarCurso = async function() {
+    const nome = document.getElementById('cursoNome').value.trim();
+    const erroBox = document.getElementById('cursoErro');
+    if (!nome) { erroBox.textContent = 'Digite o nome do curso.'; erroBox.style.display = 'block'; return; }
+
+    const dados = {
+      nome,
+      ch: document.getElementById('cursoCh').value.trim(),
+      mod: document.getElementById('cursoMod').value,
+      valor: Number(document.getElementById('cursoValor').value) || 0,
+      validade: document.getElementById('cursoValidade').value.trim(),
+      prog: document.getElementById('cursoProg').value.trim(),
+      ativo: document.getElementById('cursoAtivo').checked
+    };
+
+    try {
+      if (editandoId) await updateDoc(doc(db, 'catalogoCursos', editandoId), dados);
+      else await addDoc(collection(db, 'catalogoCursos'), dados);
+      fecharModalCurso();
+      carregarCursos();
+    } catch (err) {
+      erroBox.textContent = 'Erro: ' + err.message;
+      erroBox.style.display = 'block';
+    }
+  };
+  window.excluirCurso = async function() {
+    if (!editandoId || !confirm('Excluir esse curso do catálogo? Propostas já feitas com ele não são afetadas.')) return;
+    try {
+      await deleteDoc(doc(db, 'catalogoCursos', editandoId));
+      fecharModalCurso();
+      carregarCursos();
+    } catch (err) { alert('Erro: ' + err.message); }
+  };
+
+  window.importarCatalogoPadrao = async function() {
+    if (!confirm(`Importar os ${DEFAULT_COURSES.length} cursos padrão da SafeSeg pro catálogo? Isso só adiciona — não apaga nada que já exista.`)) return;
+    const box = document.getElementById('importarBox');
+    box.innerHTML = 'Importando...';
+    let total = 0;
+    for (const c of DEFAULT_COURSES) {
+      await addDoc(collection(db, 'catalogoCursos'), {
+        nome: c.nome, ch: c.ch || '', mod: c.mod || 'Online',
+        valor: c.valor || 0, validade: c.validade || '', prog: c.prog || '', ativo: true
+      });
+      total++;
+      box.innerHTML = `Importando... ${total}/${DEFAULT_COURSES.length}`;
+    }
+    box.style.display = 'none';
+    carregarCursos();
+  };
+
+  carregarCursos();
+</script>
+<script type="module">
+  import { auth, signOut } from "../assets/js/firebase-init.js";
+  window.fazerLogout = async function() {
+    if (!confirm("Sair da sua conta?")) return;
+    await signOut(auth);
+    location.reload();
+  };
+</script>
+
+</body>
+</html>

@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal SafeSeg — Sincronizar Funcionários</title>
+<link rel="stylesheet" href="../assets/css/safeseg-design-system.css">
+<style>
+  html, body { height: 100%; }
+  .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .topbar { background: #fff; border-bottom: 1px solid var(--paper-200); padding: var(--space-4) var(--space-6); }
+  .topbar h1 { font-size: var(--text-xl); letter-spacing: 0.03em; }
+  .content { padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); max-width: 900px; }
+  .card { background: #fff; border: 1px solid var(--paper-200); border-radius: var(--radius-md); box-shadow: var(--shadow-card); padding: var(--space-5); }
+  .aviso { background: #EAF6EC; border-radius: 8px; padding: 12px 16px; font-size: 13px; }
+  .aviso.warn { background: #FFF8E8; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 11px; text-transform: uppercase; color: var(--graphite-600); padding: 8px 10px; border-bottom: 2px solid var(--paper-200); }
+  td { padding: 8px 10px; border-bottom: 1px solid var(--paper-100); font-size: 13px; }
+  .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+  .kpi { background: var(--paper-50); border-radius: 8px; padding: 14px; text-align: center; }
+  .kpi .val { font-family: var(--font-display); font-size: 1.8rem; }
+  .kpi .lbl { font-size: 11px; color: var(--graphite-600); text-transform: uppercase; }
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr !important; }
+    .content { padding: var(--space-4) !important; }
+    table { display: block; overflow-x: auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <nav class="sidebar">
+    <div class="sidebar__logo">
+      <img src="../assets/img/logo-dark.png" alt="SafeSeg" style="background:var(--graphite-900); border-radius:8px; padding:4px; max-width:150px; display:block;">
+    </div>
+    <a class="nav-item" href="../index.html" style="background:var(--graphite-900); color:var(--gold-300); margin-bottom:4px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+      Central (Hub)
+    </a>
+    <a class="nav-item" href="empresas.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17"/><path d="M19 21V10a1 1 0 0 0-1-1h-3"/><path d="M8 7h2M8 11h2M8 15h2"/></svg>
+      Empresas
+    </a>
+    <a class="nav-item active" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 2.1l4 4-4 4M3 12.6v-2a4 4 0 0 1 4-4h14M7 21.9l-4-4 4-4M21 11.4v2a4 4 0 0 1-4 4H3"/></svg>
+      Sincronizar Funcionários
+    </a>
+    <button class="nav-item" style="width:100%; text-align:left; border:none; background:transparent; cursor:pointer; margin-top:auto; color:var(--status-danger);" onclick="fazerLogout()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      Sair
+    </button>
+  </nav>
+
+  <div class="main">
+    <div class="hazard-stripe"></div>
+    <header class="topbar">
+      <h1>Sincronizar Funcionários</h1>
+      <div class="sub" style="font-size:13px; color:var(--graphite-600);">Puxa todo mundo da planilha real, casa com as empresas, e cria/atualiza os funcionários com CPF certo</div>
+    </header>
+
+    <div class="content">
+      <div class="aviso">
+        📋 <strong>Como funciona:</strong> primeiro clica em "Analisar" pra ver o que vai acontecer, sem gravar nada ainda. Só depois de conferir, clica em "Confirmar e Aplicar".
+      </div>
+
+      <div class="card">
+        <button class="btn btn--primary" onclick="analisar()">🔍 Analisar</button>
+        <div id="statusAnalise" class="text-muted" style="font-size:12px; margin-top:10px;"></div>
+      </div>
+
+      <div id="resultadoBox" style="display:none;">
+        <div class="card">
+          <div class="kpi-row">
+            <div class="kpi"><div class="val" id="kpiTotal">—</div><div class="lbl">Alunos na planilha</div></div>
+            <div class="kpi"><div class="val" id="kpiVinculados">—</div><div class="lbl">Vinculados a empresa</div></div>
+            <div class="kpi"><div class="val" id="kpiNaoAlocados">—</div><div class="lbl">Vão pra "Não Alocados"</div></div>
+            <div class="kpi"><div class="val" id="kpiNovos">—</div><div class="lbl">Funcionários novos</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <strong>Prévia — o que vai acontecer</strong>
+          <div style="overflow-x:auto; margin-top:10px;">
+          <table>
+            <thead><tr><th>Nome</th><th>CPF (da planilha)</th><th>Empresa destino</th><th>Ação</th><th>Cursos</th></tr></thead>
+            <tbody id="previaBody"></tbody>
+          </table>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+          <button class="btn btn--primary" onclick="aplicar()" id="btnAplicar">✅ Confirmar e Aplicar</button>
+        </div>
+        <div id="statusAplicar" class="text-muted" style="font-size:12px; text-align:right;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { db, collection, getDocs, addDoc, doc, updateDoc, esperarAuth } from '../assets/js/firebase-init.js';
+
+  const CERT_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz55Li88oyroPtFH1iTOV2nR58-xbuUAMkGcyb6GRzM3S6KQNARj7Sxvi1mZShhPg-WRg/exec';
+
+  await esperarAuth();
+
+  function normaliza(s) { return (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim(); }
+
+  let planoAcoes = []; // { nome, cpf, empresaDestinoId, empresaDestinoNome, acao: 'criar'|'atualizar-cpf'|'ja-ok', funcionarioId? }
+
+  window.analisar = async function() {
+    const status = document.getElementById('statusAnalise');
+    status.textContent = 'Buscando dados da planilha real...';
+    document.getElementById('resultadoBox').style.display = 'none';
+
+    try {
+      // 1) Pega todos os alunos reais da planilha
+      const res = await fetch(CERT_APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ acao: 'listarAlunosCompleto' })
+      });
+      const resultado = await res.json();
+      if (!resultado.sucesso) throw new Error(resultado.erro || 'Erro ao buscar a planilha.');
+      const alunosPlanilha = resultado.alunos;
+
+      status.textContent = `${alunosPlanilha.length} aluno(s) na planilha. Cruzando com as empresas...`;
+
+      // 2) Pega todas as empresas + certificados (pra saber quem já pertence a qual empresa)
+      const empresasSnap = await getDocs(collection(db, 'empresas'));
+      const empresas = await Promise.all(empresasSnap.docs.map(async empDoc => {
+        const certSnap = await getDocs(collection(db, 'empresas', empDoc.id, 'certificados'));
+        const nomesCertificados = new Set();
+        certSnap.forEach(c => {
+          const d = c.data();
+          const nome = d.colaborador || d.nome || d.aluno || d.funcionario;
+          if (nome) nomesCertificados.add(normaliza(nome));
+        });
+        const funcSnap = await getDocs(collection(db, 'empresas', empDoc.id, 'funcionarios'));
+        const funcionariosExistentes = {};
+        funcSnap.forEach(f => { funcionariosExistentes[normaliza(f.data().nome)] = { id: f.id, ...f.data() }; });
+        return { id: empDoc.id, nome: empDoc.data().nome || '(sem nome)', nomesCertificados, funcionariosExistentes };
+      }));
+
+      let naoAlocadosEmpresa = empresas.find(e => normaliza(e.nome) === 'não alocados' || normaliza(e.nome) === 'nao alocados');
+
+      // 3) Monta o plano de ação
+      planoAcoes = alunosPlanilha.map(aluno => {
+        const nomeNorm = normaliza(aluno.nome);
+        let empresaDestino = empresas.find(e => e.nomesCertificados.has(nomeNorm));
+
+        let destino, funcExistente;
+        if (empresaDestino) {
+          destino = { id: empresaDestino.id, nome: empresaDestino.nome };
+          funcExistente = empresaDestino.funcionariosExistentes[nomeNorm];
+        } else if (naoAlocadosEmpresa) {
+          // já existe uma empresa "Não Alocados" de uma rodada anterior — confere
+          // se essa pessoa já está lá, pra não duplicar de novo
+          destino = { id: naoAlocadosEmpresa.id, nome: naoAlocadosEmpresa.nome };
+          funcExistente = naoAlocadosEmpresa.funcionariosExistentes[nomeNorm];
+        } else {
+          destino = { id: null, nome: '⚠️ Não Alocados (nova)' };
+          funcExistente = null;
+        }
+
+        let acao;
+        if (funcExistente && funcExistente.cpf === aluno.cpf) acao = 'ja-ok';
+        else if (funcExistente) acao = 'atualizar-cpf';
+        else acao = 'criar';
+
+        return { nome: aluno.nome, cpf: aluno.cpf, empresaDestinoId: destino.id, empresaDestinoNome: destino.nome, acao, funcionarioId: funcExistente ? funcExistente.id : null, cursos: aluno.cursos || [] };
+      });
+
+      // 4) Mostra o relatório
+      const vinculados = planoAcoes.filter(p => p.empresaDestinoId).length;
+      const naoAlocados = planoAcoes.filter(p => !p.empresaDestinoId).length;
+      const novos = planoAcoes.filter(p => p.acao === 'criar').length;
+
+      document.getElementById('kpiTotal').textContent = planoAcoes.length;
+      document.getElementById('kpiVinculados').textContent = vinculados;
+      document.getElementById('kpiNaoAlocados').textContent = naoAlocados;
+      document.getElementById('kpiNovos').textContent = novos;
+
+      const labelAcao = { 'criar': '🆕 Criar', 'atualizar-cpf': '✏️ Atualizar CPF', 'ja-ok': '✅ Já está OK' };
+      document.getElementById('previaBody').innerHTML = planoAcoes.map(p => `
+        <tr>
+          <td>${p.nome}</td>
+          <td style="font-family:var(--font-data); font-size:12px;">${p.cpf || '—'}</td>
+          <td>${p.empresaDestinoNome}</td>
+          <td>${labelAcao[p.acao]}</td>
+          <td>${p.cursos && p.cursos.length ? `${p.cursos.length} curso(s)${!p.empresaDestinoId ? ' — vai gravar também' : ''}` : '—'}</td>
+        </tr>`).join('');
+
+      document.getElementById('resultadoBox').style.display = 'block';
+      status.textContent = `✅ Análise concluída. Nada foi gravado ainda — confere a prévia e clica em "Confirmar e Aplicar" quando estiver certo.`;
+    } catch (err) {
+      status.textContent = `⚠️ Erro: ${err.message}`;
+    }
+  };
+
+  window.aplicar = async function() {
+    if (!confirm(`Isso vai criar/atualizar ${planoAcoes.filter(p=>p.acao!=='ja-ok').length} funcionário(s) de verdade. Confirma?`)) return;
+    const btn = document.getElementById('btnAplicar');
+    const status = document.getElementById('statusAplicar');
+    btn.disabled = true;
+
+    let naoAlocadosId = null;
+    let criados = 0, atualizados = 0, erros = 0;
+
+    for (let i = 0; i < planoAcoes.length; i++) {
+      const p = planoAcoes[i];
+      status.textContent = `Processando ${i+1}/${planoAcoes.length} — ${p.nome}...`;
+      // (removido o "pular se já está OK" daqui — precisamos continuar até
+      // embaixo pra completar o link do PDF de quem já existe também)
+
+      try {
+        let empresaId = p.empresaDestinoId;
+        if (!empresaId) {
+          // precisa da empresa "Não Alocados" — cria uma vez só e reaproveita
+          if (!naoAlocadosId) {
+            const snap = await getDocs(collection(db, 'empresas'));
+            const existente = snap.docs.find(d => (d.data().nome||'').toLowerCase().includes('não alocados') || (d.data().nome||'').toLowerCase().includes('nao alocados'));
+            if (existente) {
+              naoAlocadosId = existente.id;
+            } else {
+              const novaEmp = await addDoc(collection(db, 'empresas'), {
+                nome: 'Não Alocados',
+                obs: 'Empresa especial criada automaticamente pela Sincronização de Funcionários — reúne alunos da planilha que não bateram com nenhuma empresa real ainda. Mova manualmente quando identificar a empresa certa.'
+              });
+              naoAlocadosId = novaEmp.id;
+            }
+          }
+          empresaId = naoAlocadosId;
+        }
+
+        if (p.acao === 'criar') {
+          await addDoc(collection(db, 'empresas', empresaId, 'funcionarios'), { nome: p.nome, cpf: p.cpf || '', status: 'ativo' });
+          criados++;
+        } else if (p.acao === 'atualizar-cpf') {
+          await updateDoc(doc(db, 'empresas', empresaId, 'funcionarios', p.funcionarioId), { cpf: p.cpf || '' });
+          atualizados++;
+        }
+
+        // Se caiu em "Não Alocados", também grava os certificados dela (puxados
+        // da planilha) — sem isso, a pessoa aparece como funcionário mas o
+        // filtro de Certificados não mostra nada, porque não tinha nenhum
+        // certificado gravado no Firestore ainda pra essa empresa
+        // (só na primeira vez — "já está OK" não recria, só completa pdfUrl embaixo)
+        if (p.acao !== 'ja-ok' && empresaId === naoAlocadosId && p.cursos && p.cursos.length > 0) {
+          for (const curso of p.cursos) {
+            const dataValidadeISOparaBR = curso.validade || ''; // já vem formatado dd/MM/yyyy do Apps Script
+            await addDoc(collection(db, 'empresas', empresaId, 'certificados'), {
+              colaborador: p.nome,
+              cpf: p.cpf || '',
+              nr: curso.curso || '',
+              cont: curso.cont || '',
+              validade: dataValidadeISOparaBR,
+              pdfUrl: curso.pdfUrl || '',
+              origemSincronizacao: true
+            });
+          }
+        }
+
+        // Mesmo quando o funcionário já existia ("já está OK"), confere se os
+        // certificados dele em Não Alocados estão sem o link do PDF (rodadas
+        // anteriores a essa correção não capturavam isso) — completa se faltar
+        if (p.acao === 'ja-ok' && empresaId === naoAlocadosId && p.cursos && p.cursos.length > 0) {
+          try {
+            const certSnap = await getDocs(collection(db, 'empresas', empresaId, 'certificados'));
+            for (const certDoc of certSnap.docs) {
+              const certData = certDoc.data();
+              if (normaliza(certData.colaborador) !== normaliza(p.nome)) continue;
+              if (certData.pdfUrl) continue; // já tem, não mexe
+              const cursoCorrespondente = p.cursos.find(c => normaliza(c.curso) === normaliza(certData.nr));
+              if (cursoCorrespondente && cursoCorrespondente.pdfUrl) {
+                await updateDoc(doc(db, 'empresas', empresaId, 'certificados', certDoc.id), { pdfUrl: cursoCorrespondente.pdfUrl });
+              }
+            }
+          } catch (errCompletar) {
+            console.error('Erro ao completar link do PDF:', errCompletar);
+          }
+        }
+      } catch (err) {
+        erros++;
+        console.error(`Erro em ${p.nome}:`, err);
+      }
+    }
+
+    status.textContent = `✅ Concluído: ${criados} criado(s), ${atualizados} atualizado(s)${erros ? `, ${erros} erro(s)` : ''}.`;
+    btn.disabled = false;
+  };
+</script>
+<script type="module">
+  import { auth, signOut } from "../assets/js/firebase-init.js";
+  window.fazerLogout = async function() {
+    if (!confirm("Sair da sua conta?")) return;
+    await signOut(auth);
+    location.reload();
+  };
+</script>
+
+</body>
+</html>
