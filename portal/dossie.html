@@ -242,6 +242,12 @@
   function sanitizarTexto(s) {
     return (s || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^ -~\n]/g, '');
   }
+  // Certificados mais antigos (de importações/sincronizações passadas) às
+  // vezes guardam o nome do aluno num campo diferente de "colaborador" —
+  // mesma tolerância já usada na tela de Certificados
+  function pegarNomeColaborador(c) {
+    return c.colaborador || c.nome || c.aluno || c.funcionario || '';
+  }
 
   // Turmas "Abertas" (CT SafeSeg, sem empresa vinculada) têm certificado
   // gravado dentro da empresa especial "Não Alocados" no Firestore — mas
@@ -288,7 +294,7 @@
           const normaliza = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
           const nomesAlunos = new Set((dadosTurma.alunos||[]).map(a => normaliza(a.nome)));
           certificadosCache = certSnap.docs.map(d => d.data())
-            .filter(c => normaliza(c.nr) === normaliza(dadosTurma.curso) && nomesAlunos.has(normaliza(c.colaborador)) && !c.substituidoPor);
+            .filter(c => normaliza(c.nr) === normaliza(dadosTurma.curso) && nomesAlunos.has(normaliza(pegarNomeColaborador(c))) && !c.substituidoPor);
         } catch (e) { console.error(e); }
       }
       try {
@@ -369,7 +375,7 @@
     }
     box.innerHTML = certificadosCache.map(c => `
       <tr>
-        <td style="padding:8px;">${c.colaborador}</td>
+        <td style="padding:8px;">${pegarNomeColaborador(c)}</td>
         <td style="padding:8px; font-family:var(--font-data); font-size:12px;">${c.cont || '—'}</td>
         <td style="padding:8px;">${c.pdfUrl ? `<a href="${c.pdfUrl}" target="_blank" style="color:var(--gold-600);">Ver certificado →</a>` : '—'}</td>
       </tr>`).join('');
@@ -384,7 +390,7 @@
     }
     const normaliza = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
     box.innerHTML = alunos.map(a => {
-      const cert = certificadosCache.find(c => normaliza(c.colaborador) === normaliza(a.nome));
+      const cert = certificadosCache.find(c => normaliza(pegarNomeColaborador(c)) === normaliza(a.nome));
       return `
       <tr>
         <td style="padding:8px;">${a.nome}</td>
@@ -669,7 +675,7 @@
         certificadosCache.forEach((c, i) => {
           if (y > H - 20) { footer(`pág. ${doc.internal.getNumberOfPages()}`); doc.addPage(); y = header() + 8; }
           if (i % 2 === 1) { doc.setFillColor(248,246,240); doc.rect(M, y, W-2*M, 7, 'F'); }
-          doc.text(sanitizarTexto(c.colaborador || ''), M+3, y+5);
+          doc.text(sanitizarTexto(pegarNomeColaborador(c)), M+3, y+5);
           doc.text(c.cont || '—', M+120, y+5);
           y += 7;
         });
@@ -692,7 +698,7 @@
         aprovados.forEach((a, i) => {
           if (y > H - 20) { footer(`pág. ${doc.internal.getNumberOfPages()}`); doc.addPage(); y = header() + 8; }
           if (i % 2 === 1) { doc.setFillColor(248,246,240); doc.rect(M, y, W-2*M, 7, 'F'); }
-          const cert = certificadosCache.find(c => normaliza(c.colaborador) === normaliza(a.nome));
+          const cert = certificadosCache.find(c => normaliza(pegarNomeColaborador(c)) === normaliza(a.nome));
           doc.text(sanitizarTexto(a.nome || ''), M+3, y+5);
           doc.text(a.cpf || '—', M+100, y+5);
           doc.text(cert && cert.validade ? cert.validade : '—', M+150, y+5);

@@ -110,9 +110,12 @@
       certificadosCache = certSnap.docs.map(d => d.data()).filter(c => !c.substituidoPor);
 
       const normaliza = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+      // Certificados mais antigos às vezes guardam o nome num campo diferente
+      // de "colaborador" — mesma tolerância já usada na tela de Certificados
+      const pegarNomeColaborador = c => c.colaborador || c.nome || c.aluno || c.funcionario || '';
       linhasRelatorio = [];
       funcionariosCache.forEach(f => {
-        const certsDele = certificadosCache.filter(c => normaliza(c.colaborador) === normaliza(f.nome));
+        const certsDele = certificadosCache.filter(c => normaliza(pegarNomeColaborador(c)) === normaliza(f.nome));
         if (certsDele.length === 0) {
           linhasRelatorio.push({ funcionario: f.nome, curso: '—', validade: '—', ...({ texto: 'Sem treinamento', cor: [120,120,120] }) });
         } else {

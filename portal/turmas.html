@@ -356,9 +356,10 @@
               } catch (eFunc) { console.error('Erro ao garantir funcionário:', eFunc); }
 
               const certsSnap = await getDocs(collection(db, 'empresas', empresaIdParaGravar, 'certificados'));
+              const pegarNomeColaborador = c => c.colaborador || c.nome || c.aluno || c.funcionario || '';
               const existente = certsSnap.docs.find(d => {
                 const c = d.data();
-                return normaliza(c.colaborador) === normaliza(aluno.nome) && normaliza(c.nr) === normaliza(turma.curso);
+                return normaliza(pegarNomeColaborador(c)) === normaliza(aluno.nome) && normaliza(c.nr) === normaliza(turma.curso);
               });
               if (existente) {
                 await updateDoc(doc(db, 'empresas', empresaIdParaGravar, 'certificados', existente.id), {

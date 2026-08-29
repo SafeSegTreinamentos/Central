@@ -851,15 +851,15 @@ async function verificarSugestaoTurma() {
         if (!dt) return true; // sem data cadastrada = trata como pendente, também sugere
         return dt <= em60dias;
       })
-      .filter(c => nomesFuncAtivos.has(normaliza(c.colaborador))); // só quem ainda está ativo na empresa
+      .filter(c => nomesFuncAtivos.has(normaliza(pegarNomeColaborador(c)))); // só quem ainda está ativo na empresa
 
     if (candidatos.length === 0) { box.style.display = 'none'; return; }
 
     box.style.display = 'block';
     box.innerHTML = `💡 <strong>${candidatos.length} funcionário(s)</strong> dessa empresa estão vencidos ou vencendo em 60 dias no curso "${nomeCurso}":
-      <div style="margin:8px 0; font-size:12.5px; color:var(--muted);">${candidatos.map(c => c.colaborador).join(', ')}</div>
+      <div style="margin:8px 0; font-size:12.5px; color:var(--muted);">${candidatos.map(c => pegarNomeColaborador(c)).join(', ')}</div>
       <button type="button" class="btn secondary small" onclick="adicionarSugestoesComoAlunos()">+ Adicionar todos como alunos</button>`;
-    window.__sugestoesAtuais = candidatos.map(c => ({ nome: c.colaborador, cpf: c.cpf || '' }));
+    window.__sugestoesAtuais = candidatos.map(c => ({ nome: pegarNomeColaborador(c), cpf: c.cpf || '' }));
   } catch (e) {
     console.error('Erro ao verificar sugestão de turma:', e);
     box.style.display = 'none';
@@ -1446,6 +1446,12 @@ async function chamarScriptCertificados(payload){
 function primeiroNomeSemAcento(s) {
   return (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().split(/\s+/)[0] || '';
 }
+// Certificados mais antigos (de importações/sincronizações passadas) às
+// vezes guardam o nome do aluno num campo diferente de "colaborador" —
+// mesma tolerância já usada na tela de Certificados
+function pegarNomeColaborador(c) {
+  return c.colaborador || c.nome || c.aluno || c.funcionario || '';
+}
 
 let modelosCache = null; // busca uma vez só, filtra localmente depois
 
@@ -1614,7 +1620,7 @@ async function emitirCertificadosDaTurma(id){
               const certsSnap = await getDocs(collection(db, 'empresas', empresaIdParaGravar, 'certificados'));
               const anterior = certsSnap.docs.find(d => {
                 const c = d.data();
-                return normaliza(c.colaborador) === normaliza(aluno.nome) && normaliza(c.nr) === normaliza(t.curso) && !c.substituidoPor;
+                return normaliza(pegarNomeColaborador(c)) === normaliza(aluno.nome) && normaliza(c.nr) === normaliza(t.curso) && !c.substituidoPor;
               });
               if (anterior) certificadoAnteriorId = anterior.id;
             } catch (e) { console.error('Erro ao buscar certificado anterior pra renovação:', e); }
