@@ -147,10 +147,10 @@
 
   function loadTurmas(){ return turmasCache; }
 
-  async function saveTurmas(list){
+  function saveTurmas(list){
     turmasCache = list;
     localStorage.setItem(LS_TURMAS, JSON.stringify(list)); // mantém local também, como backup
-    await sincronizarComFirestore(list); // espera terminar de verdade — sem isso, recarregar rápido demais podia trazer o estado antigo de volta
+    sincronizarComFirestore(list);
   }
 
   async function sincronizarComFirestore(list){
@@ -251,12 +251,12 @@
     }).join('');
   }
 
-  window.atualizarAluno = async function(turmaId, alunoIndex, campo, valor) {
+  window.atualizarAluno = function(turmaId, alunoIndex, campo, valor) {
     const turmas = loadTurmas();
     const turma = turmas.find(t => t.id === turmaId);
     if (!turma || !turma.alunos || !turma.alunos[alunoIndex]) return;
     turma.alunos[alunoIndex][campo] = valor;
-    await saveTurmas(turmas);
+    saveTurmas(turmas);
     renderTurmas(); // re-renderiza pra atualizar contagem de aprovados e o selo
     // reabre a turma que estava aberta antes de re-renderizar
     const el = document.getElementById(`turma-${turmaId}`);
@@ -342,19 +342,6 @@
             const empresaIdParaGravar = turma.empresaId || await obterOuCriarEmpresaNaoAlocados_();
             if (empresaIdParaGravar) {
               const normaliza = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
-
-              // mesma correção do Gerador de Turmas: garante que a pessoa
-              // aparece na lista de Funcionários, não só o certificado solto
-              try {
-                const funcSnap = await getDocs(collection(db, 'empresas', empresaIdParaGravar, 'funcionarios'));
-                const jaExisteFunc = funcSnap.docs.some(d => normaliza(d.data().nome) === normaliza(aluno.nome));
-                if (!jaExisteFunc) {
-                  await addDoc(collection(db, 'empresas', empresaIdParaGravar, 'funcionarios'), {
-                    nome: aluno.nome, cpf: aluno.cpf || '', cargo: '', telefone: '', admissao: '', status: 'ativo'
-                  });
-                }
-              } catch (eFunc) { console.error('Erro ao garantir funcionário:', eFunc); }
-
               const certsSnap = await getDocs(collection(db, 'empresas', empresaIdParaGravar, 'certificados'));
               const existente = certsSnap.docs.find(d => {
                 const c = d.data();

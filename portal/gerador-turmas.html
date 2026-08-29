@@ -1584,26 +1584,6 @@ async function emitirCertificadosDaTurma(id){
         if (empresaIdParaGravar && window.__firestore) {
           try {
             const { db, collection, addDoc, getDocs, updateDoc, doc } = window.__firestore;
-            const normaliza = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
-
-            // Garante que a pessoa aparece na lista de Funcionários da
-            // empresa onde o certificado foi gravado — sem isso, o
-            // certificado existe mas a pessoa fica "invisível" na ficha
-            // (só aparecia uma contagem solta, sem nome nenhum)
-            try {
-              const funcSnap = await getDocs(collection(db, 'empresas', empresaIdParaGravar, 'funcionarios'));
-              const jaExiste = funcSnap.docs.some(d => normaliza(d.data().nome) === normaliza(aluno.nome));
-              if (!jaExiste) {
-                await addDoc(collection(db, 'empresas', empresaIdParaGravar, 'funcionarios'), {
-                  nome: aluno.nome,
-                  cpf: aluno.cpf || '',
-                  cargo: '',
-                  telefone: '',
-                  admissao: '',
-                  status: 'ativo'
-                });
-              }
-            } catch (eFunc) { console.error('Erro ao garantir funcionário:', eFunc); }
 
             // Renovação automática: procura um certificado anterior do mesmo
             // curso pra essa pessoa nessa empresa (que ainda não tenha sido
@@ -1612,6 +1592,7 @@ async function emitirCertificadosDaTurma(id){
             let certificadoAnteriorId = null;
             try {
               const certsSnap = await getDocs(collection(db, 'empresas', empresaIdParaGravar, 'certificados'));
+              const normaliza = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
               const anterior = certsSnap.docs.find(d => {
                 const c = d.data();
                 return normaliza(c.colaborador) === normaliza(aluno.nome) && normaliza(c.nr) === normaliza(t.curso) && !c.substituidoPor;
