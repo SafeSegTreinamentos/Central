@@ -243,6 +243,27 @@
     return (s || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^ -~\n]/g, '');
   }
 
+  // Turmas "Abertas" (CT SafeSeg, sem empresa vinculada) têm certificado
+  // gravado dentro da empresa especial "Não Alocados" no Firestore — mas
+  // dadosTurma.empresaId continua vazio nesse caso. Sem isso, o Dossiê
+  // nunca achava certificado nenhum pra essas turmas. Só BUSCA (não cria
+  // — se ainda não existir "Não Alocados", não tem certificado mesmo).
+  async function buscarEmpresaIdEfetivo_(dadosTurma) {
+    if (dadosTurma.empresaId) return dadosTurma.empresaId;
+    try {
+      const snap = await getDocs(collection(db, 'empresas'));
+      const normaliza = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+      const naoAlocados = snap.docs.find(d => {
+        const n = normaliza(d.data().nome);
+        return n === 'não alocados' || n === 'nao alocados';
+      });
+      return naoAlocados ? naoAlocados.id : null;
+    } catch (e) {
+      console.error('Erro ao buscar empresa Não Alocados:', e);
+      return null;
+    }
+  }
+
   async function carregar() {
     const status = document.getElementById('connStatus');
     if (!turmaId) { status.textContent = '⚠️ Link incompleto — abre pela tela de Turmas.'; return; }
@@ -256,13 +277,14 @@
       fotosCache = fotosSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
       // busca empresa (CNPJ), catálogo (conteúdo programático) e certificados emitidos
-      if (dadosTurma.empresaId) {
+      const empresaIdEfetivo = await buscarEmpresaIdEfetivo_(dadosTurma);
+      if (empresaIdEfetivo) {
         try {
-          const empSnap = await getDoc(doc(db, 'empresas', dadosTurma.empresaId));
+          const empSnap = await getDoc(doc(db, 'empresas', empresaIdEfetivo));
           if (empSnap.exists()) empresaCache = empSnap.data();
         } catch (e) { console.error(e); }
         try {
-          const certSnap = await getDocs(collection(db, 'empresas', dadosTurma.empresaId, 'certificados'));
+          const certSnap = await getDocs(collection(db, 'empresas', empresaIdEfetivo, 'certificados'));
           const normaliza = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
           const nomesAlunos = new Set((dadosTurma.alunos||[]).map(a => normaliza(a.nome)));
           certificadosCache = certSnap.docs.map(d => d.data())
