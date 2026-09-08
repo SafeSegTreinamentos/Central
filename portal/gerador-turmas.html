@@ -620,7 +620,9 @@ async function checkCloudStatus(){
   try{
     const data = await cloudGet({action:'list'});
     if(!data || !data.ok) throw new Error((data&&data.error)||'resposta inválida');
-    saveTurmas(data.turmas||[]);
+    // NÃO sobrescreve mais as turmas com esse sistema antigo — Firestore já
+    // é a fonte de verdade. Isso causava perda real de dado (aprovação de
+    // aluno sumindo) toda vez que essa sincronização rodava com sucesso.
     if(data.cursos && data.cursos.length){
       saveCursos(data.cursos);
       atualizarCursosDoInstrutor(); // usa a lista real por instrutor, não a antiga por índice
@@ -1366,8 +1368,9 @@ async function renderHistorico(){
   const url=getAppsUrl();
   if(url){
     try{
-      const data = await cloudGet({action:'list'});
-      if(data && data.ok){ saveTurmas(data.turmas||[]); }
+      // NÃO sobrescreve mais as turmas com esse sistema antigo (mesmo motivo
+      // do checkCloudStatus) — só deixa a leitura acontecer, sem gravar nada
+      await cloudGet({action:'list'});
     }catch(e){ }
   }
   const list=loadTurmas();
@@ -1906,7 +1909,8 @@ async function loadTurmaFromLink(id){
     try{
       const data = await cloudGet({action:'list'});
       if(data && data.ok){
-        saveTurmas(data.turmas||[]);
+        // NÃO sobrescreve mais o Firestore com esse sistema antigo — só usa
+        // o resultado pra achar a turma específica, se precisar
         turma = (data.turmas||[]).find(t=>String(t.id)===String(id));
       }
     }catch(e){ }
