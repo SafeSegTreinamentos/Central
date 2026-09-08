@@ -243,6 +243,7 @@
               <tbody>${linhas}</tbody>
             </table>`}
             <div style="margin-top:14px; display:flex; justify-content:flex-end; gap:8px;">
+              <button id="btnGerarTodos-${t.id}" class="btn btn--primary" onclick="gerarTodosAprovados('${t.id}')">🖨️ Gerar todos os aprovados</button>
               <a href="dossie.html?turmaId=${t.id}" class="btn btn--primary" style="text-decoration:none;">📁 Dossiê do Treinamento</a>
               <a href="gerador-turmas.html" class="btn btn--secondary" style="text-decoration:none;">Ver no Gerador de Turmas</a>
             </div>
@@ -300,6 +301,76 @@
     }
   }
 
+  // Núcleo de geração de certificado — sem nenhuma interação de UI (sem
+  // confirm, sem mexer em botão). Usado tanto pelo botão individual quanto
+  // pelo "Gerar todos os aprovados", pra não duplicar essa lógica toda.
+  // Devolve { sucesso, numero, erro }.
+  async function gerarCertificadoParaAlunoNucleo_(turma, aluno) {
+    const dataInicioISO = turma.dias && turma.dias[0] ? turma.dias[0].date : '';
+    const dataFimISO = turma.dias && turma.dias.length ? turma.dias[turma.dias.length-1].date : dataInicioISO;
+
+    const resultado = await chamarScriptCertificados({
+      acao: 'gerarCertificado',
+      nome: aluno.nome,
+      cpf: aluno.cpf,
+      curso: turma.curso,
+      instrutor: turma.instrutor,
+      dataInicioISO, dataFimISO,
+      carga: turma.carga,
+      empresa: turma.empresa,
+      cidade: turma.cidade,
+      art: turma.art,
+      reaproveitarNumero: true // reutiliza o mesmo CONT já existente, em vez de criar um novo
+    });
+
+    if (!resultado || !resultado.sucesso) {
+      return { sucesso: false, erro: resultado ? resultado.erro : 'sem resposta do servidor' };
+    }
+
+    // sincroniza com o Firestore, igual o Gerador de Turmas já faz na emissão normal
+    if (window.__firestore) {
+      try {
+        const { db, collection, addDoc, updateDoc, doc, getDocs } = window.__firestore;
+        const empresaIdParaGravar = turma.empresaId || await obterOuCriarEmpresaNaoAlocados_();
+        if (empresaIdParaGravar) {
+          const normaliza = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+
+          // garante que a pessoa aparece na lista de Funcionários, não só o certificado solto
+          try {
+            const funcSnap = await getDocs(collection(db, 'empresas', empresaIdParaGravar, 'funcionarios'));
+            const jaExisteFunc = funcSnap.docs.some(d => normaliza(d.data().nome) === normaliza(aluno.nome));
+            if (!jaExisteFunc) {
+              await addDoc(collection(db, 'empresas', empresaIdParaGravar, 'funcionarios'), {
+                nome: aluno.nome, cpf: aluno.cpf || '', cargo: '', telefone: '', admissao: '', status: 'ativo'
+              });
+            }
+          } catch (eFunc) { console.error('Erro ao garantir funcionário:', eFunc); }
+
+          const certsSnap = await getDocs(collection(db, 'empresas', empresaIdParaGravar, 'certificados'));
+          const pegarNomeColaborador = c => c.colaborador || c.nome || c.aluno || c.funcionario || '';
+          const existente = certsSnap.docs.find(d => {
+            const c = d.data();
+            return normaliza(pegarNomeColaborador(c)) === normaliza(aluno.nome) && normaliza(c.nr) === normaliza(turma.curso);
+          });
+          if (existente) {
+            await updateDoc(doc(db, 'empresas', empresaIdParaGravar, 'certificados', existente.id), {
+              pdfUrl: resultado.url, cpf: aluno.cpf || '', regeneradoEm: new Date().toISOString()
+            });
+          } else {
+            await addDoc(collection(db, 'empresas', empresaIdParaGravar, 'certificados'), {
+              colaborador: aluno.nome, cpf: aluno.cpf || '', nr: turma.curso || '', validade: '',
+              pdfUrl: resultado.url, assinadoAssinafy: false, criadoEm: new Date().toISOString()
+            });
+          }
+        }
+      } catch (errFs) {
+        console.error('Erro ao sincronizar certificado com o Firestore:', errFs);
+      }
+    }
+
+    return { sucesso: true, numero: resultado.numero };
+  }
+
   window.regenerarCertificado = async function(turmaId, alunoIndex) {
     const turma = loadTurmas().find(t => t.id === turmaId);
     if (!turma || !turma.alunos || !turma.alunos[alunoIndex]) return;
@@ -312,79 +383,13 @@
     btn.disabled = true;
     btn.textContent = 'Gerando...';
 
-    const dataInicioISO = turma.dias && turma.dias[0] ? turma.dias[0].date : '';
-    const dataFimISO = turma.dias && turma.dias.length ? turma.dias[turma.dias.length-1].date : dataInicioISO;
-
     try {
-      const resultado = await chamarScriptCertificados({
-        acao: 'gerarCertificado',
-        nome: aluno.nome,
-        cpf: aluno.cpf,
-        curso: turma.curso,
-        instrutor: turma.instrutor,
-        dataInicioISO, dataFimISO,
-        carga: turma.carga,
-        empresa: turma.empresa,
-        cidade: turma.cidade,
-        art: turma.art,
-        reaproveitarNumero: true // reutiliza o mesmo CONT já existente, em vez de criar um novo
-      });
-      if (resultado && resultado.sucesso) {
+      const resultado = await gerarCertificadoParaAlunoNucleo_(turma, aluno);
+      if (resultado.sucesso) {
         btn.textContent = '✅ Gerado (CONT ' + resultado.numero + ')';
         setTimeout(() => { btn.disabled = false; btn.textContent = textoOriginal; }, 4000);
-
-        // NOVO — sincroniza com o Firestore, igual o Gerador de Turmas já faz
-        // na emissão normal (isso nunca acontecia aqui, por isso o certificado
-        // regenerado nunca aparecia em Certificados/Carteirinha/Dossiê no Portal)
-        if (window.__firestore) {
-          try {
-            const { db, collection, addDoc, updateDoc, doc, getDocs } = window.__firestore;
-            const empresaIdParaGravar = turma.empresaId || await obterOuCriarEmpresaNaoAlocados_();
-            if (empresaIdParaGravar) {
-              const normaliza = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
-
-              // mesma correção do Gerador de Turmas: garante que a pessoa
-              // aparece na lista de Funcionários, não só o certificado solto
-              try {
-                const funcSnap = await getDocs(collection(db, 'empresas', empresaIdParaGravar, 'funcionarios'));
-                const jaExisteFunc = funcSnap.docs.some(d => normaliza(d.data().nome) === normaliza(aluno.nome));
-                if (!jaExisteFunc) {
-                  await addDoc(collection(db, 'empresas', empresaIdParaGravar, 'funcionarios'), {
-                    nome: aluno.nome, cpf: aluno.cpf || '', cargo: '', telefone: '', admissao: '', status: 'ativo'
-                  });
-                }
-              } catch (eFunc) { console.error('Erro ao garantir funcionário:', eFunc); }
-
-              const certsSnap = await getDocs(collection(db, 'empresas', empresaIdParaGravar, 'certificados'));
-              const pegarNomeColaborador = c => c.colaborador || c.nome || c.aluno || c.funcionario || '';
-              const existente = certsSnap.docs.find(d => {
-                const c = d.data();
-                return normaliza(pegarNomeColaborador(c)) === normaliza(aluno.nome) && normaliza(c.nr) === normaliza(turma.curso);
-              });
-              if (existente) {
-                await updateDoc(doc(db, 'empresas', empresaIdParaGravar, 'certificados', existente.id), {
-                  pdfUrl: resultado.url,
-                  cpf: aluno.cpf || '',
-                  regeneradoEm: new Date().toISOString()
-                });
-              } else {
-                await addDoc(collection(db, 'empresas', empresaIdParaGravar, 'certificados'), {
-                  colaborador: aluno.nome,
-                  cpf: aluno.cpf || '',
-                  nr: turma.curso || '',
-                  validade: '',
-                  pdfUrl: resultado.url,
-                  assinadoAssinafy: false,
-                  criadoEm: new Date().toISOString()
-                });
-              }
-            }
-          } catch (errFs) {
-            console.error('Erro ao sincronizar certificado regenerado com o Firestore:', errFs);
-          }
-        }
       } else {
-        alert('Erro ao gerar: ' + (resultado ? resultado.erro : 'sem resposta do servidor'));
+        alert('Erro ao gerar: ' + resultado.erro);
         btn.disabled = false;
         btn.textContent = textoOriginal;
       }
@@ -393,6 +398,49 @@
       btn.disabled = false;
       btn.textContent = textoOriginal;
     }
+  };
+
+  // NOVO — gera certificado de TODOS os aprovados da turma de uma vez,
+  // um atrás do outro (evita sobrecarregar o Apps Script todos ao mesmo
+  // tempo). Mostra progresso e resume sucessos/falhas no final.
+  window.gerarTodosAprovados = async function(turmaId) {
+    const turma = loadTurmas().find(t => t.id === turmaId);
+    if (!turma || !turma.alunos) return;
+    const aprovados = turma.alunos.map((a, i) => ({ aluno: a, index: i })).filter(x => x.aluno.aprovado);
+
+    if (aprovados.length === 0) {
+      alert('Nenhum aluno aprovado nessa turma ainda — marca a caixinha "Aprovado" de quem passou antes de gerar em lote.');
+      return;
+    }
+    if (!confirm(`Gerar certificado pra ${aprovados.length} aluno(s) aprovado(s) dessa turma? Isso pode levar alguns minutos — não fecha a página até terminar.`)) return;
+
+    const btn = document.getElementById(`btnGerarTodos-${turmaId}`);
+    const textoOriginal = btn.textContent;
+    btn.disabled = true;
+
+    let sucessos = 0;
+    const falhas = [];
+
+    for (let i = 0; i < aprovados.length; i++) {
+      const { aluno } = aprovados[i];
+      btn.textContent = `Gerando ${i + 1}/${aprovados.length} — ${aluno.nome}...`;
+      try {
+        const resultado = await gerarCertificadoParaAlunoNucleo_(turma, aluno);
+        if (resultado.sucesso) sucessos++;
+        else falhas.push(`${aluno.nome}: ${resultado.erro}`);
+      } catch (err) {
+        falhas.push(`${aluno.nome}: ${err.message}`);
+      }
+    }
+
+    btn.disabled = false;
+    btn.textContent = textoOriginal;
+
+    let resumo = `✅ ${sucessos} de ${aprovados.length} certificado(s) gerado(s) com sucesso.`;
+    if (falhas.length > 0) {
+      resumo += `\n\n⚠️ Falharam:\n` + falhas.join('\n');
+    }
+    alert(resumo);
   };
 
   carregarTurmasIniciais();
