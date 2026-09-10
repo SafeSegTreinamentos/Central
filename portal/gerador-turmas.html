@@ -1223,7 +1223,11 @@ document.getElementById('btnSalvarTurma').addEventListener('click', async ()=>{
     if(url){
       try{
         const data = await cloudPost({action:'saveTurma', turma:{...f, id:currentTurmaId, codigo:currentTurmaCodigo, status:'rascunho'}});
-        if(data && data.ok){ turma = data.turma; }
+        // só aproveita id/codigo do sistema antigo — os campos de verdade
+        // (cidade, art, instrutoresAuxiliares, etc.) sempre vêm do formulário
+        // real (f), nunca do que esse sistema devolve, porque ele não
+        // conhece campos novos e os apagava silenciosamente
+        if(data && data.ok && data.turma){ turma = { ...f, id: data.turma.id || currentTurmaId, codigo: data.turma.codigo || currentTurmaCodigo, status: 'rascunho' }; }
       }catch(e){ /* segue com salvamento local */ }
     }
     if(!turma) turma = updateLocalTurma(currentTurmaId, f, 'rascunho');
@@ -1235,7 +1239,7 @@ document.getElementById('btnSalvarTurma').addEventListener('click', async ()=>{
       try{
         const data = await cloudPost({action:'saveTurma', turma:{...f, status:'rascunho'}});
         if(!data || !data.ok) throw new Error((data&&data.error)||'falha ao salvar');
-        turma = data.turma;
+        turma = { ...f, id: data.turma.id, codigo: data.turma.codigo, status: 'rascunho' };
         const list = loadTurmas().filter(t=>t.id!==turma.id);
         list.unshift(turma);
         saveTurmas(list);
@@ -1266,7 +1270,7 @@ document.getElementById('btnGerarTurma').addEventListener('click', async ()=>{
     if(url){
       try{
         const data = await cloudPost({action:'saveTurma', turma:{...f, id:currentTurmaId, codigo:currentTurmaCodigo, status:'gerado'}});
-        if(data && data.ok){ turma = data.turma; }
+        if(data && data.ok && data.turma){ turma = { ...f, id: data.turma.id || currentTurmaId, codigo: data.turma.codigo || currentTurmaCodigo, status: 'gerado' }; }
       }catch(e){ /* segue local */ }
     }
     if(!turma) turma = updateLocalTurma(currentTurmaId, f, 'gerado');
@@ -1277,7 +1281,7 @@ document.getElementById('btnGerarTurma').addEventListener('click', async ()=>{
       try{
         const data = await cloudPost({action:'saveTurma', turma:{...f, status:'gerado'}});
         if(!data || !data.ok) throw new Error((data&&data.error)||'falha ao salvar');
-        turma = data.turma;
+        turma = { ...f, id: data.turma.id, codigo: data.turma.codigo, status: 'gerado' };
         const list = loadTurmas().filter(t=>t.id!==turma.id);
         list.unshift(turma);
         saveTurmas(list);
