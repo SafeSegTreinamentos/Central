@@ -156,6 +156,14 @@
         </div>
       </div>
 
+      <!-- PROPOSTAS DESSA EMPRESA (via link real empresaId, não mais busca por nome) -->
+      <div class="info-card" id="propostasCard" style="display:none;">
+        <div class="section-title">
+          <h2>Propostas</h2>
+        </div>
+        <div id="propostasBody"></div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -245,7 +253,8 @@
 </div>
 
 <script type="module">
-  import { db, doc, getDoc, updateDoc, deleteDoc, collection, getDocs, addDoc, esperarAuth, registrarAuditoria } from '../assets/js/firebase-init.js';
+  import { db, doc, getDoc, updateDoc, deleteDoc, collection, getDocs, addDoc, query, where, esperarAuth, registrarAuditoria } from '../assets/js/firebase-init.js';
+  import { escapeHtml } from '../assets/js/utils.js';
 
   const params = new URLSearchParams(location.search);
   const empresaId = params.get('id');
@@ -307,14 +316,7 @@
     }
   };
 
-  function statusPorData(dataStr) {
-    if (!dataStr) return { cls: 'pending', label: 'Pendente' };
-    const venc = new Date(dataStr.split('/').reverse().join('-'));
-    const dias = (venc - new Date()) / 86400000;
-    if (dias < 0) return { cls: 'danger', label: 'Vencido' };
-    if (dias <= 60) return { cls: 'warn', label: 'Atenção' };
-    return { cls: 'ok', label: 'Válido' };
-  }
+  // (função statusPorData morta removida — nunca era chamada nesse arquivo)
 
   function renderFuncionarios() {
     const tbody = document.getElementById('funcTableBody');
@@ -331,19 +333,19 @@
         <td>
           <div style="display:flex; align-items:center; gap:8px;">
             ${f.fotoBase64 ? `<img src="${f.fotoBase64}" style="width:28px; height:28px; border-radius:50%; object-fit:cover;">` : `<span style="width:28px; height:28px; border-radius:50%; background:var(--paper-100); display:inline-flex; align-items:center; justify-content:center; font-size:13px;">👤</span>`}
-            ${f.nome}
+            ${f.nome ? escapeHtml(f.nome) : ''}
           </div>
         </td>
         <td class="mono" style="font-family:var(--font-data); font-size:12px;">${f.cpf || '—'}</td>
-        <td>${f.cargo || '—'}</td>
+        <td>${escapeHtml(f.cargo) || '—'}</td>
         <td style="font-family:var(--font-data); font-size:12px;">${f.admissao ? f.admissao.split('-').reverse().join('/') : '—'}</td>
         <td><span class="selo selo--${f.status === 'inativo' ? 'danger' : 'ok'}">${f.status === 'inativo' ? 'Inativo' : 'Ativo'}</span></td>
         <td style="white-space:nowrap;">
           <button class="btn btn--ghost" style="padding:5px 9px; font-size:11px;" onclick="editarFuncionario('${f.id}')">Editar</button>
           <a href="carteirinha.html?empresaId=${empresaId}&funcionarioId=${f.id}" target="_blank" class="btn btn--secondary" style="padding:5px 9px; font-size:11px; text-decoration:none;">🪪 Carteirinha</a>
-          <button class="btn btn--secondary" style="padding:5px 9px; font-size:11px;" onclick="abrirModalMover('${f.id}', '${(f.nome||'').replace(/'/g,"\\'")}')">↔️ Mover</button>
+          <button class="btn btn--secondary" style="padding:5px 9px; font-size:11px;" onclick="abrirModalMover('${f.id}', '${escapeHtml(f.nome||'').replace(/'/g,"\\'")}')">↔️ Mover</button>
           <button class="btn ${f.status === 'inativo' ? 'btn--secondary' : 'btn--danger'}" style="padding:5px 9px; font-size:11px;" onclick="alternarStatusFuncionario('${f.id}')">${f.status === 'inativo' ? 'Reativar' : 'Inativar'}</button>
-          <button class="btn btn--danger" style="padding:5px 9px; font-size:11px;" onclick="excluirFuncionarioDeVez('${f.id}', '${(f.nome||'').replace(/'/g,"\\'")}')">🗑️ Excluir</button>
+          <button class="btn btn--danger" style="padding:5px 9px; font-size:11px;" onclick="excluirFuncionarioDeVez('${f.id}', '${escapeHtml(f.nome||'').replace(/'/g,"\\'")}')">🗑️ Excluir</button>
         </td>
       </tr>`).join('');
   }
@@ -370,6 +372,25 @@
       const funcSnap = await getDocs(collection(db, 'empresas', empresaId, 'funcionarios'));
       funcionariosCache = funcSnap.docs.map(d => ({ id: d.id, ...d.data() }));
       renderFuncionarios();
+
+      // NOVO — propostas vinculadas de verdade (via empresaId, não mais
+      // busca por nome de texto batendo por acaso)
+      try {
+        const propSnap = await getDocs(query(collection(db, 'propostas'), where('empresaId', '==', empresaId)));
+        if (!propSnap.empty) {
+          document.getElementById('propostasCard').style.display = 'block';
+          const corStatus = { enviada: 'pending', aprovada: 'ok', recusada: 'danger', rascunho: 'pending' };
+          const labelStatus = { enviada: 'Enviada', aprovada: 'Aprovada', recusada: 'Recusada', rascunho: 'Rascunho' };
+          document.getElementById('propostasBody').innerHTML = propSnap.docs.map(d => {
+            const p = d.data();
+            return `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--paper-100); font-size:13px;">
+              <span style="font-family:var(--font-data);">${escapeHtml(p.num||'—')}</span>
+              <span>${p.total ? 'R$ ' + Number(p.total).toLocaleString('pt-BR',{minimumFractionDigits:2}) : '—'}</span>
+              <span class="selo selo--${corStatus[p.status]||'pending'}">${labelStatus[p.status]||p.status}</span>
+            </div>`;
+          }).join('');
+        }
+      } catch (errProp) { console.error('Erro ao buscar propostas da empresa:', errProp); }
 
       status.textContent = '✅ Carregado.';
       status.style.color = 'var(--status-ok)';
@@ -546,10 +567,11 @@
     document.getElementById('modalMoverOverlay').style.display = 'flex';
 
     const snap = await getDocs(collection(db, 'empresas'));
-    const opcoes = snap.docs
+    const empresasOrdenadas = snap.docs
       .filter(d => d.id !== empresaId) // não mostra a empresa atual
-      .map(d => `<option value="${d.id}">${d.data().nome || '(sem nome)'}</option>`)
-      .sort((a,b) => a.localeCompare(b));
+      .map(d => ({ id: d.id, nome: d.data().nome || '(sem nome)' }))
+      .sort((a,b) => a.nome.localeCompare(b.nome)); // ordena pelo NOME de verdade, não pela string HTML já montada (que ordenava pelo ID do Firestore por acidente)
+    const opcoes = empresasOrdenadas.map(e => `<option value="${e.id}">${escapeHtml(e.nome)}</option>`);
     select.innerHTML = '<option value="">Escolhe a empresa destino...</option>' + opcoes.join('');
   };
   window.fecharModalMover = function() {
@@ -569,10 +591,29 @@
       const { id, ...dadosFuncionario } = f;
       await addDoc(collection(db, 'empresas', destinoId, 'funcionarios'), dadosFuncionario);
       await deleteDoc(doc(db, 'empresas', empresaId, 'funcionarios', funcionarioParaMoverId));
-      registrarAuditoria('mover_funcionario', { nome: f.nome, empresaOrigemId: empresaId, empresaDestinoId: destinoId });
+
+      // NOVO — move os certificados dessa pessoa junto (antes só o cadastro
+      // do funcionário ia, o certificado ficava "esquecido" na empresa
+      // antiga; isso causava duplicidade depois, na próxima sincronização)
+      const normaliza = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+      const pegarNomeColaborador = c => c.colaborador || c.nome || c.aluno || c.funcionario || '';
+      let certificadosMovidos = 0;
+      try {
+        const certsSnap = await getDocs(collection(db, 'empresas', empresaId, 'certificados'));
+        const certsDaPessoa = certsSnap.docs.filter(d => normaliza(pegarNomeColaborador(d.data())) === normaliza(f.nome));
+        for (const certDoc of certsDaPessoa) {
+          await addDoc(collection(db, 'empresas', destinoId, 'certificados'), certDoc.data());
+          await deleteDoc(doc(db, 'empresas', empresaId, 'certificados', certDoc.id));
+          certificadosMovidos++;
+        }
+      } catch (errCert) {
+        console.error('Erro ao mover certificados (funcionário já foi movido normalmente):', errCert);
+      }
+
+      registrarAuditoria('mover_funcionario', { nome: f.nome, empresaOrigemId: empresaId, empresaDestinoId: destinoId, certificadosMovidos });
       fecharModalMover();
       carregarTudo();
-      alert(`${f.nome} movido(a) com sucesso ✅`);
+      alert(`${f.nome} movido(a) com sucesso ✅${certificadosMovidos > 0 ? ` (${certificadosMovidos} certificado(s) junto)` : ''}`);
     } catch (err) {
       erroBox.textContent = 'Erro: ' + err.message;
       erroBox.style.display = 'block';

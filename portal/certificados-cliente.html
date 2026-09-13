@@ -174,6 +174,7 @@
 
 <script type="module">
   import { db, collection, getDocs, obterMeuPerfil, addDoc } from '../assets/js/firebase-init.js';
+  import { escapeHtml } from '../assets/js/utils.js';
 
   let empresaIdCache = null;
 
@@ -183,7 +184,7 @@
   }
   function statusPorData(dataStr) {
     if (!dataStr) return { cls: 'pending', label: 'Pendente' };
-    const venc = new Date(dataStr.split('/').reverse().join('-'));
+    const venc = (() => { const [dd,mm,aaaa] = dataStr.split('/'); return new Date(Number(aaaa), Number(mm)-1, Number(dd)); })();
     const dias = (venc - new Date()) / 86400000;
     if (dias < 0) return { cls: 'danger', label: 'Vencido' };
     if (dias <= 60) return { cls: 'warn', label: 'Atenção' };
@@ -243,7 +244,7 @@
           return `
             <div class="cert-row">
               <span class="cert-nr">${c.nr}</span>
-              <span class="cert-nome">${c.nome}</span>
+              <span class="cert-nome">${escapeHtml(c.nome)}</span>
               <div class="cert-row__meta">
                 <span class="cert-data">${c.data || '—'}</span>
                 <span class="selo selo--${st.cls}">${st.label}</span>
@@ -262,7 +263,7 @@
             <div class="collab-head" onclick="this.parentElement.classList.toggle('open')">
               <div class="collab-avatar">${iniciais(col.nome)}</div>
               <div class="collab-info">
-                <div class="collab-name">${col.nome}</div>
+                <div class="collab-name">${escapeHtml(col.nome)}</div>
               </div>
               <div class="collab-summary">${resumoHtml}</div>
               <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
@@ -331,15 +332,16 @@
     try {
       const snap = await getDocs(collection(db, 'empresas', empresaIdCache, 'funcionarios'));
       const ativos = snap.docs.map(d => d.data()).filter(f => f.status !== 'inativo');
+      window.__funcionariosExternoCache = ativos; // evita codificar cpf+nome numa string (nome com "|" cortava errado)
       selectFunc.innerHTML = '<option value="">Escolhe o colaborador...</option>' +
-        ativos.map(f => `<option value="${(f.cpf||'').replace(/"/g,'')}|${f.nome.replace(/"/g,'')}">${f.nome}</option>`).join('');
+        ativos.map((f, i) => `<option value="${i}">${escapeHtml(f.nome)}</option>`).join('');
     } catch (e) { selectFunc.innerHTML = '<option value="">Erro ao carregar</option>'; }
   };
   window.fecharModalExterno = function() {
     document.getElementById('modalExternoOverlay').style.display = 'none';
   };
   window.salvarCertificadoExterno = async function() {
-    const funcionarioValor = document.getElementById('extFuncionario').value;
+    const funcionarioIndex = document.getElementById('extFuncionario').value;
     const curso = document.getElementById('extCurso').value.trim();
     const dataConclusao = document.getElementById('extDataConclusao').value;
     const dataValidade = document.getElementById('extDataValidade').value;
@@ -347,12 +349,14 @@
     const link = document.getElementById('extLink').value.trim();
     const erroBox = document.getElementById('extErro');
 
-    if (!funcionarioValor || !curso || !dataValidade) {
+    if (funcionarioIndex === '' || !curso || !dataValidade) {
       erroBox.textContent = 'Preenche colaborador, curso e data de validade.';
       erroBox.style.display = 'block';
       return;
     }
-    const [cpf, nome] = funcionarioValor.split('|');
+    const funcionarioEscolhido = (window.__funcionariosExternoCache || [])[Number(funcionarioIndex)];
+    const cpf = funcionarioEscolhido ? funcionarioEscolhido.cpf : '';
+    const nome = funcionarioEscolhido ? funcionarioEscolhido.nome : '';
     const [a,m,d] = dataValidade.split('-');
     const validadeBR = `${d}/${m}/${a}`;
 

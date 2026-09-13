@@ -345,7 +345,7 @@
   }
   function diasAteVencer(dataStr) {
     if (!dataStr) return null;
-    const venc = new Date(dataStr.split('/').reverse().join('-'));
+    const venc = (() => { const [dd,mm,aaaa] = dataStr.split('/'); return new Date(Number(aaaa), Number(mm)-1, Number(dd)); })();
     return (venc - new Date()) / 86400000;
   }
   function statusPorData(dataStr) {
@@ -686,7 +686,7 @@
   function formatDateBR(iso){
     if(!iso) return '';
     const [y,m,d]=iso.split('-');
-    return `${d}/${m}`;
+    return `${d}/${m}/${y}`;
   }
   function loadTurmas(){
     try{ return JSON.parse(localStorage.getItem('safeseg_turmas_v1')||'[]'); }

@@ -174,6 +174,7 @@
 
 <script type="module">
   import { db, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, esperarAuth } from '../assets/js/firebase-init.js';
+  import { escapeHtml } from '../assets/js/utils.js';
 
   let leadsCache = [];
   let editandoId = null;
@@ -191,7 +192,7 @@
       el.className = 'lead-card';
       el.onclick = () => abrirModalLead(l.id);
       el.innerHTML = `
-        <div class="nome">${l.nome}</div>
+        <div class="nome">${escapeHtml(l.nome)}</div>
         ${l.telefone ? `<div class="empresa">${l.telefone}</div>` : ''}
         ${l.valor ? `<div class="valor">R$ ${Number(l.valor).toLocaleString('pt-BR')}</div>` : ''}
       `;
@@ -299,15 +300,26 @@
   window.converterEmEmpresa = async function() {
     if (!editandoId) return;
     const l = leadsCache.find(x => x.id === editandoId);
+    if (!l) return;
+    if (l.empresaConvertidaId) { alert('Esse lead já foi convertido em empresa antes — confere na aba Empresas.'); return; }
     if (!confirm(`Converter "${l.nome}" numa Empresa (cliente fechado)? O lead continua no histórico, mas agora vira empresa de verdade.`)) return;
+
+    const btn = event.target;
+    const textoOriginal = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Convertendo...'; // trava clique duplo — sem isso, 2 cliques rápidos criavam 2 empresas
     try {
-      await addDoc(collection(db, 'empresas'), {
+      const novaEmpresaRef = await addDoc(collection(db, 'empresas'), {
         nome: l.nome, telefone: l.telefone || '', email: l.email || '', resp: l.nome
       });
+      // grava o vínculo de volta no lead — permite rastrear "esse lead virou
+      // qual empresa" e impede converter o mesmo lead duas vezes depois
+      await updateDoc(doc(db, 'leads', editandoId), { empresaConvertidaId: novaEmpresaRef.id });
       alert('Empresa criada ✅ — agora edita os detalhes dela na aba Empresas.');
       fecharModalLead();
+      carregarLeads();
     } catch (err) {
       alert('Erro: ' + err.message);
+      btn.disabled = false; btn.textContent = textoOriginal;
     }
   };
 

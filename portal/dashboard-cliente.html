@@ -218,6 +218,7 @@
 
 <script type="module">
   import { db, collection, getDoc, doc, getDocs, query, where, or, obterMeuPerfil } from '../assets/js/firebase-init.js';
+  import { escapeHtml } from '../assets/js/utils.js';
 
   function pick(obj, ...keys) {
     for (const k of keys) if (obj[k] !== undefined && obj[k] !== null && obj[k] !== '') return obj[k];
@@ -225,7 +226,7 @@
   }
   function diasAteVencer(dataStr) {
     if (!dataStr) return null;
-    const venc = new Date(dataStr.split('/').reverse().join('-'));
+    const venc = (() => { const [dd,mm,aaaa] = dataStr.split('/'); return new Date(Number(aaaa), Number(mm)-1, Number(dd)); })();
     return (venc - new Date()) / 86400000;
   }
   function statusPorData(dataStr) {
@@ -302,7 +303,7 @@
       } else {
         tbody.innerHTML = certificados.slice(0, 20).map(c => `
           <tr>
-            <td>${c.colaborador}</td>
+            <td>${escapeHtml(c.colaborador)}</td>
             <td class="data">${c.nr}</td>
             <td class="data">${c.data || '—'}</td>
             <td><span class="selo selo--${c.status.cls}">${c.status.label}</span></td>
@@ -317,7 +318,7 @@
         : proximos.map(c => `
           <div class="turma-mini-row">
             <div class="turma-mini-info">
-              <div class="turma-mini-curso">${c.colaborador}</div>
+              <div class="turma-mini-curso">${escapeHtml(c.colaborador)}</div>
               <div class="turma-mini-meta">${c.nr} · vence ${c.data || '—'}</div>
             </div>
             <span class="selo selo--${c.status.cls}">${c.status.label}</span>

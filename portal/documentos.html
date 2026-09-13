@@ -203,6 +203,7 @@
 
 <script type="module">
   import { db, collection, getDocs, addDoc, esperarAuth } from '../assets/js/firebase-init.js';
+  import { escapeHtml } from '../assets/js/utils.js';
 
   // Documentos vivem em: empresas/{id}/documentos (subcoleção criada do zero,
   // mesmo padrão de certificados — coleção não existia antes).
@@ -215,7 +216,7 @@
   }
   function statusPorData(dataStr) {
     if (!dataStr) return { cls: 'pending', label: 'Pendente' };
-    const venc = new Date(dataStr.split('/').reverse().join('-'));
+    const venc = (() => { const [dd,mm,aaaa] = dataStr.split('/'); return new Date(Number(aaaa), Number(mm)-1, Number(dd)); })();
     const dias = (venc - new Date()) / 86400000;
     if (dias < 0) return { cls: 'danger', label: 'Vencido' };
     if (dias <= 60) return { cls: 'warn', label: 'Atenção' };
@@ -268,7 +269,7 @@
       // popula o seletor de empresa do modal "Novo Documento"
       const selectModal = document.getElementById('novoDocEmpresa');
       if (selectModal) {
-        selectModal.innerHTML = empresasComDocs.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
+        selectModal.innerHTML = empresasComDocs.map(e => `<option value="${e.id}">${escapeHtml(e.nome)}</option>`).join('');
       }
 
       const comDoc = empresasComDocs.filter(e => e.documentos.length > 0);
@@ -325,7 +326,7 @@
 
       const rowsHtml = emp.documentos.map(d => {
         const st = statusPorData(d.data);
-        return `<div class="doc-row"><span class="doc-cat doc-cat--${catClass(d.categoria)}">${d.categoria}</span><span class="doc-nome">${d.nome}</span><div class="doc-row__meta"><span class="doc-data">${d.data || '—'}</span><span class="selo selo--${st.cls}">${st.label}</span></div></div>`;
+        return `<div class="doc-row"><span class="doc-cat doc-cat--${catClass(d.categoria)}">${escapeHtml(d.categoria)}</span><span class="doc-nome">${escapeHtml(d.nome)}</span><div class="doc-row__meta"><span class="doc-data">${d.data || '—'}</span><span class="selo selo--${st.cls}">${st.label}</span></div></div>`;
       }).join('');
 
       return `
@@ -333,7 +334,7 @@
           <div class="collab-head" onclick="this.parentElement.classList.toggle('open')">
             <div class="collab-avatar">${iniciais(emp.nome)}</div>
             <div class="collab-info">
-              <div class="collab-name">${emp.nome}</div>
+              <div class="collab-name">${escapeHtml(emp.nome)}</div>
               <div class="collab-empresa">${emp.documentos.length} documento(s) cadastrado(s)</div>
             </div>
             <div class="collab-summary">${resumoHtml}</div>

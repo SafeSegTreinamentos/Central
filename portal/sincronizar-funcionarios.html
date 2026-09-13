@@ -167,7 +167,11 @@
         }
 
         let acao;
-        if (funcExistente && funcExistente.cpf === aluno.cpf) acao = 'ja-ok';
+        // compara CPF sem pontuação — "123.456.789-00" e "12345678900" são
+        // a mesma pessoa, mas uma comparação exata de string via '===' os
+        // tratava como diferentes, criando um funcionário duplicado
+        const cpfLimpo = s => (s || '').toString().replace(/\D/g, '');
+        if (funcExistente && cpfLimpo(funcExistente.cpf) === cpfLimpo(aluno.cpf)) acao = 'ja-ok';
         else if (funcExistente) acao = 'atualizar-cpf';
         else acao = 'criar';
 

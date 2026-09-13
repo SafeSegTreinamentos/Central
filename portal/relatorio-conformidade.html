@@ -77,7 +77,7 @@
     if (!dataStr) return { texto: 'Pendente', cor: [120,120,120] };
     const partes = dataStr.split('/');
     if (partes.length !== 3) return { texto: 'Pendente', cor: [120,120,120] };
-    const venc = new Date(partes.reverse().join('-'));
+    const venc = (() => { const [dd,mm,aaaa] = partes; return new Date(Number(aaaa), Number(mm)-1, Number(dd)); })();
     const dias = (venc - new Date()) / 86400000;
     if (dias < 0) return { texto: 'Vencido', cor: [220,38,38] };
     if (dias <= 60) return { texto: 'Vencendo', cor: [217,119,6] };

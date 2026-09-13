@@ -24,7 +24,8 @@ import {
   where,
   or,
   orderBy,
-  limit
+  limit,
+  runTransaction
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import {
   getAuth,
@@ -204,6 +205,6 @@ export async function registrarAuditoria(acao, detalhes) {
 // a URL gigante do CDN de novo em cada página que usar este arquivo.
 export {
   collection, collectionGroup, getDocs, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc,
-  query, where, or, orderBy, limit, onAuthStateChanged, signOut
+  query, where, or, orderBy, limit, onAuthStateChanged, signOut, runTransaction
 };
 // obterMeuPerfil e esperarAuth já exportados acima com 'export function'/'export async function'

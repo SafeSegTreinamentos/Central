@@ -157,6 +157,7 @@
 
 <script type="module">
   import { db, doc, updateDoc, collection, getDocs, addDoc, obterMeuPerfil } from '../assets/js/firebase-init.js';
+  import { escapeHtml } from '../assets/js/utils.js';
 
   let empresaId = null;
   let funcionariosCache = [];
@@ -173,11 +174,11 @@
         <td>
           <div style="display:flex; align-items:center; gap:8px;">
             ${f.fotoBase64 ? `<img src="${f.fotoBase64}" style="width:28px; height:28px; border-radius:50%; object-fit:cover;">` : `<span style="width:28px; height:28px; border-radius:50%; background:var(--paper-100); display:inline-flex; align-items:center; justify-content:center; font-size:13px;">👤</span>`}
-            ${f.nome}
+            ${f.nome ? escapeHtml(f.nome) : ''}
           </div>
         </td>
         <td style="font-family:var(--font-data); font-size:12px;">${f.cpf || '—'}</td>
-        <td>${f.cargo || '—'}</td>
+        <td>${escapeHtml(f.cargo) || '—'}</td>
         <td style="font-family:var(--font-data); font-size:12px;">${f.admissao ? f.admissao.split('-').reverse().join('/') : '—'}</td>
         <td><span class="selo selo--${f.status === 'inativo' ? 'danger' : 'ok'}">${f.status === 'inativo' ? 'Inativo' : 'Ativo'}</span></td>
         <td style="white-space:nowrap;">

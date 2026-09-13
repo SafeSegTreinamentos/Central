@@ -50,7 +50,7 @@
 
   function statusPorData(dataStr) {
     if (!dataStr) return { cls: 'pending', cor: [120,120,120] };
-    const venc = new Date(dataStr.split('/').reverse().join('-'));
+    const venc = (() => { const [dd,mm,aaaa] = dataStr.split('/'); return new Date(Number(aaaa), Number(mm)-1, Number(dd)); })();
     const dias = (venc - new Date()) / 86400000;
     if (dias < 0) return { cls: 'danger', cor: [220,38,38] };
     if (dias <= 60) return { cls: 'warn', cor: [217,119,6] };

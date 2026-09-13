@@ -109,7 +109,7 @@
       <div class="kpi-row">
         <div class="kpi"><div class="lbl">A Receber (aberto)</div><div class="val" id="kpiReceber" style="color:var(--status-ok);">—</div></div>
         <div class="kpi"><div class="lbl">A Pagar (aberto)</div><div class="val" id="kpiPagar" style="color:var(--status-danger);">—</div></div>
-        <div class="kpi"><div class="lbl">Saldo previsto</div><div class="val" id="kpiSaldo">—</div></div>
+        <div class="kpi"><div class="lbl">Saldo previsto <span title="Projeção: tudo que ainda está em aberto pra receber, menos tudo em aberto pra pagar. Não é o saldo de caixa real — pra isso, veja a aba Fluxo de Caixa." style="cursor:help; opacity:.6;">ⓘ</span></div><div class="val" id="kpiSaldo">—</div></div>
         <div class="kpi"><div class="lbl">Notas Fiscais emitidas</div><div class="val" id="kpiNF">—</div></div>
       </div>
 
@@ -482,8 +482,8 @@
       return dataStr.slice(0,7); // funciona pra "AAAA-MM-DD"
     }
 
-    const entradas = meses.map(m => receberCache.filter(r => r.status === 'pago' && chaveDe(r.vencimento) === m.chave).reduce((s,r) => s + Number(r.valor||0), 0));
-    const saidas = meses.map(m => pagarCache.filter(p => p.status === 'pago' && chaveDe(p.vencimento) === m.chave).reduce((s,p) => s + Number(p.valor||0), 0));
+    const entradas = meses.map(m => receberCache.filter(r => r.status === 'pago' && chaveDe(r.pagoEm || r.vencimento) === m.chave).reduce((s,r) => s + Number(r.valor||0), 0));
+    const saidas = meses.map(m => pagarCache.filter(p => p.status === 'pago' && chaveDe(p.pagoEm || p.vencimento) === m.chave).reduce((s,p) => s + Number(p.valor||0), 0));
 
     const ctx = document.getElementById('chartFluxo').getContext('2d');
     if (graficoFluxo) graficoFluxo.destroy();
@@ -506,7 +506,7 @@
     // resumo por categoria (receitas + despesas pagas, últimos 6 meses)
     const chavesValidas = new Set(meses.map(m => m.chave));
     const porCategoria = {};
-    receberCache.filter(r => r.status === 'pago' && chavesValidas.has(chaveDe(r.vencimento))).forEach(r => {
+    receberCache.filter(r => r.status === 'pago' && chavesValidas.has(chaveDe(r.pagoEm || r.vencimento))).forEach(r => {
       const cat = r.categoria || 'Sem categoria';
       porCategoria[cat] = (porCategoria[cat] || 0) + Number(r.valor||0);
     });
@@ -523,8 +523,11 @@
 
   window.marcarComoPago = async function(id, empresaId) {
     try {
-      if (empresaId) await updateDoc(doc(db, 'empresas', empresaId, 'financeiro', id), { status: 'pago' });
-      else await updateDoc(doc(db, 'contasPagar', id), { status: 'pago' });
+      // grava a data REAL do pagamento (não existia antes) — o gráfico de
+      // Fluxo de Caixa passa a agrupar por essa data, não pelo vencimento
+      const pagoEm = new Date().toISOString().slice(0, 10); // "AAAA-MM-DD"
+      if (empresaId) await updateDoc(doc(db, 'empresas', empresaId, 'financeiro', id), { status: 'pago', pagoEm });
+      else await updateDoc(doc(db, 'contasPagar', id), { status: 'pago', pagoEm });
       carregarTudo();
     } catch (err) { alert('Erro: ' + err.message); }
   };

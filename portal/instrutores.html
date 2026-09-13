@@ -159,6 +159,7 @@
 
 <script type="module">
   import { db, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, esperarAuth } from '../assets/js/firebase-init.js';
+  import { escapeHtml } from '../assets/js/utils.js';
 
   const NR_GROUPS = [
     { titulo: "Normas Gerais", itens: [
@@ -412,12 +413,12 @@
     box.innerHTML = filtrados.map(i => `
       <div class="instrutor-row">
         <div style="flex:1; min-width:0;">
-          <div class="nome">${i.nome}</div>
-          <div class="sub">${i.cpf || '—'} ${i.telefone ? '· ' + i.telefone : ''} ${i.email ? '· ' + i.email : ''}</div>
-          <div class="badges">${(i.treinamentos||[]).slice(0,6).map(t => `<span class="badge-nr">${t}</span>`).join('')}${(i.treinamentos||[]).length > 6 ? `<span class="badge-nr">+${i.treinamentos.length - 6}</span>` : ''}</div>
+          <div class="nome">${escapeHtml(i.nome)}</div>
+          <div class="sub">${i.cpf || '—'} ${i.telefone ? '· ' + escapeHtml(i.telefone) : ''} ${i.email ? '· ' + escapeHtml(i.email) : ''}</div>
+          <div class="badges">${(i.treinamentos||[]).slice(0,6).map(t => `<span class="badge-nr">${escapeHtml(t)}</span>`).join('')}${(i.treinamentos||[]).length > 6 ? `<span class="badge-nr">+${i.treinamentos.length - 6}</span>` : ''}</div>
         </div>
         <button class="btn btn--secondary" style="padding:6px 12px; font-size:12px;" onclick="editarInstrutor('${i.id}')">Editar</button>
-        <button class="btn btn--danger" style="padding:6px 12px; font-size:12px;" onclick="excluirInstrutor('${i.id}', '${i.nome.replace(/'/g,"\\'")}')">Excluir</button>
+        <button class="btn btn--danger" style="padding:6px 12px; font-size:12px;" onclick="excluirInstrutor('${i.id}', '${escapeHtml(i.nome).replace(/'/g,"\\'")}')">Excluir</button>
       </div>`).join('');
   }
 

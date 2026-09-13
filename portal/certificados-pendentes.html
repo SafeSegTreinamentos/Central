@@ -98,6 +98,7 @@
 
 <script type="module">
   import { db, collection, getDocs, esperarAuth } from '../assets/js/firebase-init.js';
+  import { escapeHtml } from '../assets/js/utils.js';
 
   const LS_TURMAS = 'safeseg_turmas_v1';
 
@@ -169,9 +170,9 @@
             <tbody>
               ${pendentes.map(p => `
                 <tr>
-                  <td>${p.nome}</td>
+                  <td>${escapeHtml(p.nome)}</td>
                   <td>${p.curso}</td>
-                  <td>${p.empresa || 'CT SafeSeg'}</td>
+                  <td>${escapeHtml(p.empresa) || 'CT SafeSeg'}</td>
                   <td class="mono" style="font-family:var(--font-data); font-size:12px;">${p.turmaCodigo || '—'}</td>
                   <td><a href="gerador-turmas.html" class="btn btn--secondary" style="padding:6px 10px; font-size:12px; text-decoration:none;">Emitir no Gerador →</a></td>
                 </tr>`).join('')}

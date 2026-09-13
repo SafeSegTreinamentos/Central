@@ -206,8 +206,14 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
     (async function carregarInstrutoresReais() {
       try {
         const snap = await getDocs(collection(db, 'instrutores'));
-        const nomes = snap.docs.map(d => d.data().nome).filter(Boolean).sort();
-        if (nomes.length === 0) return; // mantém as opções fixas do HTML
+        const dadosInstrutores = snap.docs.map(d => d.data()).filter(d => d.nome);
+        if (dadosInstrutores.length === 0) return; // mantém as opções fixas do HTML
+
+        const nomes = dadosInstrutores.map(d => d.nome).sort();
+        // guarda nome->email pra usar na hora de mandar pra assinatura —
+        // assim o Apps Script não precisa mais de uma tabela fixa no código
+        window.__instrutoresEmailMap = {};
+        dadosInstrutores.forEach(d => { if (d.email) window.__instrutoresEmailMap[d.nome] = d.email; });
 
         const selectInstrutor = document.getElementById('fInstrutor');
         const valorAtual = selectInstrutor.value;
@@ -330,7 +336,7 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
     <div class="tabs">
       <button class="tab-btn active" data-tab="nova">Nova Turma</button>
       <button class="tab-btn" data-tab="hist">Histórico</button>
-      <button class="tab-btn" data-tab="cursos">Cursos</button>
+      <!-- aba "Cursos" antiga removida — catálogo agora vem do Catálogo de Cursos (Firestore), não mais localStorage -->
     </div>
   </div>
 
@@ -514,16 +520,6 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
     </div>
   </div>
 
-  <div class="panel" id="panel-cursos">
-    <div class="card">
-      <h2>Catálogo de cursos</h2>
-      <div class="actions-bar" style="justify-content:flex-start;margin-top:0;margin-bottom:14px;">
-        <button class="btn secondary small" id="btnAddCurso">+ Novo curso</button>
-        <button class="btn ghost small" id="btnSyncCursos">☁ Sincronizar catálogo com a nuvem</button>
-      </div>
-      <div id="cursosList"></div>
-    </div>
-  </div>
 </div>
 
 </div>
@@ -540,25 +536,11 @@ const LS_LOGO = 'safeseg_logo_v1';
 const DEFAULT_LOGO = '';
 document.documentElement.style.setProperty('--doc-accent', '#F59E0B'); // cor SafeSeg fixa, sem opção de troca
 
-const DEFAULT_CURSOS = [
-  {nome:'NR-05 — CIPA', carga:'20 Horas', conteudo:'Estudo do ambiente, das condições de trabalho e dos riscos originados do processo produtivo;\nMetodologia de investigação e análise de acidentes e doenças relacionadas ao trabalho;\nNoções sobre acidentes e doenças do trabalho decorrentes de exposição aos riscos existentes na empresa;\nNoções sobre a Síndrome de Burnout e prevenção do suicídio relacionado ao trabalho;\nOrganização da CIPA e outros assuntos necessários ao exercício das atividades da Comissão.'},
-  {nome:'NR-06 — EPI', carga:'04 Horas', conteudo:'Conceito de EPI e CA;\nClassificação dos EPIs quanto à sua utilização;\nResponsabilidades do empregador e do empregado;\nSeleção do EPI adequado ao risco;\nGuarda, conservação, higienização e substituição do EPI.'},
-  {nome:'NR-10 — Segurança em Instalações e Serviços em Eletricidade (Básico)', carga:'40 Horas', conteudo:'Introdução à segurança com eletricidade;\nRiscos em instalações e serviços com eletricidade;\nTécnicas de análise de risco;\nMedidas de controle do risco elétrico;\nNR-10 e regulamentações;\nEquipamentos de proteção coletiva e individual;\nRotinas de trabalho, riscos adicionais e primeiros socorros.'},
-  {nome:'NR-11 — Operação de Empilhadeira', carga:'16 Horas', conteudo:'Histórico da Regulamentação: Descrição e identificação dos riscos associados à máquina específica;\nSistemas de Proteção: Funcionamento e importância das proteções fixas, móveis e dispositivos de intertravamento;\nDispositivos de Parada de Emergência: Localização e modo de acionamento;\nMeios de Acesso: Uso correto de escadas, plataformas e passarelas de inspeção;\nSinalização de Segurança: Compreensão das placas, cores e avisos sonoros;\nProcedimentos de Trabalho Seguro: Métodos de operação, alimentação e retirada de peças;\nBloqueio e Etiquetagem (LOTO): Segurança para limpeza, ajuste e manutenção;\nRiscos de Acidentes: Medidas de prevenção e o que fazer em caso de anomalias;\nPermissão de Trabalho: Quando necessária para atividades não rotineiras.'},
-  {nome:'NR-12 — Segurança no Trabalho em Máquinas e Equipamentos', carga:'08 Horas', conteudo:'Aplicação e princípios da NR-12;\nDispositivos de segurança em máquinas;\nSistemas de proteção e intertravamento;\nProcedimentos de trabalho seguro;\nManutenção, inspeção e regulagem de máquinas.'},
-  {nome:'NR-18 — Segurança na Construção Civil', carga:'08 Horas', conteudo:'Condições e meio ambiente de trabalho na indústria da construção;\nPCMAT;\nÁreas de vivência;\nProteção contra quedas;\nMáquinas, equipamentos e ferramentas.'},
-  {nome:'NR-20 — Segurança com Inflamáveis e Combustíveis (Básico)', carga:'08 Horas', conteudo:'Noções básicas de inflamáveis e combustíveis;\nClassificação de áreas e instalações;\nRiscos e medidas de controle;\nProcedimentos em situações de emergência.'},
-  {nome:'NR-33 — Espaços Confinados (Supervisor)', carga:'40 Horas', conteudo:'Definições e tipificação de espaços confinados;\nReconhecimento, avaliação e controle de riscos;\nOperação, equipamentos, sistemas de ventilação;\nElaboração da Permissão de Entrada e Trabalho (PET);\nAtribuições do supervisor de entrada;\nUtilização dos equipamentos de proteção;\nCriação e manutenção de condições atmosféricas seguras;\nProcedimentos e utilização de equipamentos de resgate e primeiros socorros;\nInvestigação e análise de acidentes;\nAspectos comportamentais;\nRotina de trabalho para entrada e permanência;\nSimulados práticos.'},
-  {nome:'NR-34 — Segurança na Indústria da Construção e Reparação Naval', carga:'08 Horas', conteudo:'Disposições gerais da NR-34;\nRiscos específicos das atividades navais;\nMedidas de proteção coletiva e individual;\nProcedimentos de trabalho seguro.'},
-  {nome:'NR-35 — Trabalho em Altura', carga:'08 Horas', conteudo:'Normas e regulamentos aplicáveis;\nAnálise de risco e condições impeditivas;\nSistemas, equipamentos e cinturão de segurança;\nAcidentes com trabalho em altura;\nUso de EPI, EPC e outros equipamentos;\nProcedimentos de emergência e resgate.'},
-];
+// (catálogo antigo DEFAULT_CURSOS/loadCursos/saveCursos removido — o
+// Catálogo de Cursos, no Firestore, é agora a única fonte de verdade
+// pro nome/carga/conteúdo de cada curso, usado por Propostas, Certificado
+// Externo, Dossiê, Carteirinha, e agora também aqui no Gerador de Turmas)
 
-function loadCursos(){
-  let c = localStorage.getItem(LS_CURSOS);
-  if(!c){ localStorage.setItem(LS_CURSOS, JSON.stringify(DEFAULT_CURSOS)); return DEFAULT_CURSOS.slice(); }
-  try{ return JSON.parse(c); }catch(e){ return DEFAULT_CURSOS.slice(); }
-}
-function saveCursos(list){ localStorage.setItem(LS_CURSOS, JSON.stringify(list)); }
 function loadTurmas(){ try{ return JSON.parse(localStorage.getItem(LS_TURMAS)||'[]'); }catch(e){ return []; } }
 function saveTurmas(list){
   localStorage.setItem(LS_TURMAS, JSON.stringify(list));
@@ -623,21 +605,12 @@ async function checkCloudStatus(){
     // NÃO sobrescreve mais as turmas com esse sistema antigo — Firestore já
     // é a fonte de verdade. Isso causava perda real de dado (aprovação de
     // aluno sumindo) toda vez que essa sincronização rodava com sucesso.
-    if(data.cursos && data.cursos.length){
-      saveCursos(data.cursos);
-      atualizarCursosDoInstrutor(); // usa a lista real por instrutor, não a antiga por índice
-    } else if(loadCursos().length){
-      await pushCursosToCloud();
-    }
+    // Também não sincroniza mais "cursos" — o catálogo antigo foi removido,
+    // o Catálogo de Cursos (Firestore) é a fonte única agora.
     setCloudBanner('✅ Conectado à nuvem — histórico sincronizado entre dispositivos.','on');
   }catch(err){
     setCloudBanner('⚠️ Não foi possível conectar à nuvem ('+err.message+'). Usando dados salvos neste aparelho.','error');
   }
-}
-async function pushCursosToCloud(){
-  const url=getAppsUrl();
-  if(!url) return;
-  try{ await cloudPost({action:'saveCursos', cursos: loadCursos()}); }catch(e){ console.error('sync cursos falhou', e); }
 }
 
 function nextTurmaCode(dateStr){
@@ -718,27 +691,31 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
     btn.classList.add('active');
     document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
     if(btn.dataset.tab==='hist') renderHistorico();
-    if(btn.dataset.tab==='cursos') refreshCursosFromCloud();
   });
 });
 
-function populateCursoSelect(){
-  const sel=document.getElementById('fCurso');
-  const cursos=loadCursos();
-  sel.innerHTML = cursos.map((c,i)=>`<option value="${i}">${c.nome}</option>`).join('') + `<option value="custom">Outro (digitar manualmente)</option>`;
-}
-document.getElementById('fCurso').addEventListener('change',e=>{
-  const cursos=loadCursos();
-  const v=e.target.value;
-  if(v==='custom'){
-    document.getElementById('fCarga').value='';
-    document.getElementById('fConteudo').value='';
-    return;
+let catalogoCursosCache = null; // busca uma vez só do Firestore, cacheia depois
+async function buscarNoCatalogoCursos(nomeCurso) {
+  if (!window.__firestore) return null;
+  const { db, collection, getDocs } = window.__firestore;
+  if (!catalogoCursosCache) {
+    try {
+      const snap = await getDocs(collection(db, 'catalogoCursos'));
+      catalogoCursosCache = snap.docs.map(d => d.data());
+    } catch (e) { console.error('Erro ao buscar Catálogo de Cursos:', e); return null; }
   }
-  const c=cursos[+v];
-  if(c){
-    document.getElementById('fCarga').value=c.carga||'';
-    document.getElementById('fConteudo').value=c.conteudo||'';
+  const normaliza = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+  return catalogoCursosCache.find(c => normaliza(c.nome) === normaliza(nomeCurso)) || null;
+}
+document.getElementById('fCurso').addEventListener('change', async e=>{
+  const v=e.target.value;
+  if (!v) return;
+  // auto-preenche carga/conteúdo a partir do Catálogo de Cursos real
+  // (Firestore) — antes vinha de um catálogo local solto, desconectado
+  const cursoDoCatalogo = await buscarNoCatalogoCursos(v);
+  if (cursoDoCatalogo) {
+    document.getElementById('fCarga').value = cursoDoCatalogo.ch || cursoDoCatalogo.carga || '';
+    document.getElementById('fConteudo').value = cursoDoCatalogo.prog || cursoDoCatalogo.conteudo || '';
   }
 });
 
@@ -814,11 +791,11 @@ document.getElementById('fEmpresa').addEventListener('change', carregarFuncionar
 
 // ---------- Sugestão automática de turma ----------
 function nomeCursoAtual() {
+  // o valor do campo já É o nome do curso (texto direto, vindo dos
+  // Modelos) — antes esperava um índice de um catálogo que não existe
+  // mais, então retornava null sempre, quebrando a Sugestão Automática
   const v = document.getElementById('fCurso').value;
-  if (v === 'custom') return null;
-  const cursos = loadCursos();
-  const c = cursos[+v];
-  return c ? c.nome : null;
+  return v || null;
 }
 function parseDataCertBR(str) {
   if (!str) return null;
@@ -1636,7 +1613,7 @@ async function emitirCertificadosDaTurma(id){
               colaborador: aluno.nome,
               cpf: aluno.cpf || '',
               nr: t.curso || '',
-              validade: '',
+              validade: resultado.validade || '', // agora vem calculada de verdade do Apps Script (antes sempre vazio)
               pdfUrl: resultado.url,
               assinadoAssinafy: false,
               criadoEm: new Date().toISOString(),
@@ -1728,7 +1705,7 @@ async function verificarAssinaturasClick(turmaId) {
               await addDoc(collection(db, 'empresas', empresaIdDoItem, 'certificados'), {
                 colaborador: item.nome,
                 nr: t.curso || '',
-                validade: '',
+                validade: '', // não temos a validade calculada disponível nesse ponto específico (fluxo de verificação de assinatura, não de emissão) — fica vazio até editar manualmente ou regenerar
                 pdfUrl: item.urlAssinado,
                 assinadoAssinafy: true,
                 criadoEm: new Date().toISOString()
@@ -1755,6 +1732,14 @@ async function verificarAssinaturasClick(turmaId) {
     `<br><button class="btn secondary small" style="margin-top:8px;" onclick="verificarAssinaturasClick('${turmaId}')">🔄 Verificar de novo</button>`;
 }
 
+// Monta a lista {nome, email} pra mandar pra Assinafy, usando o cadastro
+// real de Instrutores — assim o Apps Script não depende mais de uma
+// tabela fixa no código pra saber o e-mail de cada um
+function montarInstrutoresComEmail(nomes) {
+  const mapa = window.__instrutoresEmailMap || {};
+  return nomes.filter(Boolean).map(nome => ({ nome, email: mapa[nome] || null }));
+}
+
 async function enviarParaAssinaturaClick(turmaId, indice) {
   const emitidos = window[`__emitidos_${turmaId}`];
   if (!emitidos || !emitidos[indice]) return;
@@ -1767,7 +1752,7 @@ async function enviarParaAssinaturaClick(turmaId, indice) {
     const resultado = await chamarScriptCertificados({
       acao: 'assinafyEnviarParaAssinatura',
       certificadoUrl: item.url,
-      instrutores: [item.instrutor, ...(item.instrutoresAuxiliares || [])].filter(Boolean),
+      instrutoresComEmail: montarInstrutoresComEmail([item.instrutor, ...(item.instrutoresAuxiliares || [])]),
       nomeAluno: item.nome
     });
     if (resultado && resultado.sucesso) {
@@ -1804,7 +1789,7 @@ async function enviarTodosParaAssinaturaClick(turmaId) {
       const resultado = await chamarScriptCertificados({
         acao: 'assinafyEnviarParaAssinatura',
         certificadoUrl: emitidos[i].url,
-        instrutores: [emitidos[i].instrutor, ...(emitidos[i].instrutoresAuxiliares || [])].filter(Boolean),
+        instrutoresComEmail: montarInstrutoresComEmail([emitidos[i].instrutor, ...(emitidos[i].instrutoresAuxiliares || [])]),
         nomeAluno: emitidos[i].nome
       });
       if (resultado && resultado.sucesso) {
@@ -1847,58 +1832,11 @@ async function deleteTurma(id){
   toast('Turma excluída');
 }
 
-async function refreshCursosFromCloud(){
-  const url=getAppsUrl();
-  if(url){
-    try{
-      const data = await cloudGet({action:'list'});
-      if(data && data.ok && data.cursos && data.cursos.length){ saveCursos(data.cursos); atualizarCursosDoInstrutor(); }
-    }catch(e){ }
-  }
-  renderCursos();
-}
-function renderCursos(){
-  const cursos=loadCursos();
-  const box=document.getElementById('cursosList');
-  box.innerHTML = cursos.map((c,i)=>`
-    <div class="course-item">
-      <div class="row">
-        <div class="field"><label>Nome do curso</label><input value="${c.nome.replace(/"/g,'&quot;')}" onchange="updateCurso(${i},'nome',this.value)"></div>
-        <div class="field"><label>Carga horária padrão</label><input value="${c.carga||''}" onchange="updateCurso(${i},'carga',this.value)"></div>
-      </div>
-      <div class="field" style="margin-top:8px;"><label>Conteúdo programático padrão</label>
-        <textarea onchange="updateCurso(${i},'conteudo',this.value)">${c.conteudo||''}</textarea>
-      </div>
-      <div class="actions-bar"><button class="btn danger small" onclick="removeCurso(${i})">Excluir curso</button></div>
-    </div>`).join('');
-}
-function updateCurso(i, field, value){
-  const cursos=loadCursos();
-  cursos[i][field]=value;
-  saveCursos(cursos);
-  pushCursosToCloud();
-}
-function removeCurso(i){
-  if(!confirm('Excluir este curso do catálogo?')) return;
-  const cursos=loadCursos();
-  cursos.splice(i,1);
-  saveCursos(cursos);
-  renderCursos();
-  pushCursosToCloud();
-}
-document.getElementById('btnAddCurso').addEventListener('click',()=>{
-  const cursos=loadCursos();
-  cursos.push({nome:'Novo curso', carga:'', conteudo:''});
-  saveCursos(cursos);
-  renderCursos();
-  pushCursosToCloud();
-});
-document.getElementById('btnSyncCursos').addEventListener('click', async ()=>{
-  if(!getAppsUrl()){ toast('Conecte a sincronização primeiro (aba Nova Turma)'); return; }
-  toast('Enviando catálogo para a nuvem...');
-  await pushCursosToCloud();
-  toast('Catálogo sincronizado com a nuvem');
-});
+// (aba "Cursos" antiga removida por completo — refreshCursosFromCloud,
+// renderCursos, updateCurso, removeCurso e os listeners de
+// btnAddCurso/btnSyncCursos não existem mais. O Catálogo de Cursos, no
+// Firestore, agora é a única fonte de verdade — gerenciado na própria
+// tela "Catálogo de Cursos" do Portal, não mais aqui.)
 
 document.getElementById('btnSaveAppsUrl').addEventListener('click', ()=>{
   const v=document.getElementById('fAppsUrl').value.trim();

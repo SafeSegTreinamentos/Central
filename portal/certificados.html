@@ -332,6 +332,7 @@
 
 <script type="module">
   import { db, collection, getDocs, doc, updateDoc, addDoc, esperarAuth, registrarAuditoria } from '../assets/js/firebase-init.js';
+  import { escapeHtml } from '../assets/js/utils.js';
 
   // Certificados vivem em: empresas/{id}/certificados
   // ⚠️ Schema do documento de certificado ainda NÃO foi confirmado no Firestore
@@ -348,7 +349,7 @@
   }
   function statusPorData(dataStr) {
     if (!dataStr) return { cls: 'pending', label: 'Pendente' };
-    const venc = new Date(dataStr.split('/').reverse().join('-')); // aceita DD/MM/AAAA
+    const venc = (() => { const [dd,mm,aaaa] = dataStr.split('/'); return new Date(Number(aaaa), Number(mm)-1, Number(dd)); })(); // aceita DD/MM/AAAA
     const hoje = new Date();
     const dias = (venc - hoje) / 86400000;
     if (dias < 0) return { cls: 'danger', label: 'Vencido' };
@@ -456,13 +457,13 @@
         return `
           <div class="cert-row" style="${c.substituidoPor ? 'opacity:.5;' : ''}">
             <span class="cert-nr">${c.nr}</span>
-            <span class="cert-nome">${c.nome}</span>
+            <span class="cert-nome">${escapeHtml(c.nome)}</span>
             <div class="cert-row__meta">
               ${c.cont ? `<span class="cert-cont">CONT ${c.cont}</span>` : ''}
               <span class="cert-data">${c.data || '—'}</span>
               ${c.substituidoPor ? `<span class="selo selo--pending">🔄 Renovado (veja o mais novo)</span>` : `<span class="selo selo--${st.cls}">${st.label}</span>`}
               ${c.origem === 'externo' ? `<span class="selo" style="background:#EFE9FE; color:#6B46C1;">🌐 Externo</span>` : ''}
-              <button class="btn btn--ghost" style="padding:4px 9px; font-size:11px;" onclick="abrirModalEditarCert('${c.id}', '${c.empresaId}', '${c.campoData}', '${(c.nr||'').replace(/'/g,"\\'")}', '${col.nome.replace(/'/g,"\\'")}')">✏️ Editar</button>
+              <button class="btn btn--ghost" style="padding:4px 9px; font-size:11px;" onclick="abrirModalEditarCert('${c.id}', '${c.empresaId}', '${c.campoData}', '${(c.nr||'').replace(/'/g,"\\'")}', '${escapeHtml(col.nome).replace(/'/g,"\\'")}')">✏️ Editar</button>
               <button class="btn btn--ghost" style="padding:4px 9px; font-size:11px;" onclick="abrirModalRegenerar('${(col.nome||'').replace(/'/g,"\\'")}', '${(c.cpf||'').replace(/'/g,"\\'")}', '${(c.nr||'').replace(/'/g,"\\'")}', '${(col.empresa||'').replace(/'/g,"\\'")}', '${c.id}', '${c.empresaId}')">🔄 Regenerar</button>
             </div>
           </div>`;
@@ -478,8 +479,8 @@
           <div class="collab-head" onclick="this.parentElement.classList.toggle('open')">
             <div class="collab-avatar">${iniciais(col.nome)}</div>
             <div class="collab-info">
-              <div class="collab-name">${col.nome}</div>
-              <div class="collab-empresa">${col.empresa}</div>
+              <div class="collab-name">${escapeHtml(col.nome)}</div>
+              <div class="collab-empresa">${escapeHtml(col.empresa)}</div>
             </div>
             <div class="collab-summary">${resumoHtml}</div>
             <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
@@ -668,7 +669,7 @@
     try {
       const catSnap = await getDocs(collection(db, 'catalogoCursos'));
       cursosCatalogoParaExterno = catSnap.docs.map(d => d.data()).filter(c => c.ativo !== false);
-      document.getElementById('listaCursosExterno').innerHTML = cursosCatalogoParaExterno.map(c => `<option value="${c.nome}">`).join('');
+      document.getElementById('listaCursosExterno').innerHTML = cursosCatalogoParaExterno.map(c => `<option value="${escapeHtml(c.nome)}">`).join('');
     } catch (e) { /* segue sem sugestão, não é crítico */ }
   };
   window.fecharModalExterno = function() {
@@ -682,13 +683,14 @@
     try {
       const snap = await getDocs(collection(db, 'empresas', empresaId, 'funcionarios'));
       const ativos = snap.docs.map(d => d.data()).filter(f => f.status !== 'inativo');
+      window.__funcionariosExternoCache = ativos; // guarda o array real — evita codificar cpf+nome numa string e desmontar depois (nome com "|" cortava errado)
       selectFunc.innerHTML = '<option value="">Escolhe o colaborador...</option>' +
-        ativos.map(f => `<option value="${(f.cpf||'').replace(/"/g,'')}|${f.nome.replace(/"/g,'')}">${f.nome}</option>`).join('');
+        ativos.map((f, i) => `<option value="${i}">${escapeHtml(f.nome)}</option>`).join('');
     } catch (e) { selectFunc.innerHTML = '<option value="">Erro ao carregar</option>'; }
   };
   window.salvarCertificadoExterno = async function() {
     const empresaId = document.getElementById('extEmpresa').value;
-    const funcionarioValor = document.getElementById('extFuncionario').value;
+    const funcionarioIndex = document.getElementById('extFuncionario').value;
     const curso = document.getElementById('extCurso').value.trim();
     const dataConclusao = document.getElementById('extDataConclusao').value;
     const dataValidade = document.getElementById('extDataValidade').value;
@@ -696,12 +698,14 @@
     const link = document.getElementById('extLink').value.trim();
     const erroBox = document.getElementById('extErro');
 
-    if (!empresaId || !funcionarioValor || !curso || !dataValidade) {
+    if (!empresaId || funcionarioIndex === '' || !curso || !dataValidade) {
       erroBox.textContent = 'Preenche empresa, colaborador, curso e data de validade.';
       erroBox.style.display = 'block';
       return;
     }
-    const [cpf, nome] = funcionarioValor.split('|');
+    const funcionarioEscolhido = (window.__funcionariosExternoCache || [])[Number(funcionarioIndex)];
+    const cpf = funcionarioEscolhido ? funcionarioEscolhido.cpf : '';
+    const nome = funcionarioEscolhido ? funcionarioEscolhido.nome : '';
     const [a,m,d] = dataValidade.split('-');
     const validadeBR = `${d}/${m}/${a}`;
 

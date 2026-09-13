@@ -827,6 +827,7 @@ const DEFAULT_COURSES = [
   }
 ];
   import { db, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, esperarAuth } from '../assets/js/firebase-init.js';
+  import { escapeHtml } from '../assets/js/utils.js';
 
   let cursosCache = [];
   let editandoId = null;
@@ -864,7 +865,7 @@ const DEFAULT_COURSES = [
     }
     box.innerHTML = lista.map(c => `
       <tr class="${c.ativo === false ? 'inativo' : ''}">
-        <td>${c.nome}</td>
+        <td>${escapeHtml(c.nome)}</td>
         <td>${c.ch || '—'}</td>
         <td>${c.mod || '—'}</td>
         <td>${money(c.valor)}</td>
@@ -956,20 +957,24 @@ const DEFAULT_COURSES = [
   };
 
   window.importarCatalogoPadrao = async function() {
-    if (!confirm(`Importar os ${DEFAULT_COURSES.length} cursos padrão da SafeSeg pro catálogo? Isso só adiciona — não apaga nada que já exista.`)) return;
+    if (!confirm(`Importar os ${DEFAULT_COURSES.length} cursos padrão da SafeSeg pro catálogo? Isso só adiciona os que ainda não existem — não duplica nem apaga nada.`)) return;
     const box = document.getElementById('importarBox');
     box.innerHTML = 'Importando...';
-    let total = 0;
+    const normaliza = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+    const nomesJaExistentes = new Set(cursosCache.map(c => normaliza(c.nome)));
+    let total = 0, pulados = 0;
     for (const c of DEFAULT_COURSES) {
+      if (nomesJaExistentes.has(normaliza(c.nome))) { pulados++; continue; } // já existe — não duplica (antes, rodar 2x duplicava o catálogo inteiro)
       await addDoc(collection(db, 'catalogoCursos'), {
         nome: c.nome, ch: c.ch || '', mod: c.mod || 'Online',
         valor: c.valor || 0, validade: c.validade || '', prog: c.prog || '', ativo: true
       });
       total++;
-      box.innerHTML = `Importando... ${total}/${DEFAULT_COURSES.length}`;
+      box.innerHTML = `Importando... ${total}/${DEFAULT_COURSES.length - pulados}`;
     }
     box.style.display = 'none';
     carregarCursos();
+    if (pulados > 0) alert(`${total} curso(s) novo(s) importado(s). ${pulados} já existia(m) no catálogo e foi(ram) pulado(s).`);
   };
 
   carregarCursos();

@@ -155,6 +155,7 @@
       <div class="flex gap-2">
         <button class="btn btn--secondary" onclick="exportarEmpresasCSV()">↓ Exportar</button>
         <a href="sincronizar-funcionarios.html" class="btn btn--secondary" style="text-decoration:none;">🔄 Sincronizar Funcionários</a>
+        <button class="btn btn--secondary" id="btnCriarPastasExistentes" onclick="criarPastasParaTodasExistentes()">📁 Criar pastas das empresas existentes</button>
         <button class="btn btn--primary" onclick="abrirModalNovaEmpresa()">+ Nova Empresa</button>
       </div>
     </header>
@@ -297,6 +298,7 @@
 
 <script type="module">
   import { db, collection, getDocs, addDoc, query, where, updateDoc, deleteDoc, doc, esperarAuth, criarUsuarioCliente, registrarAuditoria } from '../assets/js/firebase-init.js';
+  import { escapeHtml } from '../assets/js/utils.js';
 
   // Schema confirmado da coleção 'empresas': nome, cnpj, seg, cidade, resp.
   // Certificados vivem como SUBCOLEÇÃO: empresas/{id}/certificados
@@ -378,25 +380,25 @@
     const cardsHtml = filtradas.map(emp => `
       <div class="empresa-card">
         <div class="empresa-card__head" style="cursor:pointer;" onclick="location.href='empresa-detalhe.html?id=${emp.id}'">
-          <div class="empresa-avatar">${iniciais(emp.nome)}</div>
+          <div class="empresa-avatar">${escapeHtml(iniciais(emp.nome))}</div>
           <div>
-            <div class="empresa-nome">${emp.nome || '(sem nome)'}</div>
-            <div class="empresa-cnpj">${emp.cnpj || '—'}</div>
+            <div class="empresa-nome">${escapeHtml(emp.nome) || '(sem nome)'}</div>
+            <div class="empresa-cnpj">${escapeHtml(emp.cnpj) || '—'}</div>
           </div>
         </div>
-        ${emp.seg ? `<div class="empresa-setor">${emp.seg}</div>` : ''}
+        ${emp.seg ? `<div class="empresa-setor">${escapeHtml(emp.seg)}</div>` : ''}
         <div class="empresa-stats">
           <div class="empresa-stat"><div class="empresa-stat__value">${emp.totalCertificados}</div><div class="empresa-stat__label">Certificados</div></div>
           <div class="empresa-stat"><div class="empresa-stat__value">${emp.totalFuncionarios ?? '—'}</div><div class="empresa-stat__label">Funcionários</div></div>
         </div>
         ${(emp.cidade || emp.resp) ? `<div style="font-size:12px; color:var(--graphite-600); display:flex; justify-content:space-between;">
-          ${emp.cidade ? `<span>📍 ${emp.cidade}</span>` : '<span></span>'}
-          ${emp.resp ? `<span>👤 ${emp.resp}</span>` : ''}
+          ${emp.cidade ? `<span>📍 ${escapeHtml(emp.cidade)}</span>` : '<span></span>'}
+          ${emp.resp ? `<span>👤 ${escapeHtml(emp.resp)}</span>` : ''}
         </div>` : ''}
         <div class="empresa-card__footer" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
           <span class="selo selo--${emp.temAcesso ? 'ok' : 'pending'}">${emp.temAcesso ? 'Acesso ativo' : 'Sem acesso'}</span>
           <a href="empresa-detalhe.html?id=${emp.id}" class="btn btn--secondary" style="padding:6px 10px; font-size:12px; margin-left:auto; text-decoration:none;">Ver detalhes</a>
-          <button class="btn btn--ghost" style="padding:6px 10px; font-size:12px;" onclick="abrirModalAcesso('${emp.id}', '${(emp.nome||'').replace(/'/g,"\\'")}')">Gerenciar acesso</button>
+          <button class="btn btn--ghost" style="padding:6px 10px; font-size:12px;" onclick="abrirModalAcesso('${emp.id}', '${escapeHtml(emp.nome||'').replace(/'/g,"\\'")}')">Gerenciar acesso</button>
         </div>
       </div>
     `);
@@ -472,6 +474,55 @@
     }
   };
 
+  // NOVO — cria a pasta no Drive (com as 7 subpastas padrão) pra todas as
+  // empresas que já existem no sistema e ainda não têm — rodado uma vez
+  // só, pedido explícito do usuário. Empresas novas já ganham a pasta
+  // automaticamente ao serem cadastradas (não precisa rodar isso de novo
+  // pra elas).
+  window.criarPastasParaTodasExistentes = async function() {
+    const btn = document.getElementById('btnCriarPastasExistentes');
+    const textoOriginal = btn.textContent;
+
+    let empresas;
+    try {
+      const snap = await getDocs(collection(db, 'empresas'));
+      empresas = snap.docs.map(d => ({ id: d.id, nome: d.data().nome || '(sem nome)' }));
+    } catch (err) {
+      alert('Erro ao buscar empresas: ' + err.message);
+      return;
+    }
+    if (empresas.length === 0) { alert('Nenhuma empresa cadastrada ainda.'); return; }
+
+    if (!confirm(`Criar a pasta no Drive (com as 7 subpastas padrão) pra ${empresas.length} empresa(s)? Empresas que já têm pasta não são duplicadas — só ganham a pasta as que ainda não têm. Isso pode levar alguns minutos.`)) return;
+
+    btn.disabled = true;
+    let sucessos = 0;
+    const falhas = [];
+
+    for (let i = 0; i < empresas.length; i++) {
+      btn.textContent = `Criando ${i + 1}/${empresas.length} — ${empresas[i].nome}...`;
+      try {
+        const res = await fetch('https://script.google.com/macros/s/AKfycbz55Li88oyroPtFH1iTOV2nR58-xbuUAMkGcyb6GRzM3S6KQNARj7Sxvi1mZShhPg-WRg/exec', {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ acao: 'criarPastaCliente', nomeEmpresa: empresas[i].nome })
+        });
+        const resultado = await res.json();
+        if (resultado && resultado.sucesso) sucessos++;
+        else falhas.push(`${empresas[i].nome}: ${resultado ? resultado.erro : 'sem resposta'}`);
+      } catch (err) {
+        falhas.push(`${empresas[i].nome}: ${err.message}`);
+      }
+    }
+
+    btn.disabled = false;
+    btn.textContent = textoOriginal;
+
+    let resumo = `✅ ${sucessos} de ${empresas.length} pasta(s) criada(s)/confirmada(s) com sucesso.`;
+    if (falhas.length > 0) resumo += `\n\n⚠️ Falharam:\n` + falhas.join('\n');
+    alert(resumo);
+  };
+
   window.abrirModalNovaEmpresa = function() {
     document.getElementById('modalOverlay').style.display = 'flex';
   };
@@ -503,7 +554,19 @@
     erroBox.style.display = 'none';
 
     try {
-      await addDoc(collection(db, 'empresas'), { nome, cnpj, seg, cidade, resp, telefone, email, endereco, obs });
+      const empresaRef = await addDoc(collection(db, 'empresas'), { nome, cnpj, seg, cidade, resp, telefone, email, endereco, obs });
+
+      // NOVO — cria a pasta da empresa no Drive automaticamente, com as 7
+      // subpastas padrão (mesmo modelo já usado manualmente até agora).
+      // Roda em segundo plano — se o Drive falhar, a empresa já foi
+      // criada normalmente, só não teria a pasta ainda (pode gerar depois
+      // manualmente se precisar)
+      fetch('https://script.google.com/macros/s/AKfycbz55Li88oyroPtFH1iTOV2nR58-xbuUAMkGcyb6GRzM3S6KQNARj7Sxvi1mZShhPg-WRg/exec', {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ acao: 'criarPastaCliente', nomeEmpresa: nome })
+      }).catch(errDrive => console.error('Não foi possível criar a pasta no Drive (empresa já foi salva normalmente):', errDrive));
+
       window.fecharModalNovaEmpresa();
       ['novaEmpresaNome','novaEmpresaCnpj','novaEmpresaSeg','novaEmpresaCidade','novaEmpresaResp','novaEmpresaTelefone','novaEmpresaEmail','novaEmpresaEndereco','novaEmpresaObs']
         .forEach(id => { document.getElementById(id).value = ''; });

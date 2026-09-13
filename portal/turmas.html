@@ -125,6 +125,8 @@
 <script type="module">
   try {
     const { esperarAuth, db, collection, getDocs, addDoc, updateDoc, doc, setDoc } = await import('../assets/js/firebase-init.js');
+    const { escapeHtml } = await import('../assets/js/utils.js');
+    window.escapeHtml = escapeHtml; // expõe globalmente — o resto do arquivo usa funções fora desse escopo de módulo
     await esperarAuth();
     window.__firestore = { db, collection, getDocs, addDoc, updateDoc, doc, setDoc };
   } catch (err) {
@@ -213,7 +215,7 @@
       const aprovados = alunos.filter(a => a.aprovado).length;
       const linhas = alunos.map((a, ai) => `
         <tr>
-          <td>${a.nome}</td>
+          <td>${window.escapeHtml(a.nome)}</td>
           <td style="font-family:var(--font-data); font-size:12px;">${a.cpf || '—'}</td>
           <td><input type="text" value="${(a.nota||'').toString().replace(/"/g,'&quot;')}" placeholder="Nota (opcional)" onchange="atualizarAluno('${t.id}', ${ai}, 'nota', this.value)"></td>
           <td>
@@ -232,7 +234,7 @@
           <div class="turma-head" onclick="document.getElementById('turma-${t.id}').classList.toggle('open')">
             <div>
               <div class="turma-code">${t.codigo || '(sem código)'} — ${t.curso || 'Treinamento'}</div>
-              <div class="turma-meta">${t.empresa || 'CT SafeSeg'} · ${alunos.length} aluno(s) · ${aprovados} aprovado(s) · ${t.dias && t.dias[0] ? formatDateBR(t.dias[0].date) : ''}</div>
+              <div class="turma-meta">${window.escapeHtml(t.empresa) || 'CT SafeSeg'} · ${alunos.length} aluno(s) · ${aprovados} aprovado(s) · ${t.dias && t.dias[0] ? formatDateBR(t.dias[0].date) : ''}</div>
             </div>
             <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
           </div>
@@ -354,11 +356,11 @@
           });
           if (existente) {
             await updateDoc(doc(db, 'empresas', empresaIdParaGravar, 'certificados', existente.id), {
-              pdfUrl: resultado.url, cpf: aluno.cpf || '', regeneradoEm: new Date().toISOString()
+              pdfUrl: resultado.url, cpf: aluno.cpf || '', validade: resultado.validade || existente.data().validade || '', regeneradoEm: new Date().toISOString()
             });
           } else {
             await addDoc(collection(db, 'empresas', empresaIdParaGravar, 'certificados'), {
-              colaborador: aluno.nome, cpf: aluno.cpf || '', nr: turma.curso || '', validade: '',
+              colaborador: aluno.nome, cpf: aluno.cpf || '', nr: turma.curso || '', validade: resultado.validade || '',
               pdfUrl: resultado.url, assinadoAssinafy: false, criadoEm: new Date().toISOString()
             });
           }
