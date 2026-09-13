@@ -331,7 +331,7 @@
 </div>
 
 <script type="module">
-  import { db, collection, getDocs, doc, updateDoc, addDoc, esperarAuth, registrarAuditoria } from '../assets/js/firebase-init.js';
+  import { db, collection, getDocs, doc, updateDoc, addDoc, deleteDoc, esperarAuth, registrarAuditoria } from '../assets/js/firebase-init.js';
   import { escapeHtml } from '../assets/js/utils.js';
 
   // Certificados vivem em: empresas/{id}/certificados
@@ -465,6 +465,7 @@
               ${c.origem === 'externo' ? `<span class="selo" style="background:#EFE9FE; color:#6B46C1;">🌐 Externo</span>` : ''}
               <button class="btn btn--ghost" style="padding:4px 9px; font-size:11px;" onclick="abrirModalEditarCert('${c.id}', '${c.empresaId}', '${c.campoData}', '${(c.nr||'').replace(/'/g,"\\'")}', '${escapeHtml(col.nome).replace(/'/g,"\\'")}')">✏️ Editar</button>
               <button class="btn btn--ghost" style="padding:4px 9px; font-size:11px;" onclick="abrirModalRegenerar('${(col.nome||'').replace(/'/g,"\\'")}', '${(c.cpf||'').replace(/'/g,"\\'")}', '${(c.nr||'').replace(/'/g,"\\'")}', '${(col.empresa||'').replace(/'/g,"\\'")}', '${c.id}', '${c.empresaId}')">🔄 Regenerar</button>
+              <button class="btn btn--ghost" style="padding:4px 9px; font-size:11px; color:var(--status-danger);" onclick="excluirCertificado('${c.id}', '${c.empresaId}', '${escapeHtml(col.nome).replace(/'/g,"\\'")}', '${(c.nr||'').replace(/'/g,"\\'")}')">🗑️ Excluir</button>
             </div>
           </div>`;
       }).join('');
@@ -504,6 +505,17 @@
     link.href = URL.createObjectURL(blob);
     link.download = `safeseg-certificados-${new Date().toISOString().slice(0,10)}.csv`;
     link.click();
+  };
+
+  window.excluirCertificado = async function(certId, empresaId, nomeColaborador, nr) {
+    if (!confirm(`Excluir de vez o certificado "${nr}" de ${nomeColaborador}?\n\nIsso NÃO apaga o PDF do Drive nem a linha na planilha "ALUNOS GERAL" — só remove esse registro daqui do Portal. Não tem como desfazer.`)) return;
+    try {
+      await deleteDoc(doc(db, 'empresas', empresaId, 'certificados', certId));
+      registrarAuditoria('excluir_certificado', { nome: nomeColaborador, nr, empresaId });
+      carregarCertificados();
+    } catch (err) {
+      alert('Erro ao excluir: ' + err.message);
+    }
   };
 
   window.abrirModalEditarCert = function(certId, empresaId, campoData, nr, nomeColaborador) {

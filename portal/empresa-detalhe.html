@@ -587,15 +587,27 @@
     if (!f) return;
 
     try {
-      // cria no destino (sem o campo id, que é interno) e apaga da origem
-      const { id, ...dadosFuncionario } = f;
-      await addDoc(collection(db, 'empresas', destinoId, 'funcionarios'), dadosFuncionario);
+      const normaliza = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+
+      // NOVO — antes de criar, confere se já existe alguém com esse nome
+      // na empresa destino. Se existir, NÃO cria duplicado — só apaga o
+      // registro de origem e move os certificados; a pessoa "some" da
+      // origem e os certificados passam a aparecer sob o cadastro que já
+      // existia no destino. Isso corrige a duplicação relatada: mover
+      // sempre criava um funcionário novo, mesmo quando a pessoa já
+      // estava cadastrada lá — ficava um com 0 certificado (o antigo) e
+      // outro com tudo (o duplicado recém-criado).
+      const funcDestinoSnap = await getDocs(collection(db, 'empresas', destinoId, 'funcionarios'));
+      const jaExisteNoDestino = funcDestinoSnap.docs.some(d => normaliza(d.data().nome) === normaliza(f.nome));
+
+      if (!jaExisteNoDestino) {
+        const { id, ...dadosFuncionario } = f;
+        await addDoc(collection(db, 'empresas', destinoId, 'funcionarios'), dadosFuncionario);
+      }
       await deleteDoc(doc(db, 'empresas', empresaId, 'funcionarios', funcionarioParaMoverId));
 
-      // NOVO — move os certificados dessa pessoa junto (antes só o cadastro
-      // do funcionário ia, o certificado ficava "esquecido" na empresa
-      // antiga; isso causava duplicidade depois, na próxima sincronização)
-      const normaliza = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+      // move os certificados dessa pessoa junto (independente de ter
+      // criado funcionário novo ou reaproveitado o que já existia)
       const pegarNomeColaborador = c => c.colaborador || c.nome || c.aluno || c.funcionario || '';
       let certificadosMovidos = 0;
       try {
@@ -610,10 +622,10 @@
         console.error('Erro ao mover certificados (funcionário já foi movido normalmente):', errCert);
       }
 
-      registrarAuditoria('mover_funcionario', { nome: f.nome, empresaOrigemId: empresaId, empresaDestinoId: destinoId, certificadosMovidos });
+      registrarAuditoria('mover_funcionario', { nome: f.nome, empresaOrigemId: empresaId, empresaDestinoId: destinoId, certificadosMovidos, unificouComExistente: jaExisteNoDestino });
       fecharModalMover();
       carregarTudo();
-      alert(`${f.nome} movido(a) com sucesso ✅${certificadosMovidos > 0 ? ` (${certificadosMovidos} certificado(s) junto)` : ''}`);
+      alert(`${f.nome} movido(a) com sucesso ✅${certificadosMovidos > 0 ? ` (${certificadosMovidos} certificado(s) junto)` : ''}${jaExisteNoDestino ? ' — unificado com o cadastro que já existia lá, sem duplicar' : ''}`);
     } catch (err) {
       erroBox.textContent = 'Erro: ' + err.message;
       erroBox.style.display = 'block';
