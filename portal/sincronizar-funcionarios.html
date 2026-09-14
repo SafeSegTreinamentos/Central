@@ -255,43 +255,41 @@
           atualizados++;
         }
 
-        // Se caiu em "Não Alocados", também grava os certificados dela (puxados
-        // da planilha) — sem isso, a pessoa aparece como funcionário mas o
-        // filtro de Certificados não mostra nada, porque não tinha nenhum
-        // certificado gravado no Firestore ainda pra essa empresa
-        // (só na primeira vez — "já está OK" não recria, só completa pdfUrl embaixo)
-        if (p.acao !== 'ja-ok' && empresaId === naoAlocadosId && p.cursos && p.cursos.length > 0) {
-          for (const curso of p.cursos) {
-            const dataValidadeISOparaBR = curso.validade || ''; // já vem formatado dd/MM/yyyy do Apps Script
-            await addDoc(collection(db, 'empresas', empresaId, 'certificados'), {
-              colaborador: p.nome,
-              cpf: p.cpf || '',
-              nr: curso.curso || '',
-              cont: curso.cont || '',
-              validade: dataValidadeISOparaBR,
-              pdfUrl: curso.pdfUrl || '',
-              origemSincronizacao: true
-            });
-          }
-        }
-
-        // Mesmo quando o funcionário já existia ("já está OK"), confere se os
-        // certificados dele em Não Alocados estão sem o link do PDF (rodadas
-        // anteriores a essa correção não capturavam isso) — completa se faltar
-        if (p.acao === 'ja-ok' && empresaId === naoAlocadosId && p.cursos && p.cursos.length > 0) {
+        // Cria/completa os certificados dela (puxados da planilha) em
+        // QUALQUER empresa destino — antes isso só rodava quando a pessoa
+        // caía em "Não Alocados"; empresa real nunca ganhava certificado
+        // por aqui, mesmo quando reconhecida como funcionário já existente
+        // sem nenhum certificado ainda no Firestore (bug descoberto depois
+        // da correção anterior, que passou a reconhecer mais gente de
+        // empresa real sem certificado ainda vinculado)
+        if (p.cursos && p.cursos.length > 0) {
           try {
             const certSnap = await getDocs(collection(db, 'empresas', empresaId, 'certificados'));
-            for (const certDoc of certSnap.docs) {
-              const certData = certDoc.data();
-              if (normaliza(certData.colaborador) !== normaliza(p.nome)) continue;
-              if (certData.pdfUrl) continue; // já tem, não mexe
-              const cursoCorrespondente = p.cursos.find(c => normaliza(c.curso) === normaliza(certData.nr));
-              if (cursoCorrespondente && cursoCorrespondente.pdfUrl) {
-                await updateDoc(doc(db, 'empresas', empresaId, 'certificados', certDoc.id), { pdfUrl: cursoCorrespondente.pdfUrl });
+            const certsDaPessoa = certSnap.docs.filter(d => normaliza(d.data().colaborador) === normaliza(p.nome));
+
+            for (const curso of p.cursos) {
+              const certExistente = certsDaPessoa.find(d => normaliza(d.data().nr) === normaliza(curso.curso));
+              if (certExistente) {
+                // já existe — só completa o link do PDF se estiver faltando
+                // (rodadas anteriores a essa correção não capturavam isso)
+                if (!certExistente.data().pdfUrl && curso.pdfUrl) {
+                  await updateDoc(doc(db, 'empresas', empresaId, 'certificados', certExistente.id), { pdfUrl: curso.pdfUrl });
+                }
+              } else {
+                // não existe ainda — cria
+                await addDoc(collection(db, 'empresas', empresaId, 'certificados'), {
+                  colaborador: p.nome,
+                  cpf: p.cpf || '',
+                  nr: curso.curso || '',
+                  cont: curso.cont || '',
+                  validade: curso.validade || '', // já vem formatado dd/MM/yyyy do Apps Script
+                  pdfUrl: curso.pdfUrl || '',
+                  origemSincronizacao: true
+                });
               }
             }
-          } catch (errCompletar) {
-            console.error('Erro ao completar link do PDF:', errCompletar);
+          } catch (errCert) {
+            console.error(`Erro ao criar/completar certificados de ${p.nome}:`, errCert);
           }
         }
       } catch (err) {
