@@ -610,22 +610,39 @@
       // criado funcionário novo ou reaproveitado o que já existia)
       const pegarNomeColaborador = c => c.colaborador || c.nome || c.aluno || c.funcionario || '';
       let certificadosMovidos = 0;
+      let certificadosEncontrados = 0;
+      let erroMoverCertificados = null;
       try {
         const certsSnap = await getDocs(collection(db, 'empresas', empresaId, 'certificados'));
         const certsDaPessoa = certsSnap.docs.filter(d => normaliza(pegarNomeColaborador(d.data())) === normaliza(f.nome));
+        certificadosEncontrados = certsDaPessoa.length;
         for (const certDoc of certsDaPessoa) {
           await addDoc(collection(db, 'empresas', destinoId, 'certificados'), certDoc.data());
           await deleteDoc(doc(db, 'empresas', empresaId, 'certificados', certDoc.id));
           certificadosMovidos++;
         }
       } catch (errCert) {
-        console.error('Erro ao mover certificados (funcionário já foi movido normalmente):', errCert);
+        console.error('Erro ao mover certificados:', errCert);
+        erroMoverCertificados = errCert.message;
       }
 
-      registrarAuditoria('mover_funcionario', { nome: f.nome, empresaOrigemId: empresaId, empresaDestinoId: destinoId, certificadosMovidos, unificouComExistente: jaExisteNoDestino });
+      registrarAuditoria('mover_funcionario', { nome: f.nome, empresaOrigemId: empresaId, empresaDestinoId: destinoId, certificadosEncontrados, certificadosMovidos, unificouComExistente: jaExisteNoDestino });
       fecharModalMover();
       carregarTudo();
-      alert(`${f.nome} movido(a) com sucesso ✅${certificadosMovidos > 0 ? ` (${certificadosMovidos} certificado(s) junto)` : ''}${jaExisteNoDestino ? ' — unificado com o cadastro que já existia lá, sem duplicar' : ''}`);
+
+      // AGORA avisa de verdade se algo deu errado com os certificados —
+      // antes isso ficava escondido no console, e o alerta de sucesso
+      // aparecia mesmo quando os certificados não tinham ido junto
+      let resumo = `${f.nome} movido(a) com sucesso ✅`;
+      if (jaExisteNoDestino) resumo += ' — unificado com o cadastro que já existia lá, sem duplicar';
+      if (erroMoverCertificados) {
+        resumo += `\n\n⚠️ ATENÇÃO: encontrei ${certificadosEncontrados} certificado(s) dessa pessoa, mas deu erro ao mover: ${erroMoverCertificados}\n\nOs certificados continuam na empresa de ORIGEM — não foram perdidos, só não moveram.`;
+      } else if (certificadosEncontrados === 0) {
+        resumo += `\n\nℹ️ Não achei nenhum certificado registrado com o nome "${f.nome}" na empresa de origem — se ela tem certificado, confere se o nome bate certinho (acento, espaço) no cadastro do certificado.`;
+      } else {
+        resumo += ` (${certificadosMovidos} certificado(s) junto)`;
+      }
+      alert(resumo);
     } catch (err) {
       erroBox.textContent = 'Erro: ' + err.message;
       erroBox.style.display = 'block';

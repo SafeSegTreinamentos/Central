@@ -148,9 +148,16 @@
       let naoAlocadosEmpresa = empresas.find(e => normaliza(e.nome) === 'não alocados' || normaliza(e.nome) === 'nao alocados');
 
       // 3) Monta o plano de ação
+      // NOVO — prioriza achar onde a pessoa JÁ está CADASTRADA como
+      // funcionário, não onde já existe um certificado com o nome dela.
+      // Antes, alguém já corretamente alocado (mas ainda sem nenhum
+      // certificado registrado naquela empresa específica) era mandado de
+      // volta pra "Não Alocados" — porque a busca olhava só certificado,
+      // nunca o cadastro de funcionário em si.
       planoAcoes = alunosPlanilha.map(aluno => {
         const nomeNorm = normaliza(aluno.nome);
-        let empresaDestino = empresas.find(e => e.nomesCertificados.has(nomeNorm));
+        let empresaDestino = empresas.find(e => e.funcionariosExistentes[nomeNorm]);
+        if (!empresaDestino) empresaDestino = empresas.find(e => e.nomesCertificados.has(nomeNorm));
 
         let destino, funcExistente;
         if (empresaDestino) {
