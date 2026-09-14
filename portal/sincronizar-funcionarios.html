@@ -267,7 +267,22 @@
             const certSnap = await getDocs(collection(db, 'empresas', empresaId, 'certificados'));
             const certsDaPessoa = certSnap.docs.filter(d => normaliza(d.data().colaborador) === normaliza(p.nome));
 
+            // NOVO — se a planilha tem MAIS DE UMA linha pro mesmo curso da
+            // mesma pessoa (ex: uma completa com validade+PDF, outra "pendente"
+            // sem nada ainda), antes disso cada linha virava um certificado
+            // SEPARADO no Firestore — duplicando "NR-35 Válido" + "NR-35
+            // Pendente" para a mesma pessoa. Agora deduplica primeiro,
+            // mantendo só a entrada mais completa (com validade/PDF) por curso.
+            const cursosPorNome = {};
             for (const curso of p.cursos) {
+              const chave = normaliza(curso.curso);
+              const jaTemUma = cursosPorNome[chave];
+              const estaMaisCompleta = !jaTemUma || (!jaTemUma.validade && curso.validade) || (!jaTemUma.pdfUrl && curso.pdfUrl);
+              if (estaMaisCompleta) cursosPorNome[chave] = curso;
+            }
+            const cursosDeduplicados = Object.values(cursosPorNome);
+
+            for (const curso of cursosDeduplicados) {
               const certExistente = certsDaPessoa.find(d => normaliza(d.data().nr) === normaliza(curso.curso));
               if (certExistente) {
                 // já existe — só completa o link do PDF se estiver faltando
