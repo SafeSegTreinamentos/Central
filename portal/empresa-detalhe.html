@@ -536,10 +536,28 @@
     const f = funcionariosCache.find(x => x.id === id);
     if (!f) return;
     const novoStatus = f.status === 'inativo' ? 'ativo' : 'inativo';
-    if (!confirm(`${novoStatus === 'inativo' ? 'Inativar' : 'Reativar'} ${f.nome}?`)) return;
+    if (!confirm(`${novoStatus === 'inativo' ? 'Inativar' : 'Reativar'} ${f.nome}? ${novoStatus === 'inativo' ? 'Os certificados dele(a) também ficam inativos junto (não somem, só saem da lista principal).' : ''}`)) return;
     try {
       await updateDoc(doc(db, 'empresas', empresaId, 'funcionarios', id), { status: novoStatus });
-      registrarAuditoria(novoStatus === 'inativo' ? 'inativar_funcionario' : 'reativar_funcionario', { empresaId, funcionarioId: id, nome: f.nome });
+
+      // NOVO — inativa/reativa os certificados dessa pessoa junto, pra não
+      // precisar fazer um por um manualmente (e pra não poluir a lista de
+      // certificados com gente que já nem trabalha mais aqui)
+      const normaliza = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+      const pegarNomeColaborador = c => c.colaborador || c.nome || c.aluno || c.funcionario || '';
+      let certificadosAfetados = 0;
+      try {
+        const certsSnap = await getDocs(collection(db, 'empresas', empresaId, 'certificados'));
+        const certsDaPessoa = certsSnap.docs.filter(d => normaliza(pegarNomeColaborador(d.data())) === normaliza(f.nome));
+        for (const certDoc of certsDaPessoa) {
+          await updateDoc(doc(db, 'empresas', empresaId, 'certificados', certDoc.id), { status: novoStatus });
+          certificadosAfetados++;
+        }
+      } catch (errCert) {
+        console.error('Erro ao inativar certificados junto:', errCert);
+      }
+
+      registrarAuditoria(novoStatus === 'inativo' ? 'inativar_funcionario' : 'reativar_funcionario', { empresaId, funcionarioId: id, nome: f.nome, certificadosAfetados });
       carregarTudo();
     } catch (err) {
       alert('Erro: ' + err.message);

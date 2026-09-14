@@ -179,6 +179,11 @@
         <select id="filtroEmpresa" onchange="renderColaboradoresFiltrados()" style="border:1px solid var(--paper-200); border-radius:6px; padding:8px 12px; font-size:13px; background:#fff;">
           <option value="">Todas as empresas</option>
         </select>
+        <select id="filtroStatusCert" onchange="renderColaboradoresFiltrados()" style="border:1px solid var(--paper-200); border-radius:6px; padding:8px 12px; font-size:13px; background:#fff;">
+          <option value="ativo" selected>Só ativos</option>
+          <option value="todos">Todos (ativos + inativos)</option>
+          <option value="inativo">Só inativos</option>
+        </select>
         <div class="search-box">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
           <input type="text" id="buscaColaborador" placeholder="Buscar colaborador ou empresa..." oninput="renderColaboradoresFiltrados()">
@@ -399,7 +404,8 @@
             data: pick(c, 'validade', 'dataVencimento', 'vencimento', 'dataValidade'),
             campoData: ['validade','dataVencimento','vencimento','dataValidade'].find(f => c[f] !== undefined) || 'validade',
             substituidoPor: c.substituidoPor || null,
-            origem: c.origem || 'safeseg'
+            origem: c.origem || 'safeseg',
+            status: c.status || 'ativo'
           });
         });
       }));
@@ -437,12 +443,25 @@
     const todos = window.__colaboradoresCertificados || [];
     const empresaFiltro = document.getElementById('filtroEmpresa').value;
     const busca = (document.getElementById('buscaColaborador').value || '').toLowerCase().trim();
+    const filtroStatus = document.getElementById('filtroStatusCert').value;
 
-    const colaboradores = todos.filter(col => {
-      if (empresaFiltro && col.empresa !== empresaFiltro) return false;
-      if (busca && !col.nome.toLowerCase().includes(busca) && !col.empresa.toLowerCase().includes(busca)) return false;
-      return true;
-    });
+    // filtra os CERTIFICADOS de cada colaborador por status (ativo/inativo),
+    // não o colaborador inteiro — uma pessoa pode ter uma mistura dos dois
+    const colaboradores = todos
+      .map(col => ({
+        ...col,
+        certificados: col.certificados.filter(c => {
+          if (filtroStatus === 'todos') return true;
+          const statusCert = c.status || 'ativo'; // sem campo = trata como ativo (certificados antigos, de antes desse recurso existir)
+          return statusCert === filtroStatus;
+        })
+      }))
+      .filter(col => {
+        if (col.certificados.length === 0) return false; // sem nenhum certificado no filtro atual, não mostra o card
+        if (empresaFiltro && col.empresa !== empresaFiltro) return false;
+        if (busca && !col.nome.toLowerCase().includes(busca) && !col.empresa.toLowerCase().includes(busca)) return false;
+        return true;
+      });
 
     document.getElementById('countTodos').textContent = colaboradores.length;
 
@@ -454,17 +473,19 @@
     box.innerHTML = colaboradores.map((col, i) => {
       const certsHtml = col.certificados.map(c => {
         const st = statusPorData(c.data);
+        const estaInativo = c.status === 'inativo';
         return `
-          <div class="cert-row" style="${c.substituidoPor ? 'opacity:.5;' : ''}">
+          <div class="cert-row" style="${c.substituidoPor || estaInativo ? 'opacity:.5;' : ''}">
             <span class="cert-nr">${c.nr}</span>
             <span class="cert-nome">${escapeHtml(c.nome)}</span>
             <div class="cert-row__meta">
               ${c.cont ? `<span class="cert-cont">CONT ${c.cont}</span>` : ''}
               <span class="cert-data">${c.data || '—'}</span>
-              ${c.substituidoPor ? `<span class="selo selo--pending">🔄 Renovado (veja o mais novo)</span>` : `<span class="selo selo--${st.cls}">${st.label}</span>`}
+              ${estaInativo ? `<span class="selo selo--pending">⏸️ Inativo</span>` : (c.substituidoPor ? `<span class="selo selo--pending">🔄 Renovado (veja o mais novo)</span>` : `<span class="selo selo--${st.cls}">${st.label}</span>`)}
               ${c.origem === 'externo' ? `<span class="selo" style="background:#EFE9FE; color:#6B46C1;">🌐 Externo</span>` : ''}
               <button class="btn btn--ghost" style="padding:4px 9px; font-size:11px;" onclick="abrirModalEditarCert('${c.id}', '${c.empresaId}', '${c.campoData}', '${(c.nr||'').replace(/'/g,"\\'")}', '${escapeHtml(col.nome).replace(/'/g,"\\'")}')">✏️ Editar</button>
               <button class="btn btn--ghost" style="padding:4px 9px; font-size:11px;" onclick="abrirModalRegenerar('${(col.nome||'').replace(/'/g,"\\'")}', '${(c.cpf||'').replace(/'/g,"\\'")}', '${(c.nr||'').replace(/'/g,"\\'")}', '${(col.empresa||'').replace(/'/g,"\\'")}', '${c.id}', '${c.empresaId}')">🔄 Regenerar</button>
+              <button class="btn btn--ghost" style="padding:4px 9px; font-size:11px;" onclick="alternarStatusCertificado('${c.id}', '${c.empresaId}', '${escapeHtml(col.nome).replace(/'/g,"\\'")}', '${estaInativo ? 'ativo' : 'inativo'}')">${estaInativo ? '▶️ Reativar' : '⏸️ Inativar'}</button>
               <button class="btn btn--ghost" style="padding:4px 9px; font-size:11px; color:var(--status-danger);" onclick="excluirCertificado('${c.id}', '${c.empresaId}', '${escapeHtml(col.nome).replace(/'/g,"\\'")}', '${(c.nr||'').replace(/'/g,"\\'")}')">🗑️ Excluir</button>
             </div>
           </div>`;
@@ -505,6 +526,17 @@
     link.href = URL.createObjectURL(blob);
     link.download = `safeseg-certificados-${new Date().toISOString().slice(0,10)}.csv`;
     link.click();
+  };
+
+  window.alternarStatusCertificado = async function(certId, empresaId, nomeColaborador, novoStatus) {
+    if (!confirm(`${novoStatus === 'inativo' ? 'Inativar' : 'Reativar'} esse certificado de ${nomeColaborador}? ${novoStatus === 'inativo' ? 'Ele some da lista principal, mas continua guardado (diferente de Excluir).' : ''}`)) return;
+    try {
+      await updateDoc(doc(db, 'empresas', empresaId, 'certificados', certId), { status: novoStatus });
+      registrarAuditoria(novoStatus === 'inativo' ? 'inativar_certificado' : 'reativar_certificado', { nome: nomeColaborador, empresaId, certId });
+      carregarCertificados();
+    } catch (err) {
+      alert('Erro ao alterar status: ' + err.message);
+    }
   };
 
   window.excluirCertificado = async function(certId, empresaId, nomeColaborador, nr) {

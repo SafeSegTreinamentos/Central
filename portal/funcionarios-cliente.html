@@ -344,9 +344,24 @@
     const f = funcionariosCache.find(x => x.id === id);
     if (!f) return;
     const novoStatus = f.status === 'inativo' ? 'ativo' : 'inativo';
-    if (!confirm(`${novoStatus === 'inativo' ? 'Inativar' : 'Reativar'} ${f.nome}?`)) return;
+    if (!confirm(`${novoStatus === 'inativo' ? 'Inativar' : 'Reativar'} ${f.nome}? ${novoStatus === 'inativo' ? 'Os certificados dele(a) também ficam inativos junto.' : ''}`)) return;
     try {
       await updateDoc(doc(db, 'empresas', empresaId, 'funcionarios', id), { status: novoStatus, atualizadoEm: new Date().toISOString() });
+
+      // inativa/reativa os certificados dessa pessoa junto (mesmo
+      // comportamento da tela de admin)
+      const normaliza = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+      const pegarNomeColaborador = c => c.colaborador || c.nome || c.aluno || c.funcionario || '';
+      try {
+        const certsSnap = await getDocs(collection(db, 'empresas', empresaId, 'certificados'));
+        const certsDaPessoa = certsSnap.docs.filter(d => normaliza(pegarNomeColaborador(d.data())) === normaliza(f.nome));
+        for (const certDoc of certsDaPessoa) {
+          await updateDoc(doc(db, 'empresas', empresaId, 'certificados', certDoc.id), { status: novoStatus });
+        }
+      } catch (errCert) {
+        console.error('Erro ao inativar certificados junto:', errCert);
+      }
+
       carregarTudo();
     } catch (err) {
       alert('Erro: ' + err.message);
