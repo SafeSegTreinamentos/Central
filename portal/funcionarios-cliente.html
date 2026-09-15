@@ -321,7 +321,10 @@
     const nascimento = document.getElementById('funcNascimento').value;
     const erroBox = document.getElementById('funcErro');
     if (!nome) { erroBox.textContent = 'Digite o nome do funcionário.'; erroBox.style.display = 'block'; return; }
-    if (cpf && !validarCPF(cpf)) { erroBox.textContent = 'Esse CPF não é válido — confere se digitou certo.'; erroBox.style.display = 'block'; return; }
+    if (cpf && !validarCPF(cpf)) {
+      const seguirMesmoAssim = confirm(`⚠️ Esse CPF (${cpf}) não bate com o cálculo oficial — é bem provável que tenha algum dígito errado ou trocado.\n\nQuer salvar assim mesmo? Você pode corrigir depois, mas um CPF errado pode dar problema no certificado oficial dela(e).`);
+      if (!seguirMesmoAssim) { erroBox.textContent = 'Confere o CPF certo com a pessoa antes de salvar.'; erroBox.style.display = 'block'; return; }
+    }
 
     const btn = document.getElementById('btnSalvarFunc');
     btn.disabled = true; btn.textContent = 'Salvando...';
