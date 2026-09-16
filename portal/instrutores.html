@@ -132,9 +132,10 @@
 
         <div style="margin-top:18px; padding-top:16px; border-top:1px solid var(--paper-200);">
           <strong style="font-size:14px;">Treinamentos aptos a ministrar <span class="text-muted" id="nrCount" style="font-weight:400;">(0)</span></strong>
+          <input type="text" id="buscaTreinamento" placeholder="Buscar curso..." style="width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:8px 10px; font-size:13px; margin-top:8px;" oninput="renderCursosDoCatalogo()">
           <div id="nrContainer"></div>
           <div style="display:flex; gap:8px; margin-top:10px;">
-            <input type="text" id="fOutroTreinamento" placeholder="Outro treinamento não listado (opcional)" style="flex:1; border:1px solid var(--paper-200); border-radius:6px; padding:8px 10px; font-size:13px;">
+            <input type="text" id="fOutroTreinamento" placeholder="Outro treinamento não listado no catálogo (opcional)" style="flex:1; border:1px solid var(--paper-200); border-radius:6px; padding:8px 10px; font-size:13px;">
             <button type="button" class="btn btn--secondary" style="padding:6px 12px; font-size:12px;" onclick="adicionarOutroTreinamento()">Adicionar</button>
           </div>
           <div id="outrosTreinamentosTags" style="margin-top:6px;"></div>
@@ -161,27 +162,10 @@
   import { db, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, esperarAuth } from '../assets/js/firebase-init.js';
   import { escapeHtml } from '../assets/js/utils.js';
 
-  const NR_GROUPS = [
-    { titulo: "Normas Gerais", itens: [
-      "NR-01 - Disposições Gerais / GRO", "NR-05 - CIPA", "NR-06 - EPI",
-      "NR-07 - PCMSO", "NR-09 - Avaliação e Controle de Exposições Ocupacionais",
-      "NR-17 - Ergonomia", "NR-23 - Brigada de Incêndio"
-    ]},
-    { titulo: "Altura, Espaço Confinado e Energia", itens: [
-      "NR-10 - Segurança em Instalações Elétricas (Básico)", "NR-10 - SEP (Sistema Elétrico de Potência)",
-      "NR-12 - Segurança em Máquinas e Equipamentos", "NR-33 - Espaço Confinado (Trabalhador)",
-      "NR-33 - Espaço Confinado (Supervisor)", "NR-35 - Trabalho em Altura"
-    ]},
-    { titulo: "Construção e Indústria", itens: [
-      "NR-11 - Operação de Empilhadeira", "NR-11 - Ponte Rolante / Guindaste",
-      "NR-13 - Caldeiras e Vasos de Pressão", "NR-18 - Segurança na Construção Civil",
-      "NR-20 - Inflamáveis e Combustíveis", "NR-34 - Indústria Naval"
-    ]},
-    { titulo: "Rural, Transporte e Outros", itens: [
-      "NR-31 - Trabalho Rural", "NR-06 - PTA (Plataforma de Trabalho Aéreo)",
-      "MOPP - Movimentação de Produtos Perigosos", "Direção Defensiva", "Primeiros Socorros"
-    ]}
-  ];
+  // NOVO — antes era uma lista fixa (NR_GROUPS) no código, agora vem do
+  // Catálogo de Cursos de verdade (Firestore) — cadastrar um curso novo lá
+  // já faz ele aparecer aqui automaticamente, sem precisar editar código
+  let nomesCursosCatalogo = [];
   const REGISTRO_TIPOS = ["CREA", "CRM", "COREN", "MTE", "CRP", "CRF", "Outro"];
 
   let instrutoresCache = [];
@@ -208,25 +192,51 @@
 
   function slug(s) { return s.replace(/[^a-zA-Z0-9]/g, '_'); }
   const nrContainer = document.getElementById('nrContainer');
-  NR_GROUPS.forEach(grupo => {
-    const titulo = document.createElement('div');
-    titulo.className = 'nr-group-title';
-    titulo.textContent = grupo.titulo;
-    nrContainer.appendChild(titulo);
+  let treinamentosMarcadosTemp = new Set(); // preserva o que já foi marcado entre re-renderizações (ex: ao usar a busca)
+
+  async function carregarCursosDoCatalogo() {
+    try {
+      const snap = await getDocs(collection(db, 'catalogoCursos'));
+      nomesCursosCatalogo = snap.docs.map(d => d.data().nome).filter(Boolean).sort((a,b) => a.localeCompare(b));
+    } catch (e) {
+      console.error('Erro ao carregar Catálogo de Cursos:', e);
+      nomesCursosCatalogo = [];
+    }
+    window.renderCursosDoCatalogo();
+  }
+
+  window.renderCursosDoCatalogo = function() {
+    const busca = (document.getElementById('buscaTreinamento').value || '').toLowerCase().trim();
+    const lista = busca ? nomesCursosCatalogo.filter(n => n.toLowerCase().includes(busca)) : nomesCursosCatalogo;
+    nrContainer.innerHTML = '';
+    if (nomesCursosCatalogo.length === 0) {
+      nrContainer.innerHTML = '<div class="text-muted" style="font-size:12.5px; padding:8px 0;">Nenhum curso no Catálogo de Cursos ainda — cadastra os cursos lá primeiro, ou usa o campo "Outro treinamento" abaixo por enquanto.</div>';
+      return;
+    }
+    if (lista.length === 0) {
+      nrContainer.innerHTML = '<div class="text-muted" style="font-size:12.5px; padding:8px 0;">Nenhum curso encontrado com esse termo.</div>';
+      return;
+    }
     const grid = document.createElement('div');
     grid.className = 'nr-grid';
-    grupo.itens.forEach(item => {
+    lista.forEach(item => {
       const id = 'nr_' + slug(item);
       const chip = document.createElement('label');
       chip.className = 'nr-chip';
-      chip.innerHTML = `<input type="checkbox" id="${id}" value="${item}"><span>${item}</span>`;
+      chip.innerHTML = `<input type="checkbox" id="${id}" value="${item.replace(/"/g,'&quot;')}" ${treinamentosMarcadosTemp.has(item) ? 'checked' : ''}><span>${item}</span>`;
       grid.appendChild(chip);
     });
     nrContainer.appendChild(grid);
+  };
+  nrContainer.addEventListener('change', e => {
+    if (e.target.type === 'checkbox') {
+      if (e.target.checked) treinamentosMarcadosTemp.add(e.target.value);
+      else treinamentosMarcadosTemp.delete(e.target.value);
+    }
+    atualizarContadorNR();
   });
-  nrContainer.addEventListener('change', atualizarContadorNR);
   function atualizarContadorNR() {
-    const marcados = nrContainer.querySelectorAll('input:checked').length + outrosTreinamentosTemp.length;
+    const marcados = treinamentosMarcadosTemp.size + outrosTreinamentosTemp.length;
     document.getElementById('nrCount').textContent = `(${marcados})`;
   }
 
@@ -297,7 +307,9 @@
     document.getElementById('fTipoConta').value = 'Corrente';
     document.getElementById('fPixChave').value = '';
     document.querySelector('input[name="pixTipo"][value="CPF"]').checked = true;
-    nrContainer.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = false);
+    treinamentosMarcadosTemp = new Set();
+    document.getElementById('buscaTreinamento').value = '';
+    window.renderCursosDoCatalogo();
     outrosTreinamentosTemp = [];
     renderOutrosTags();
     atualizarContadorNR();
@@ -327,7 +339,7 @@
     if (!nome) { erroBox.textContent = 'Preenche o nome.'; erroBox.style.display = 'block'; return; }
     if (!cpf) { erroBox.textContent = 'Preenche o CPF.'; erroBox.style.display = 'block'; return; }
 
-    const nrsMarcados = Array.from(nrContainer.querySelectorAll('input:checked')).map(c => c.value);
+    const nrsMarcados = Array.from(treinamentosMarcadosTemp);
     const treinamentos = [...nrsMarcados, ...outrosTreinamentosTemp];
 
     const dadosInstrutor = {
@@ -379,11 +391,10 @@
     const radioSel = document.querySelector(`input[name="pixTipo"][value="${inst.pixTipo || 'CPF'}"]`);
     if (radioSel) radioSel.checked = true;
 
-    const listaNR = NR_GROUPS.flatMap(g => g.itens);
+    const listaNR = nomesCursosCatalogo;
     outrosTreinamentosTemp = (inst.treinamentos || []).filter(t => !listaNR.includes(t));
-    nrContainer.querySelectorAll('input[type=checkbox]').forEach(c => {
-      c.checked = (inst.treinamentos || []).includes(c.value);
-    });
+    treinamentosMarcadosTemp = new Set((inst.treinamentos || []).filter(t => listaNR.includes(t)));
+    window.renderCursosDoCatalogo();
     renderOutrosTags();
     atualizarContadorNR();
     document.getElementById('formErro').style.display = 'none';
@@ -423,6 +434,7 @@
   }
 
   carregar();
+  carregarCursosDoCatalogo();
 </script>
 <script type="module">
   import { auth, signOut } from "../assets/js/firebase-init.js";
