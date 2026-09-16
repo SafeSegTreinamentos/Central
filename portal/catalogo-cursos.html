@@ -148,6 +148,21 @@
         <input type="checkbox" id="cursoAtivo" checked> Ativo (aparece na busca de curso das Propostas)
       </label>
       <div id="cursoErro" style="color:var(--status-danger); font-size:13px; display:none;"></div>
+
+      <!-- NOVO — Instrutores e Modelos de Certificado, unificado nessa mesma
+           tela (antes era uma tela "Modelos" separada). Isso grava numa
+           planilha Google diferente (via Apps Script), não no Firestore —
+           mas pra você só existe UM lugar pra editar tudo sobre o curso. -->
+      <div style="border-top:2px solid var(--paper-200); margin-top:6px; padding-top:14px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <label style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600);">🗂️ Instrutores e Modelos de Certificado</label>
+          <button class="btn btn--secondary" style="padding:5px 10px; font-size:11px;" onclick="adicionarLinhaModelo()">+ Adicionar</button>
+        </div>
+        <div class="text-muted" style="font-size:11.5px; margin-bottom:8px;">Define qual arquivo de Slides usar pra esse curso, por instrutor. Grava direto na planilha real (aba Config_Modelos), separado do resto desse formulário.</div>
+        <div id="modelosDoCursoBox" style="border:1px solid var(--paper-200); border-radius:8px; overflow:hidden;">
+          <div class="text-muted" style="text-align:center; padding:14px; font-size:13px;">Carregando...</div>
+        </div>
+      </div>
     </div>
     <div style="padding:16px 20px; border-top:1px solid var(--paper-200); display:flex; justify-content:space-between; gap:8px;">
       <button class="btn btn--danger" id="btnExcluirCurso" style="display:none;" onclick="excluirCurso()">Excluir</button>
@@ -834,9 +849,122 @@ const DEFAULT_COURSES = [
 
   function money(v) { return "R$ " + (Number(v)||0).toLocaleString('pt-BR', {minimumFractionDigits:2}); }
 
+  // ---------- Instrutores e Modelos de Certificado (unificado nessa tela) ----------
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz55Li88oyroPtFH1iTOV2nR58-xbuUAMkGcyb6GRzM3S6KQNARj7Sxvi1mZShhPg-WRg/exec';
+  window.modelosDoCursoState = []; // exposto em window — onchange/onclick inline no HTML gerado dinamicamente rodam fora do escopo desse módulo
+  let nomesInstrutoresReais = ['Deverson', 'Everton']; // fallback — substituído pelos reais assim que carregam
+
+  async function chamarAppsScript(payload) {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+    return await res.json();
+  }
+
+  async function carregarModelosDoCurso(nomeCurso) {
+    const box = document.getElementById('modelosDoCursoBox');
+    box.innerHTML = '<div class="text-muted" style="text-align:center; padding:14px; font-size:13px;">Carregando da planilha...</div>';
+    try {
+      const resultado = await chamarAppsScript({ acao: 'listarModelos' });
+      if (!resultado.sucesso) throw new Error(resultado.erro || 'Erro desconhecido');
+      const normaliza = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+      window.modelosDoCursoState = resultado.modelos
+        .filter(m => normaliza(m.curso) === normaliza(nomeCurso))
+        .map(m => ({ curso: m.curso, instrutor: m.instrutor, modeloId: m.fileId, validade: m.anos, cursoOriginal: m.curso, instrutorOriginal: m.instrutor, salvo: true }));
+      renderModelosDoCurso();
+    } catch (err) {
+      box.innerHTML = `<div style="text-align:center; padding:14px; font-size:13px; color:var(--status-danger);">Erro ao carregar: ${err.message}</div>`;
+    }
+  }
+
+  function renderModelosDoCurso() {
+    const box = document.getElementById('modelosDoCursoBox');
+    if (window.modelosDoCursoState.length === 0) {
+      box.innerHTML = '<div class="text-muted" style="text-align:center; padding:14px; font-size:13px;">Nenhum modelo ainda — clica em "+ Adicionar" pra definir qual Slide usar com qual instrutor.</div>';
+      return;
+    }
+    box.innerHTML = `
+      <table style="width:100%; border-collapse:collapse;">
+        <thead><tr style="background:var(--paper-50);">
+          <th style="text-align:left; font-size:10.5px; text-transform:uppercase; color:var(--graphite-600); padding:6px 8px;">Instrutor</th>
+          <th style="text-align:left; font-size:10.5px; text-transform:uppercase; color:var(--graphite-600); padding:6px 8px;">Link do Modelo (Slides)</th>
+          <th style="text-align:left; font-size:10.5px; text-transform:uppercase; color:var(--graphite-600); padding:6px 8px;">Validade (anos)</th>
+          <th></th>
+        </tr></thead>
+        <tbody>
+          ${window.modelosDoCursoState.map((m, i) => `
+            <tr style="border-top:1px solid var(--paper-100);">
+              <td style="padding:6px 8px;">
+                <select multiple size="2" style="min-width:130px; border:1px solid var(--paper-200); border-radius:5px; font-size:12.5px;" onchange="window.modelosDoCursoState[${i}].instrutor = Array.from(this.selectedOptions).map(o=>o.value).join(', ');">
+                  ${nomesInstrutoresReais.map(n => `<option ${(m.instrutor||'').split(',').map(x=>x.trim()).includes(n) ? 'selected' : ''}>${n}</option>`).join('')}
+                </select>
+              </td>
+              <td style="padding:6px 8px;"><input type="text" value="${(m.modeloId||'').replace(/"/g,'&quot;')}" placeholder="Cola o link do Google Slides" style="width:100%; border:1px solid var(--paper-200); border-radius:5px; padding:5px 7px; font-size:12.5px;" onchange="window.modelosDoCursoState[${i}].modeloId=this.value"></td>
+              <td style="padding:6px 8px;"><input type="number" value="${m.validade || ''}" placeholder="2" style="width:55px; border:1px solid var(--paper-200); border-radius:5px; padding:5px 7px; font-size:12.5px;" onchange="window.modelosDoCursoState[${i}].validade=this.value"></td>
+              <td style="padding:6px 8px; white-space:nowrap;">
+                <button class="btn btn--secondary" style="padding:4px 8px; font-size:10.5px;" onclick="salvarLinhaModelo(${i})">Salvar</button>
+                <button class="btn btn--danger" style="padding:4px 8px; font-size:10.5px;" onclick="excluirLinhaModelo(${i})">Excluir</button>
+              </td>
+            </tr>`).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  window.adicionarLinhaModelo = function() {
+    const nomeCursoAtual = document.getElementById('cursoNome').value.trim();
+    if (!nomeCursoAtual) { alert('Preenche o nome do curso primeiro (lá em cima).'); return; }
+    window.modelosDoCursoState.push({ curso: nomeCursoAtual, instrutor: nomesInstrutoresReais[0] || 'Deverson', modeloId: '', validade: '', salvo: false });
+    renderModelosDoCurso();
+  };
+
+  window.salvarLinhaModelo = async function(i) {
+    const m = window.modelosDoCursoState[i];
+    const nomeCursoAtual = document.getElementById('cursoNome').value.trim();
+    if (!nomeCursoAtual) { alert('Preenche o nome do curso primeiro (lá em cima).'); return; }
+    m.curso = nomeCursoAtual; // sempre sincronizado com o nome do curso do formulário — não dá pra "desalinhar"
+    if (!m.modeloId) { alert('Preenche o link do modelo antes de salvar.'); return; }
+    try {
+      let resultado;
+      if (m.salvo) {
+        resultado = await chamarAppsScript({
+          acao: 'atualizarModelo',
+          cursoOriginal: m.cursoOriginal, instrutorOriginal: m.instrutorOriginal,
+          cursoNovo: m.curso, instrutorNovo: m.instrutor,
+          linkModelo: m.modeloId, anos: m.validade
+        });
+      } else {
+        resultado = await chamarAppsScript({ acao: 'salvarModelo', curso: m.curso, instrutor: m.instrutor, linkModelo: m.modeloId, anos: m.validade });
+      }
+      if (!resultado.sucesso) { alert('Erro ao salvar: ' + resultado.erro); return; }
+      m.salvo = true; m.cursoOriginal = m.curso; m.instrutorOriginal = m.instrutor;
+      alert('Modelo salvo na planilha ✅');
+    } catch (err) { alert('Erro ao salvar: ' + err.message); }
+  };
+
+  window.excluirLinhaModelo = async function(i) {
+    const m = window.modelosDoCursoState[i];
+    if (!confirm('Excluir esse modelo?')) return;
+    if (!m.salvo) { window.modelosDoCursoState.splice(i, 1); renderModelosDoCurso(); return; }
+    try {
+      const resultado = await chamarAppsScript({ acao: 'excluirModelo', curso: m.cursoOriginal, instrutor: m.instrutorOriginal });
+      if (!resultado.sucesso) { alert('Erro ao excluir: ' + resultado.erro); return; }
+      window.modelosDoCursoState.splice(i, 1);
+      renderModelosDoCurso();
+    } catch (err) { alert('Erro ao excluir: ' + err.message); }
+  };
+  // ---------- fim da seção de Modelos ----------
+
   async function carregarCursos() {
     const status = document.getElementById('connStatus');
     await esperarAuth();
+    // busca instrutores reais pra usar no seletor de Modelos (fallback: Deverson/Everton)
+    try {
+      const snapInstr = await getDocs(collection(db, 'instrutores'));
+      const nomes = snapInstr.docs.map(d => d.data().nome).filter(Boolean).sort();
+      if (nomes.length > 0) nomesInstrutoresReais = nomes;
+    } catch (e) { console.error('Erro ao carregar instrutores:', e); }
     try {
       const snap = await getDocs(collection(db, 'catalogoCursos'));
       cursosCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -890,6 +1018,8 @@ const DEFAULT_COURSES = [
     document.getElementById('cursoAtivo').checked = true;
     document.getElementById('btnExcluirCurso').style.display = 'none';
     document.getElementById('cursoErro').style.display = 'none';
+    window.modelosDoCursoState = []; // curso novo — ainda sem nenhum modelo cadastrado
+    renderModelosDoCurso();
     document.getElementById('modalCursoOverlay').style.display = 'flex';
   };
   window.fecharModalCurso = function() {
@@ -909,6 +1039,7 @@ const DEFAULT_COURSES = [
     document.getElementById('cursoAtivo').checked = c.ativo !== false;
     document.getElementById('btnExcluirCurso').style.display = 'inline-block';
     document.getElementById('cursoErro').style.display = 'none';
+    carregarModelosDoCurso(c.nome); // busca os modelos desse curso na planilha
     document.getElementById('modalCursoOverlay').style.display = 'flex';
   };
   window.duplicarCurso = async function(id) {
