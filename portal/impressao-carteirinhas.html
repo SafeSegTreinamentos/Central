@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Portal SafeSeg — Impressão de Carteirinhas</title>
 <link rel="stylesheet" href="../assets/css/safeseg-design-system.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   html, body { height: 100%; }
   .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
@@ -19,12 +17,6 @@
   .aluno-row { display:flex; align-items:center; gap:10px; padding:9px 10px; border:1px solid var(--paper-200); border-radius:8px; margin-bottom:8px; }
   .aluno-row .nome { font-weight:700; font-size:13.5px; }
   .aluno-row .sub { font-size:11.5px; color:var(--graphite-600); font-family: var(--font-data); }
-  .upload-fundo-box { border: 2px dashed var(--paper-200); border-radius:10px; padding:20px; text-align:center; cursor:pointer; transition:border-color .15s; }
-  .upload-fundo-box:hover { border-color: var(--gold-400); }
-  .upload-fundo-box img { max-width:180px; max-height:120px; border-radius:6px; box-shadow:var(--shadow-card); }
-  .status-fundo { display:flex; align-items:center; gap:8px; font-size:13px; }
-  .badge-fundo-ok { background:#e8f9ee; color:#166534; padding:3px 10px; border-radius:10px; font-size:11.5px; font-weight:700; }
-  .badge-fundo-vazio { background:#fef3e0; color:#92400e; padding:3px 10px; border-radius:10px; font-size:11.5px; font-weight:700; }
 </style>
 </head>
 <body>
@@ -61,60 +53,13 @@
     <header class="topbar">
       <div>
         <h1>Impressão de Carteirinhas</h1>
-        <div class="sub" id="topbarSub" style="font-size:13px; color:var(--graphite-600);">Ferramenta só pra admin — gera frente e verso lado a lado, com espaço de corte, pra imprimir de um lado só e recortar depois</div>
+        <div class="sub" id="topbarSub" style="font-size:13px; color:var(--graphite-600);">Ferramenta só pra admin — escolhe a empresa e os funcionários, e gera exatamente o mesmo modelo da emissão individual (8,5 x 5,4cm), um PDF só com todos, na ordem selecionada</div>
       </div>
-      <button class="btn btn--primary" onclick="gerarCartelaPDF()">📄 Gerar pra Impressão</button>
+      <button class="btn btn--primary" onclick="gerarCarteirinhasSelecionadas()">📄 Gerar Carteirinhas</button>
     </header>
 
     <div class="content">
       <div id="connStatus" class="text-muted" style="font-size:12px;">Conectando...</div>
-
-      <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-          <strong>Arte de Fundo — Frente</strong>
-          <span id="badgeFundoFrente" class="badge-fundo-vazio">Nenhuma enviada — usando modelo padrão</span>
-        </div>
-        <div class="text-muted" style="font-size:12.5px; margin-bottom:12px;">
-          Desenha no Canva o lado da FRENTE (foto + nome + CPF + empresa). Exporta como PNG (tamanho recomendado: 1010x1417px, proporção 85x120mm) e sobe aqui.
-        </div>
-        <label class="upload-fundo-box" id="uploadFundoBoxFrente">
-          <div id="previewFundoFrente">📤 Clica pra enviar a arte da FRENTE</div>
-          <input type="file" id="inputFundoFrente" accept="image/png,image/jpeg" style="display:none;" onchange="processarUploadFundo(this, 'frente')">
-        </label>
-        <div style="display:flex; justify-content:flex-end; margin-top:10px;">
-          <button class="btn btn--secondary" style="padding:7px 14px; font-size:12.5px;" onclick="removerFundo('frente')">Remover e voltar ao padrão</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-          <strong>Arte de Fundo — Verso</strong>
-          <span id="badgeFundoVerso" class="badge-fundo-vazio">Nenhuma enviada — usando modelo padrão</span>
-        </div>
-        <div class="text-muted" style="font-size:12.5px; margin-bottom:12px;">
-          Desenha no Canva o lado do VERSO (título + área pros cursos + QR code). Mesmo tamanho recomendado da frente.
-        </div>
-        <label class="upload-fundo-box" id="uploadFundoBoxVerso">
-          <div id="previewFundoVerso">📤 Clica pra enviar a arte do VERSO</div>
-          <input type="file" id="inputFundoVerso" accept="image/png,image/jpeg" style="display:none;" onchange="processarUploadFundo(this, 'verso')">
-        </label>
-        <div style="display:flex; justify-content:flex-end; margin-top:10px;">
-          <button class="btn btn--secondary" style="padding:7px 14px; font-size:12.5px;" onclick="removerFundo('verso')">Remover e voltar ao padrão</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <details id="detalhesCalibragem">
-          <summary style="cursor:pointer; font-weight:700; font-size:13.5px;">⚙️ Calibragem — onde cada campo aparece em cima da arte (opcional, ajusta se o texto não cair no lugar certo)</summary>
-          <div style="margin-top:14px; display:grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap:12px;">
-            <div class="field"><label>Nome — posição Y (mm, do topo)</label><input type="number" id="calNomeY" value="70" step="1"></div>
-            <div class="field"><label>CPF — posição Y (mm)</label><input type="number" id="calCpfY" value="78" step="1"></div>
-            <div class="field"><label>Foto — X, Y, tamanho (mm)</label><input type="text" id="calFoto" value="8,8,28"></div>
-            <div class="field"><label>QR code — X, Y, tamanho (mm)</label><input type="text" id="calQr" value="55,90,22"></div>
-          </div>
-          <div class="text-muted" style="font-size:11.5px; margin-top:8px;">Essas posições ficam salvas — só precisa ajustar uma vez, depois de ver como ficou no PDF de teste.</div>
-        </details>
-      </div>
 
       <div class="card">
         <div class="field" style="margin-bottom:14px;">
@@ -132,36 +77,17 @@
 </div>
 
 <script type="module">
-  import { db, collection, getDocs, doc, getDoc, setDoc, esperarAuth } from '../assets/js/firebase-init.js';
+  import { db, collection, getDocs, esperarAuth } from '../assets/js/firebase-init.js';
 
-  let empresasCache = [];
+  let empresaIdAtual = null;
   let funcionariosCache = [];
-  let fundoFrenteBase64 = null;
-  let fundoVersoBase64 = null;
-
-  function normaliza(s) {
-    return (s || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
-  }
-  function pegarNomeColaborador(c) {
-    return c.colaborador || c.nome || c.aluno || c.funcionario || '';
-  }
 
   async function carregar() {
     const status = document.getElementById('connStatus');
     await esperarAuth();
     try {
-      // busca as artes de fundo já salvas, se tiver
-      try {
-        const fundoSnap = await getDoc(doc(db, 'configuracoes', 'carteirinhaFundo'));
-        if (fundoSnap.exists()) {
-          const d = fundoSnap.data();
-          if (d.frente) { fundoFrenteBase64 = d.frente; mostrarPreviewFundo('frente', fundoFrenteBase64); }
-          if (d.verso) { fundoVersoBase64 = d.verso; mostrarPreviewFundo('verso', fundoVersoBase64); }
-        }
-      } catch (e) { console.error('Erro ao carregar arte de fundo:', e); }
-
       const snap = await getDocs(collection(db, 'empresas'));
-      empresasCache = snap.docs.map(d => ({ id: d.id, nome: d.data().nome || '(sem nome)' })).sort((a,b) => a.nome.localeCompare(b.nome));
+      const empresasCache = snap.docs.map(d => ({ id: d.id, nome: d.data().nome || '(sem nome)' })).sort((a,b) => a.nome.localeCompare(b.nome));
       document.getElementById('empresaSelect').innerHTML = '<option value="">— Escolhe a empresa —</option>' +
         empresasCache.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
 
@@ -173,70 +99,24 @@
     }
   }
 
-  // ---------- Upload da arte de fundo (Canva) — separado por lado ----------
-  function mostrarPreviewFundo(lado, base64) {
-    document.getElementById(`previewFundo${lado === 'frente' ? 'Frente' : 'Verso'}`).innerHTML = `<img src="${base64}" alt="Fundo ${lado}">`;
-    const badge = document.getElementById(`badgeFundo${lado === 'frente' ? 'Frente' : 'Verso'}`);
-    badge.textContent = 'Arte enviada — usando esse fundo';
-    badge.className = 'badge-fundo-ok';
-  }
-  async function salvarFundosNoFirestore_() {
-    try {
-      await setDoc(doc(db, 'configuracoes', 'carteirinhaFundo'), { frente: fundoFrenteBase64, verso: fundoVersoBase64, atualizadoEm: new Date().toISOString() });
-    } catch (err) {
-      alert('Imagem carregada na tela, mas não consegui salvar pra próxima vez: ' + err.message);
-    }
-  }
-  window.processarUploadFundo = function(input, lado) {
-    const arquivo = input.files[0];
-    if (!arquivo) return;
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      if (lado === 'frente') fundoFrenteBase64 = e.target.result;
-      else fundoVersoBase64 = e.target.result;
-      mostrarPreviewFundo(lado, e.target.result);
-      await salvarFundosNoFirestore_();
-    };
-    reader.readAsDataURL(arquivo);
-  };
-  window.removerFundo = async function(lado) {
-    if (!confirm(`Remover a arte de fundo do ${lado === 'frente' ? 'FRENTE' : 'VERSO'} e voltar pro modelo padrão?`)) return;
-    if (lado === 'frente') fundoFrenteBase64 = null; else fundoVersoBase64 = null;
-    const campo = lado === 'frente' ? 'Frente' : 'Verso';
-    document.getElementById(`previewFundo${campo}`).innerHTML = `📤 Clica pra enviar a arte do ${lado === 'frente' ? 'FRENTE' : 'VERSO'}`;
-    document.getElementById(`badgeFundo${campo}`).textContent = 'Nenhuma enviada — usando modelo padrão';
-    document.getElementById(`badgeFundo${campo}`).className = 'badge-fundo-vazio';
-    await salvarFundosNoFirestore_();
-  };
-
   // ---------- Seleção de funcionários ----------
   window.carregarFuncionarios = async function() {
     const empresaId = document.getElementById('empresaSelect').value;
     const listBox = document.getElementById('funcionariosList');
+    empresaIdAtual = empresaId || null;
     if (!empresaId) {
       funcionariosCache = [];
       listBox.innerHTML = '<div class="text-muted" style="font-size:13px;">Escolhe uma empresa primeiro.</div>';
+      atualizarContador();
       return;
     }
     listBox.innerHTML = 'Carregando...';
     try {
-      const [funcSnap, certSnap] = await Promise.all([
-        getDocs(collection(db, 'empresas', empresaId, 'funcionarios')),
-        getDocs(collection(db, 'empresas', empresaId, 'certificados'))
-      ]);
-      const certificados = certSnap.docs.map(d => d.data()).filter(c => !c.substituidoPor);
-
+      const funcSnap = await getDocs(collection(db, 'empresas', empresaId, 'funcionarios'));
       funcionariosCache = funcSnap.docs
         .map(d => ({ id: d.id, ...d.data() }))
         .filter(f => f.status !== 'inativo')
-        .map(f => ({
-          id: f.id,
-          nome: f.nome || '',
-          cpf: f.cpf || '',
-          foto: f.foto || '', // base64 ou URL, se já tiver foto cadastrada
-          selecionado: false,
-          cursos: certificados.filter(c => normaliza(pegarNomeColaborador(c)) === normaliza(f.nome))
-        }))
+        .map(f => ({ id: f.id, nome: f.nome || '', cpf: f.cpf || '', selecionado: false }))
         .sort((a, b) => a.nome.localeCompare(b.nome));
       renderFuncionarios();
     } catch (err) {
@@ -249,7 +129,7 @@
     const listBox = document.getElementById('funcionariosList');
     if (funcionariosCache.length === 0) {
       listBox.innerHTML = '<div class="text-muted" style="font-size:13px;">Nenhum funcionário ativo cadastrado nessa empresa ainda.</div>';
-      document.getElementById('contadorSelecionados').textContent = '';
+      atualizarContador();
       return;
     }
     listBox.innerHTML = funcionariosCache.map((f, i) => `
@@ -257,7 +137,7 @@
         <input type="checkbox" ${f.selecionado ? 'checked' : ''} onchange="alternarFuncionario(${i}, this.checked)" style="cursor:pointer;">
         <div class="info" style="flex:1;">
           <div class="nome">${f.nome}</div>
-          <div class="sub">${f.cpf || '—'} · ${f.cursos.length} curso(s)</div>
+          <div class="sub">${f.cpf || '—'}</div>
         </div>
       </div>`).join('');
     atualizarContador();
@@ -271,168 +151,16 @@
     atualizarContador();
   };
 
-  function lerCalibragem() {
-    const [fx, fy, fs] = document.getElementById('calFoto').value.split(',').map(Number);
-    const [qx, qy, qs] = document.getElementById('calQr').value.split(',').map(Number);
-    return {
-      nomeY: Number(document.getElementById('calNomeY').value) || 70,
-      cpfY: Number(document.getElementById('calCpfY').value) || 78,
-      foto: { x: fx || 8, y: fy || 8, tam: fs || 28 },
-      qr: { x: qx || 55, y: qy || 90, tam: qs || 22 }
-    };
-  }
-
-  function sanitizarTexto(s) {
-    return (s || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^ -~]/g, '');
-  }
-
-  // Gera um QR code como PNG base64 (via canvas escondido) — usado dentro do PDF
-  async function gerarQrBase64(texto) {
-    return new Promise((resolve) => {
-      const div = document.createElement('div');
-      div.style.display = 'none';
-      document.body.appendChild(div);
-      new QRCode(div, { text: texto, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M });
-      setTimeout(() => {
-        const img = div.querySelector('img') || div.querySelector('canvas');
-        const base64 = img.tagName === 'CANVAS' ? img.toDataURL('image/png') : img.src;
-        document.body.removeChild(div);
-        resolve(base64);
-      }, 150);
-    });
-  }
-
-  // ---------- Desenha a FRENTE (foto + nome + CPF + empresa) ----------
-  function desenharFrente(docPDF, x, y, largura, altura, funcionario, cal) {
-    if (fundoFrenteBase64) {
-      docPDF.addImage(fundoFrenteBase64, 'PNG', x, y, largura, altura);
-    } else {
-      docPDF.setDrawColor(20,23,27); docPDF.setLineWidth(0.3);
-      docPDF.rect(x, y, largura, altura);
-      docPDF.setFillColor(245,158,11); docPDF.rect(x, y, largura, 3, 'F');
-      docPDF.setFillColor(20,23,27); docPDF.rect(x, y+altura-3, largura, 3, 'F');
-      docPDF.setFont('helvetica','bold'); docPDF.setFontSize(6.5); docPDF.setTextColor(20,23,27);
-      docPDF.text('SAFESEG TREINAMENTOS', x+largura/2, y+7, {align:'center'});
-    }
-    docPDF.setFont('helvetica','bold'); docPDF.setFontSize(8); docPDF.setTextColor(20,23,27);
-    docPDF.text(sanitizarTexto(funcionario.nome), x+largura/2, y+cal.nomeY, {align:'center', maxWidth: largura-6});
-    docPDF.setFont('helvetica','normal'); docPDF.setFontSize(6.5); docPDF.setTextColor(90,90,90);
-    docPDF.text(funcionario.cpf || '', x+largura/2, y+cal.cpfY, {align:'center'});
-    if (funcionario.empresaNome) {
-      docPDF.setFontSize(6);
-      docPDF.text(sanitizarTexto(funcionario.empresaNome), x+largura/2, y+cal.cpfY+5, {align:'center', maxWidth: largura-6});
-    }
-    if (funcionario.foto) {
-      try { docPDF.addImage(funcionario.foto, 'JPEG', x+cal.foto.x, y+cal.foto.y, cal.foto.tam, cal.foto.tam*1.2); } catch(e) {}
-    }
-  }
-
-  // ---------- Desenha o VERSO (título + lista de cursos com fonte
-  // adaptativa + QR code) ----------
-  function desenharVerso(docPDF, x, y, largura, altura, funcionario, cal, qrBase64) {
-    if (fundoVersoBase64) {
-      docPDF.addImage(fundoVersoBase64, 'PNG', x, y, largura, altura);
-    } else {
-      docPDF.setDrawColor(20,23,27); docPDF.setLineWidth(0.3);
-      docPDF.rect(x, y, largura, altura);
-      docPDF.setFillColor(20,23,27); docPDF.rect(x, y, largura, 10, 'F');
-      docPDF.setFont('helvetica','bold'); docPDF.setFontSize(7); docPDF.setTextColor(245,158,11);
-      docPDF.text('CURSOS REALIZADOS', x+largura/2, y+6.5, {align:'center'});
-    }
-    // quadro fixo pros cursos — a fonte encolhe sozinha se tiver muito curso
-    const quadroY = 13, quadroAltura = altura - 13 - (cal.qr.tam + 6);
-    desenharListaCursosComFonteAdaptativa(docPDF, x+4, y+quadroY, largura-8, quadroAltura, funcionario.cursos);
-    if (qrBase64) {
-      try { docPDF.addImage(qrBase64, 'PNG', x + (largura-cal.qr.tam)/2, y+altura-cal.qr.tam-4, cal.qr.tam, cal.qr.tam); } catch(e) {}
-    }
-  }
-
-  // Testa tamanhos de fonte do maior pro menor, e usa o maior que couber
-  // todo mundo dentro da altura disponível. Se nem no menor tamanho couber,
-  // trunca e mostra "+ X curso(s)" no final.
-  function desenharListaCursosComFonteAdaptativa(docPDF, x, y, largura, alturaMax, cursos) {
-    if (!cursos || cursos.length === 0) return;
-    const TAMANHOS = [6, 5.5, 5, 4.5, 4, 3.5];
-    let tamanhoEscolhido = TAMANHOS[TAMANHOS.length - 1];
-    let cursosVisiveis = cursos;
-
-    for (const tam of TAMANHOS) {
-      const alturaLinha = tam * 0.4; // aproximação de altura de linha em mm por pt de fonte
-      const alturaNecessaria = cursos.length * alturaLinha;
-      if (alturaNecessaria <= alturaMax) { tamanhoEscolhido = tam; cursosVisiveis = cursos; break; }
-    }
-    // mesmo no menor tamanho, não coube tudo — trunca
-    const alturaLinhaMin = TAMANHOS[TAMANHOS.length-1] * 0.4;
-    const maxLinhasQueCabem = Math.floor(alturaMax / alturaLinhaMin);
-    if (cursos.length * alturaLinhaMin > alturaMax && maxLinhasQueCabem > 1) {
-      cursosVisiveis = cursos.slice(0, maxLinhasQueCabem - 1);
-    }
-
-    docPDF.setFont('helvetica','normal'); docPDF.setFontSize(tamanhoEscolhido); docPDF.setTextColor(20,23,27);
-    let linhaY = y + tamanhoEscolhido * 0.35;
-    cursosVisiveis.forEach(c => {
-      docPDF.text('• ' + sanitizarTexto(c.nr || ''), x, linhaY, { maxWidth: largura });
-      linhaY += tamanhoEscolhido * 0.4;
-    });
-    if (cursosVisiveis.length < cursos.length) {
-      docPDF.setFont('helvetica','italic');
-      docPDF.text(`+ ${cursos.length - cursosVisiveis.length} curso(s)`, x, linhaY);
-    }
-  }
-
-  // ---------- Gera o PDF: frente e verso lado a lado por pessoa, com
-  // espaço de corte entre eles. 2 pessoas por página A4 (empilhadas) —
-  // se selecionar mais gente, continua nas páginas seguintes automaticamente.
-  window.gerarCartelaPDF = async function() {
-    const selecionados = funcionariosCache.filter(f => f.selecionado);
-    if (selecionados.length === 0) { alert('Marca pelo menos um funcionário antes de gerar.'); return; }
-
-    const btn = event.target;
-    const textoOriginal = btn.textContent;
-    btn.disabled = true; btn.textContent = 'Gerando...';
-
-    try {
-      const { jsPDF } = window.jspdf;
-      const docPDF = new jsPDF('p', 'mm', 'a4');
-      const cal = lerCalibragem();
-      const CARD_W = 85, CARD_H = 120;
-      const GAP_H = 4;   // espaço de corte entre frente e verso da mesma pessoa
-      const GAP_V = 8;   // espaço de corte entre uma pessoa e outra, empilhadas
-      const larguraTotal = CARD_W * 2 + GAP_H;
-      const alturaTotal = CARD_H * 2 + GAP_V;
-      const MARGEM_X = (210 - larguraTotal) / 2;
-      const MARGEM_Y = (297 - alturaTotal) / 2;
-      const nomeEmpresa = document.getElementById('empresaSelect').selectedOptions[0]?.textContent || '';
-
-      for (let i = 0; i < selecionados.length; i++) {
-        const linhaIndex = i % 2;
-        if (i > 0 && linhaIndex === 0) docPDF.addPage();
-        const func = { ...selecionados[i], empresaNome: nomeEmpresa };
-        const y = MARGEM_Y + linhaIndex * (CARD_H + GAP_V);
-        const xFrente = MARGEM_X;
-        const xVerso = MARGEM_X + CARD_W + GAP_H;
-
-        const validadorUrl = `https://safesegtreinamentos.github.io/Central/validador/?cpf=${(func.cpf||'').replace(/\D/g,'')}`;
-        const qrBase64 = await gerarQrBase64(validadorUrl);
-
-        desenharFrente(docPDF, xFrente, y, CARD_W, CARD_H, func, cal);
-        desenharVerso(docPDF, xVerso, y, CARD_W, CARD_H, func, cal, qrBase64);
-
-        // linhas de corte pontilhadas ao redor de cada peça
-        docPDF.setDrawColor(180,180,180); docPDF.setLineDashPattern([1,1], 0);
-        docPDF.rect(xFrente, y, CARD_W, CARD_H);
-        docPDF.rect(xVerso, y, CARD_W, CARD_H);
-        docPDF.setLineDashPattern([], 0);
-      }
-
-      const sufixo = selecionados.length === 1 ? sanitizarTexto(selecionados[0].nome).replace(/[^a-zA-Z0-9]/g,'_') : `${selecionados.length}_pessoas`;
-      docPDF.save(`Carteirinhas_${sufixo}.pdf`);
-    } catch (err) {
-      alert('Erro ao gerar: ' + err.message);
-      console.error(err);
-    } finally {
-      btn.disabled = false; btn.textContent = textoOriginal;
-    }
+  // Não desenha PDF nenhum aqui — abre o carteirinha.html com os IDs
+  // selecionados, que é quem realmente gera o PDF. Assim a carteirinha
+  // em lote sai IDÊNTICA à emissão individual, sempre (mesmo código,
+  // mesmo modelo, mesmo salvamento no Drive) — nunca corre o risco de
+  // desalinhar as duas telas de novo.
+  window.gerarCarteirinhasSelecionadas = function() {
+    if (!empresaIdAtual) { alert('Escolhe uma empresa primeiro.'); return; }
+    const ids = funcionariosCache.filter(f => f.selecionado).map(f => f.id);
+    if (ids.length === 0) { alert('Marca pelo menos um funcionário antes de gerar.'); return; }
+    window.open(`carteirinha.html?empresaId=${empresaIdAtual}&funcionarioIds=${ids.join(',')}`, '_blank');
   };
 
   carregar();

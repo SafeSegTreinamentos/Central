@@ -316,6 +316,7 @@
       if (p > 0) doc.addPage([85, 54], 'landscape'); // abre a FRENTE da próxima pessoa numa página nova
       const { dadosFuncionario, cursosAtivos } = pessoas[p];
       await desenharPessoa(dadosFuncionario, cursosAtivos, funcionarioIds[p] || p);
+      salvarQrNoDriveEmSegundoPlano(dadosEmpresa.nome, dadosFuncionario.nome, dadosFuncionario.cpf);
       botao.textContent = pessoas.length > 1 ? `Gerando ${p+1}/${pessoas.length}...` : 'Gerando...';
     }
 
@@ -339,6 +340,25 @@
       if (!data.sucesso) console.error('Não consegui salvar no Drive:', data.erro);
     } catch (err) {
       console.error('Erro ao salvar no Drive (o download local funcionou normalmente):', err);
+    }
+  }
+
+  // Salva o QR code dessa pessoa na pasta "QR Code" do Drive (mesma pasta
+  // já usada pela geração de certificado — organizada por empresa). Se o
+  // arquivo já existir pra esse nome, o Apps Script pula sozinho (não
+  // duplica), então é seguro chamar de novo toda vez que a carteirinha
+  // é reemitida.
+  async function salvarQrNoDriveEmSegundoPlano(empresaNome, nome, cpf) {
+    try {
+      const CERT_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz55Li88oyroPtFH1iTOV2nR58-xbuUAMkGcyb6GRzM3S6KQNARj7Sxvi1mZShhPg-WRg/exec';
+      const res = await fetch(CERT_APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ acao: 'gerarQrPessoa', empresa: empresaNome, nome, cpf })
+      });
+      const data = await res.json();
+      if (!data.sucesso) console.error('Não consegui salvar o QR no Drive:', data.erro);
+    } catch (err) {
+      console.error('Erro ao salvar o QR no Drive (o PDF gerado não é afetado):', err);
     }
   }
 
