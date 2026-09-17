@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal SafeSeg — Etiqueta de Capacete</title>
+<link rel="stylesheet" href="../assets/css/safeseg-design-system.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  html, body { height: 100%; }
+  .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .topbar { background: #fff; border-bottom: 1px solid var(--paper-200); padding: var(--space-4) var(--space-6); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:var(--space-3); }
+  .content { padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); max-width: 900px; }
+  .card { background: #fff; border: 1px solid var(--paper-200); border-radius: var(--radius-md); box-shadow: var(--shadow-card); padding: var(--space-5); }
+  .field label { font-size:12px; font-weight:700; text-transform:uppercase; color:var(--graphite-600); display:block; margin-bottom:4px; }
+  .field select, .field input { width:100%; border:1px solid var(--paper-200); border-radius:6px; padding:9px 12px; font-size:14px; }
+  .aluno-row { display:flex; align-items:center; gap:10px; padding:9px 10px; border:1px solid var(--paper-200); border-radius:8px; margin-bottom:8px; }
+  .aluno-row .nome { font-weight:700; font-size:13.5px; }
+  .aluno-row .sub { font-size:11.5px; color:var(--graphite-600); font-family: var(--font-data); }
+  .preview-box { border:1px dashed var(--paper-200); border-radius:8px; padding:16px; display:flex; align-items:center; justify-content:center; background:var(--paper-50); }
+  .preview-etiqueta { background:#fff; border:1px solid var(--graphite-900); border-radius:4px; padding:6px; display:flex; flex-direction:column; align-items:center; gap:4px; width:110px; }
+  .preview-etiqueta img { width:78px; height:78px; }
+  .preview-etiqueta .nome-preview { font-family: var(--font-display); font-size:10px; letter-spacing:.02em; text-align:center; line-height:1.15; color:var(--graphite-900); word-break:break-word; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <nav class="sidebar">
+    <div class="sidebar__logo">
+      <img src="../assets/img/logo-dark.png" alt="SafeSeg" style="background:var(--graphite-900); border-radius:8px; padding:4px; max-width:150px; display:block;">
+    </div>
+    <a class="nav-item" href="../index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+      Central (Hub)
+    </a>
+    <a class="nav-item" href="empresas.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17"/><path d="M19 21V10a1 1 0 0 0-1-1h-3"/><path d="M8 7h2M8 11h2M8 15h2"/></svg>
+      Empresas
+    </a>
+    <a class="nav-item" href="impressao-carteirinhas.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="2" width="12" height="8" rx="1"/><path d="M6 18h12v4H6z"/><path d="M4 10h16a2 2 0 0 1 2 2v6h-4M2 18v-6a2 2 0 0 1 2-2"/></svg>
+      Impressão de Carteirinhas
+    </a>
+    <a class="nav-item" style="background:var(--graphite-900); color:var(--gold-300);" href="etiqueta-capacete.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 14a8 8 0 0 1 16 0z"/><path d="M2 14h20"/><path d="M2 14v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2"/></svg>
+      Etiqueta de Capacete
+    </a>
+    <button class="nav-item" style="width:100%; text-align:left; border:none; background:transparent; cursor:pointer; margin-top:auto; color:var(--status-danger);" onclick="fazerLogout()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      Sair
+    </button>
+  </nav>
+
+  <div class="main">
+    <div class="hazard-stripe"></div>
+    <header class="topbar">
+      <div>
+        <h1>Etiqueta de Capacete</h1>
+        <div class="sub" id="topbarSub" style="font-size:13px; color:var(--graphite-600);">QR code por CPF + nome embaixo — cola no capacete, escaneia e mostra todos os treinamentos da pessoa no validador público</div>
+      </div>
+      <button class="btn btn--primary" onclick="gerarEtiquetasPDF()">📄 Gerar PDF pra Impressão</button>
+    </header>
+
+    <div class="content">
+      <div id="connStatus" class="text-muted" style="font-size:12px;">Conectando...</div>
+
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:20px; flex-wrap:wrap;">
+          <div style="flex:1; min-width:220px;">
+            <div class="field" style="margin-bottom:10px;">
+              <label>Nome de exemplo (só pra prévia)</label>
+              <input type="text" id="previewNome" value="Deverson R. F. Pomerenk" oninput="atualizarPreview()">
+            </div>
+            <div class="text-muted" style="font-size:12px;">
+              O QR aponta pro validador público (<span style="font-family:var(--font-data);">/Central/validador/?cpf=...</span>) — o mesmo usado nas carteirinhas. Escaneando, aparece o nome e todos os cursos/status de validade da pessoa.
+            </div>
+          </div>
+          <div class="preview-box">
+            <div class="preview-etiqueta">
+              <img id="previewQrImg" alt="QR de exemplo">
+              <div class="nome-preview" id="previewNomeTexto">Deverson R. F. Pomerenk</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <details id="detalhesCalibragem">
+          <summary style="cursor:pointer; font-weight:700; font-size:13.5px;">⚙️ Tamanho da etiqueta (opcional — já vem com um padrão bom pra capacete)</summary>
+          <div style="margin-top:14px; display:grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap:12px;">
+            <div class="field"><label>Largura (mm)</label><input type="number" id="calLargura" value="35" step="1"></div>
+            <div class="field"><label>Altura (mm)</label><input type="number" id="calAltura" value="42" step="1"></div>
+            <div class="field"><label>Espaço entre etiquetas (mm)</label><input type="number" id="calEspaco" value="3" step="0.5"></div>
+            <div class="field"><label>Margem da folha (mm)</label><input type="number" id="calMargem" value="8" step="1"></div>
+          </div>
+          <div class="text-muted" style="font-size:11.5px; margin-top:8px;">35x42mm rende um QR legível de perto (celular a ~10-15cm) e ainda sobra espaço pro nome em até 2 linhas. Ajusta se for imprimir em papel adesivo com grade própria.</div>
+        </details>
+      </div>
+
+      <div class="card">
+        <div class="field" style="margin-bottom:14px;">
+          <label>Empresa</label>
+          <select id="empresaSelect" onchange="carregarFuncionarios()"></select>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <strong style="font-size:13.5px;">Funcionários</strong>
+          <span class="text-muted" style="font-size:11.5px;" id="contadorSelecionados"></span>
+        </div>
+        <div id="funcionariosList" class="text-muted" style="font-size:13px;">Escolhe uma empresa primeiro.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { db, collection, getDocs, esperarAuth } from '../assets/js/firebase-init.js';
+
+  let empresasCache = [];
+  let funcionariosCache = [];
+
+  function sanitizarTexto(s) {
+    return (s || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^ -~]/g, '');
+  }
+
+  // Gera um QR code como PNG base64 (via canvas escondido) — mesmo esquema
+  // já usado na carteirinha (QRCode.js local, sem depender de API externa)
+  async function gerarQrBase64(texto) {
+    return new Promise((resolve) => {
+      const div = document.createElement('div');
+      div.style.display = 'none';
+      document.body.appendChild(div);
+      new QRCode(div, { text: texto, width: 300, height: 300, correctLevel: QRCode.CorrectLevel.M });
+      setTimeout(() => {
+        const img = div.querySelector('img') || div.querySelector('canvas');
+        const base64 = img.tagName === 'CANVAS' ? img.toDataURL('image/png') : img.src;
+        document.body.removeChild(div);
+        resolve(base64);
+      }, 150);
+    });
+  }
+
+  function montarUrlValidador(cpf) {
+    return `https://safesegtreinamentos.github.io/Central/validador/?cpf=${(cpf || '').toString().replace(/\D/g,'')}`;
+  }
+
+  // ---------- Prévia ao vivo (não usa CPF real, só ilustra o layout) ----------
+  window.atualizarPreview = async function() {
+    const nome = document.getElementById('previewNome').value || 'Nome do Colaborador';
+    document.getElementById('previewNomeTexto').textContent = nome;
+    const qr = await gerarQrBase64('https://safesegtreinamentos.github.io/Central/validador/?cpf=00000000000');
+    document.getElementById('previewQrImg').src = qr;
+  };
+
+  async function carregar() {
+    const status = document.getElementById('connStatus');
+    await esperarAuth();
+    try {
+      const snap = await getDocs(collection(db, 'empresas'));
+      empresasCache = snap.docs.map(d => ({ id: d.id, nome: d.data().nome || '(sem nome)' })).sort((a,b) => a.nome.localeCompare(b.nome));
+      document.getElementById('empresaSelect').innerHTML = '<option value="">— Escolhe a empresa —</option>' +
+        empresasCache.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
+
+      status.textContent = '✅ Carregado.';
+      status.style.color = 'var(--status-ok)';
+    } catch (err) {
+      status.textContent = '⚠️ Erro: ' + err.message;
+      console.error(err);
+    }
+    atualizarPreview();
+  }
+
+  // ---------- Seleção de funcionários ----------
+  window.carregarFuncionarios = async function() {
+    const empresaId = document.getElementById('empresaSelect').value;
+    const listBox = document.getElementById('funcionariosList');
+    if (!empresaId) {
+      funcionariosCache = [];
+      listBox.innerHTML = '<div class="text-muted" style="font-size:13px;">Escolhe uma empresa primeiro.</div>';
+      return;
+    }
+    listBox.innerHTML = 'Carregando...';
+    try {
+      const funcSnap = await getDocs(collection(db, 'empresas', empresaId, 'funcionarios'));
+      funcionariosCache = funcSnap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(f => f.status !== 'inativo')
+        .map(f => ({ id: f.id, nome: f.nome || '', cpf: f.cpf || '', selecionado: false }))
+        .sort((a, b) => a.nome.localeCompare(b.nome));
+      renderFuncionarios();
+    } catch (err) {
+      listBox.innerHTML = '⚠️ Erro ao carregar: ' + err.message;
+      console.error(err);
+    }
+  };
+
+  function renderFuncionarios() {
+    const listBox = document.getElementById('funcionariosList');
+    if (funcionariosCache.length === 0) {
+      listBox.innerHTML = '<div class="text-muted" style="font-size:13px;">Nenhum funcionário ativo cadastrado nessa empresa ainda.</div>';
+      document.getElementById('contadorSelecionados').textContent = '';
+      return;
+    }
+    const semCpf = funcionariosCache.filter(f => !f.cpf).length;
+    listBox.innerHTML = (semCpf > 0 ? `<div style="color:var(--status-danger); font-size:12px; margin-bottom:8px;">⚠️ ${semCpf} funcionário(s) sem CPF cadastrado — não aparecem pra seleção, porque o QR precisa do CPF pra funcionar.</div>` : '')
+      + funcionariosCache.filter(f => f.cpf).map((f, i) => `
+      <div class="aluno-row">
+        <input type="checkbox" ${f.selecionado ? 'checked' : ''} onchange="alternarFuncionario('${f.id}', this.checked)" style="cursor:pointer;">
+        <div class="info" style="flex:1;">
+          <div class="nome">${f.nome}</div>
+          <div class="sub">${f.cpf}</div>
+        </div>
+      </div>`).join('');
+    atualizarContador();
+  }
+  function atualizarContador() {
+    const n = funcionariosCache.filter(f => f.selecionado).length;
+    document.getElementById('contadorSelecionados').textContent = n > 0 ? `${n} selecionado(s)` : '';
+  }
+  window.alternarFuncionario = function(id, valor) {
+    const f = funcionariosCache.find(x => x.id === id);
+    if (f) f.selecionado = valor;
+    atualizarContador();
+  };
+
+  function lerCalibragem() {
+    return {
+      largura: Number(document.getElementById('calLargura').value) || 35,
+      altura: Number(document.getElementById('calAltura').value) || 42,
+      espaco: Number(document.getElementById('calEspaco').value) || 3,
+      margem: Number(document.getElementById('calMargem').value) || 8
+    };
+  }
+
+  // Desenha uma etiqueta: QR no topo + nome embaixo, com fonte que encolhe
+  // se o nome for grande (até 2 linhas — se não couber, quebra mesmo assim
+  // e deixa o jsPDF cortar, mas isso é raro com nomes normais)
+  function desenharEtiqueta(docPDF, x, y, largura, altura, nome, qrBase64) {
+    docPDF.setDrawColor(180,180,180); docPDF.setLineWidth(0.2);
+    docPDF.setLineDashPattern([1,1], 0);
+    docPDF.rect(x, y, largura, altura);
+    docPDF.setLineDashPattern([], 0);
+
+    const margemInterna = 3;
+    const areaNome = 11; // mm reservados pro nome, na base
+    const qrTam = Math.min(largura - margemInterna*2, altura - areaNome - margemInterna);
+    const qrX = x + (largura - qrTam)/2;
+    const qrY = y + margemInterna;
+    if (qrBase64) {
+      try { docPDF.addImage(qrBase64, 'PNG', qrX, qrY, qrTam, qrTam); } catch(e) {}
+    }
+
+    const nomeSanitizado = sanitizarTexto(nome);
+    docPDF.setFont('helvetica','bold');
+    let tamanhoFonte = 7.5;
+    docPDF.setFontSize(tamanhoFonte);
+    let linhas = docPDF.splitTextToSize(nomeSanitizado, largura - margemInterna*2);
+    while (linhas.length > 2 && tamanhoFonte > 5) {
+      tamanhoFonte -= 0.5;
+      docPDF.setFontSize(tamanhoFonte);
+      linhas = docPDF.splitTextToSize(nomeSanitizado, largura - margemInterna*2);
+    }
+    docPDF.setTextColor(20,23,27);
+    const baseY = qrY + qrTam + 4;
+    linhas.slice(0,2).forEach((linha, i) => {
+      docPDF.text(linha, x + largura/2, baseY + i*(tamanhoFonte*0.42), { align: 'center' });
+    });
+  }
+
+  window.gerarEtiquetasPDF = async function() {
+    const selecionados = funcionariosCache.filter(f => f.selecionado);
+    if (selecionados.length === 0) { alert('Marca pelo menos um funcionário antes de gerar.'); return; }
+
+    const btn = event.target;
+    const textoOriginal = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Gerando...';
+
+    try {
+      const { jsPDF } = window.jspdf;
+      const docPDF = new jsPDF('p', 'mm', 'a4');
+      const cal = lerCalibragem();
+      const PAGINA_L = 210, PAGINA_A = 297;
+      const larguraUtil = PAGINA_L - cal.margem*2;
+      const alturaUtil = PAGINA_A - cal.margem*2;
+      const cols = Math.max(1, Math.floor((larguraUtil + cal.espaco) / (cal.largura + cal.espaco)));
+      const rows = Math.max(1, Math.floor((alturaUtil + cal.espaco) / (cal.altura + cal.espaco)));
+      const porPagina = cols * rows;
+
+      // reaproveita o QR já gerado quando duas pessoas repetidas aparecerem
+      // na mesma leva (não deveria acontecer, mas é barato garantir)
+      const qrCache = {};
+
+      for (let i = 0; i < selecionados.length; i++) {
+        if (i > 0 && i % porPagina === 0) docPDF.addPage();
+        const posNaPagina = i % porPagina;
+        const col = posNaPagina % cols;
+        const row = Math.floor(posNaPagina / cols);
+        const x = cal.margem + col * (cal.largura + cal.espaco);
+        const y = cal.margem + row * (cal.altura + cal.espaco);
+
+        const func = selecionados[i];
+        const cpfLimpo = (func.cpf || '').replace(/\D/g,'');
+        if (!qrCache[cpfLimpo]) {
+          qrCache[cpfLimpo] = await gerarQrBase64(montarUrlValidador(cpfLimpo));
+        }
+        desenharEtiqueta(docPDF, x, y, cal.largura, cal.altura, func.nome, qrCache[cpfLimpo]);
+      }
+
+      const nomeEmpresa = sanitizarTexto(document.getElementById('empresaSelect').selectedOptions[0]?.textContent || 'etiquetas').replace(/[^a-zA-Z0-9]/g,'_');
+      docPDF.save(`Etiquetas_Capacete_${nomeEmpresa}.pdf`);
+    } catch (err) {
+      alert('Erro ao gerar: ' + err.message);
+      console.error(err);
+    } finally {
+      btn.disabled = false; btn.textContent = textoOriginal;
+    }
+  };
+
+  carregar();
+</script>
+<script type="module">
+  import { auth, signOut } from "../assets/js/firebase-init.js";
+  window.fazerLogout = async function() {
+    if (!confirm("Sair da sua conta?")) return;
+    await signOut(auth);
+    location.reload();
+  };
+</script>
+
+</body>
+</html>
