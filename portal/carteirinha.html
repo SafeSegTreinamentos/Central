@@ -27,7 +27,7 @@
   </div>
 
   <div class="btns">
-    <button class="btn btn--primary" onclick="gerarPDFCarteirinha()">📄 Baixar PDF (8,5 x 5,4cm)</button>
+    <button class="btn btn--primary" onclick="gerarPDFCarteirinha()">📄 Gerar PDF pra Impressão (A4)</button>
     <a href="#" id="linkVoltar" class="btn btn--secondary" style="text-decoration:none;">← Voltar</a>
   </div>
 </div>
@@ -163,39 +163,44 @@
     if (pessoas.length === 0) { alert('Aguarda carregar os dados primeiro.'); return; }
     const botao = event.target;
     const textoOriginal = botao.textContent;
-    botao.disabled = true; botao.textContent = pessoas.length > 1 ? `Gerando ${pessoas.length}...` : 'Gerando...';
+    botao.disabled = true; botao.textContent = 'Gerando...';
 
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [85, 54] });
-    const W = 85, H = 54;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const PRETO = [17, 17, 17], AMBAR = [245, 158, 11], AMBAR_ESCURO = [180, 116, 9];
     const BRANCO = [255,255,255], CINZA_TXT = [70,70,70], CINZA_CLARO = [235,235,235];
     const hoje = new Date();
     const dataEmissaoFmt = String(hoje.getDate()).padStart(2,'0') + '/' + String(hoje.getMonth()+1).padStart(2,'0') + '/' + hoje.getFullYear();
 
-    // Gera a frente + o verso de UMA pessoa nas 2 páginas "atuais" do PDF —
-    // chamado uma vez por colaborador selecionado, dentro do loop abaixo.
-    // Cada pessoa ocupa 2 páginas no arquivo final (frente e verso), na
-    // mesma ordem em que foi selecionada.
-    async function desenharPessoa(dadosFuncionario, cursosAtivos, idFallback) {
-      const cpfLimpo = (dadosFuncionario.cpf || '').replace(/\D/g, '');
-      const numeroCarteira = 'ST-' + (cpfLimpo ? cpfLimpo.slice(0,8) : String(idFallback).slice(0,8).toUpperCase());
+    // Tamanho real da carteirinha (8,5 x 5,4cm) — mas agora várias entram
+    // na MESMA folha A4, numa grade, em vez de uma folha inteira por
+    // carteirinha (que desperdiçava quase todo o papel)
+    const CARD_W = 85, CARD_H = 54;
+    const MARGEM = 10, GAP = 4;
+    const cols = Math.max(1, Math.floor((210 - MARGEM*2 + GAP) / (CARD_W + GAP)));
+    const rows = Math.max(1, Math.floor((297 - MARGEM*2 + GAP) / (CARD_H + GAP)));
+    const porPagina = cols * rows;
 
-      /* ============================== FRENTE ============================== */
-      doc.setFillColor(...BRANCO); doc.rect(0, 0, W, H, 'F');
+    function linhaDeCorte(ox, oy) {
+      doc.setDrawColor(180,180,180); doc.setLineWidth(0.2); doc.setLineDashPattern([1,1], 0);
+      doc.rect(ox, oy, CARD_W, CARD_H);
+      doc.setLineDashPattern([], 0);
+    }
 
-      // cabeçalho preto
-      doc.setFillColor(...PRETO); doc.rect(0, 0, W, 7, 'F');
-      doc.setFillColor(...AMBAR); doc.rect(0, 7, W, 0.8, 'F');
+    // ---------- FRENTE de uma pessoa, desenhada a partir de (ox, oy) ----------
+    function desenharFrente(ox, oy, dadosFuncionario, numeroCarteira) {
+      doc.setFillColor(...BRANCO); doc.rect(ox, oy, CARD_W, CARD_H, 'F');
 
-      try { doc.addImage(LOGO_BASE64, 'PNG', 2, 1, 10, 5.6); } catch(e) {}
+      doc.setFillColor(...PRETO); doc.rect(ox, oy, CARD_W, 7, 'F');
+      doc.setFillColor(...AMBAR); doc.rect(ox, oy+7, CARD_W, 0.8, 'F');
+
+      try { doc.addImage(LOGO_BASE64, 'PNG', ox+2, oy+1, 10, 5.6); } catch(e) {}
       doc.setFont('helvetica', 'bold'); doc.setFontSize(4.6); doc.setTextColor(...AMBAR);
-      doc.text('CARTEIRA DE CAPACITAÇÃO', W - 2, 3.4, { align: 'right' });
+      doc.text('CARTEIRA DE CAPACITAÇÃO', ox+CARD_W-2, oy+3.4, { align: 'right' });
       doc.setFont('helvetica', 'normal'); doc.setFontSize(3.2); doc.setTextColor(200, 200, 200);
-      doc.text('SEGURANÇA DO TRABALHO', W - 2, 6, { align: 'right' });
+      doc.text('SEGURANÇA DO TRABALHO', ox+CARD_W-2, oy+6, { align: 'right' });
 
-      // foto
-      const fotoX = 2.5, fotoY = 9.5, fotoW = 15, fotoH = 19;
+      const fotoX = ox+2.5, fotoY = oy+9.5, fotoW = 15, fotoH = 19;
       doc.setDrawColor(...AMBAR); doc.setLineWidth(0.5);
       if (dadosFuncionario.fotoBase64) {
         try { doc.addImage(dadosFuncionario.fotoBase64, 'JPEG', fotoX, fotoY, fotoW, fotoH, undefined, 'FAST'); } catch(e) {}
@@ -204,8 +209,8 @@
       }
       doc.rect(fotoX, fotoY, fotoW, fotoH);
 
-      // dados ao lado da foto — na paisagem a largura sobra, então NOME
-      // ocupa a linha toda e os demais campos ficam em pares lado a lado
+      // dados ao lado da foto — NOME ocupa a linha toda e os demais campos
+      // ficam em pares lado a lado
       const tx = fotoX + fotoW + 2.5;
       const tx2 = tx + 30;
       let ty = fotoY + 2;
@@ -219,52 +224,54 @@
         return linhas.length;
       }
 
-      const linhasNome = campo('NOME', dadosFuncionario.nome, tx, W - tx - 2, 4.8) || 1;
+      const linhasNome = campo('NOME', dadosFuncionario.nome, tx, ox + CARD_W - tx - 2, 4.8) || 1;
       ty += linhasNome * 3.6 + 3.6;
 
       campo('CPF', dadosFuncionario.cpf, tx, 27, 4);
-      campo('FUNÇÃO', dadosFuncionario.cargo, tx2, W - tx2 - 2, 4);
+      campo('FUNÇÃO', dadosFuncionario.cargo, tx2, ox + CARD_W - tx2 - 2, 4);
       ty += 6.2;
 
       doc.setDrawColor(...AMBAR_ESCURO); doc.setLineWidth(0.2);
-      doc.line(tx, ty - 1.5, W - 2, ty - 1.5);
+      doc.line(tx, ty - 1.5, ox + CARD_W - 2, ty - 1.5);
       campo('Nº CARTEIRA', numeroCarteira, tx, 27, 4);
-      campo('EMISSÃO', dataEmissaoFmt, tx2, W - tx2 - 2, 4);
+      campo('EMISSÃO', dataEmissaoFmt, tx2, ox + CARD_W - tx2 - 2, 4);
       ty += 6.2;
 
       doc.setFont('helvetica', 'italic'); doc.setFontSize(3.4); doc.setTextColor(...CINZA_TXT);
-      doc.text('Empresa: ' + sanitizarTexto(dadosEmpresa.nome || ''), tx, ty, { maxWidth: W - tx - 2 });
+      doc.text('Empresa: ' + sanitizarTexto(dadosEmpresa.nome || ''), tx, ty, { maxWidth: ox + CARD_W - tx - 2 });
 
       // faixa final (listrada preto/âmbar)
-      const faixaY = H - 5;
-      doc.setFillColor(...PRETO); doc.rect(0, faixaY, W, 5, 'F');
+      const faixaY = oy + CARD_H - 5;
+      doc.setFillColor(...PRETO); doc.rect(ox, faixaY, CARD_W, 5, 'F');
       doc.setFillColor(...AMBAR);
-      for (let i = -2; i < W / 4 + 2; i++) doc.triangle(i*4, faixaY, i*4+2, faixaY, i*4, faixaY+1.3, 'F');
+      for (let i = -2; i < CARD_W / 4 + 2; i++) doc.triangle(ox+i*4, faixaY, ox+i*4+2, faixaY, ox+i*4, faixaY+1.3, 'F');
       doc.setFont('helvetica', 'bold'); doc.setFontSize(3.1); doc.setTextColor(...BRANCO);
-      doc.text('NÃO SUBSTITUI DOCUMENTO OFICIAL COM FOTO', W/2, faixaY + 3.4, { align: 'center' });
+      doc.text('NÃO SUBSTITUI DOCUMENTO OFICIAL COM FOTO', ox + CARD_W/2, faixaY + 3.4, { align: 'center' });
 
-      /* ============================== VERSO ============================== */
-      doc.addPage([85, 54], 'landscape');
-      doc.setFillColor(...BRANCO); doc.rect(0, 0, W, H, 'F');
+      linhaDeCorte(ox, oy);
+    }
 
-      // cabeçalho preto
-      doc.setFillColor(...PRETO); doc.rect(0, 0, W, 6, 'F');
-      doc.setFillColor(...AMBAR); doc.rect(0, 6, W, 0.6, 'F');
+    // ---------- VERSO de uma pessoa, desenhado a partir de (ox, oy) ----------
+    function desenharVerso(ox, oy, dadosFuncionario, cursosAtivos, qrBase64) {
+      doc.setFillColor(...BRANCO); doc.rect(ox, oy, CARD_W, CARD_H, 'F');
+
+      doc.setFillColor(...PRETO); doc.rect(ox, oy, CARD_W, 6, 'F');
+      doc.setFillColor(...AMBAR); doc.rect(ox, oy+6, CARD_W, 0.6, 'F');
       doc.setFont('helvetica', 'bold'); doc.setFontSize(4.4); doc.setTextColor(...AMBAR);
-      doc.text('CURSOS REALIZADOS', 2.5, 4.2);
+      doc.text('CURSOS REALIZADOS', ox+2.5, oy+4.2);
 
-      const vx = 2.5;
-      let vy = 10.5;
+      const vx = ox + 2.5;
+      let vy = oy + 10.5;
+      const larguraTabela = CARD_W - 5;
 
-      // cabeçalho da tabela
-      doc.setFillColor(...PRETO); doc.rect(vx, vy - 2.6, W - vx - 2.5, 3.6, 'F');
+      doc.setFillColor(...PRETO); doc.rect(vx, vy - 2.6, larguraTabela, 3.6, 'F');
       doc.setFont('helvetica', 'bold'); doc.setFontSize(3); doc.setTextColor(...AMBAR);
       doc.text('CURSO', vx + 0.5, vy);
       doc.text('REALIZ.', vx + 40.5, vy);
-      doc.text('VALIDADE', W - 3, vy, { align: 'right' });
+      doc.text('VALIDADE', ox + CARD_W - 3, vy, { align: 'right' });
       vy += 4;
 
-      const qrTam = 13, qrX = vx, qrY = H - qrTam - 2;
+      const qrTam = 13, qrX = vx, qrY = oy + CARD_H - qrTam - 2;
       const limiteY = qrY - 2; // reserva espaço pro QR/rodapé
 
       if (cursosAtivos.length === 0) {
@@ -277,7 +284,7 @@
         visiveis.forEach((c, i) => {
           const st = statusPorData(c.validade);
           const realizacao = formatarDataBR(c.dataConclusao) || formatarDataBR(c.criadoEm ? c.criadoEm.slice(0,10) : '');
-          if (i % 2 === 1) { doc.setFillColor(248, 246, 240); doc.rect(vx, vy - 2.4, W - vx - 2.5, ALTURA_LINHA, 'F'); }
+          if (i % 2 === 1) { doc.setFillColor(248, 246, 240); doc.rect(vx, vy - 2.4, larguraTabela, ALTURA_LINHA, 'F'); }
 
           doc.setFont('helvetica', 'bold'); doc.setTextColor(...PRETO); doc.setFontSize(3.4);
           const nomeCurto = doc.splitTextToSize(sanitizarTexto(c.nr || ''), 38)[0];
@@ -285,7 +292,7 @@
           doc.setFont('helvetica', 'normal'); doc.setTextColor(...CINZA_TXT);
           doc.text(realizacao || '-', vx + 40.5, vy);
           doc.setTextColor(...st.cor);
-          doc.text(c.validade || '-', W - 3, vy, { align: 'right' });
+          doc.text(c.validade || '-', ox + CARD_W - 3, vy, { align: 'right' });
           vy += ALTURA_LINHA;
         });
         if (visiveis.length < cursosAtivos.length) {
@@ -294,8 +301,6 @@
         }
       }
 
-      // QR code + validação
-      const qrBase64 = await buscarQrCodeBase64(cpfLimpo);
       if (qrBase64) {
         try { doc.addImage(qrBase64, 'PNG', qrX, qrY, qrTam, qrTam); } catch(e) {}
       } else {
@@ -308,17 +313,48 @@
       doc.text('/Central/validador', qrX + qrTam + 2.5, qrY + 9.5);
       doc.setFont('helvetica', 'normal'); doc.setFontSize(3); doc.setTextColor(...CINZA_TXT);
       doc.text('(46) 99920-3945 · contato@safeseg.eng.br', qrX + qrTam + 2.5, qrY + 12.5);
+
+      linhaDeCorte(ox, oy);
     }
 
-    // Uma pessoa atrás da outra, no MESMO arquivo — cada uma entra com
-    // frente+verso (2 páginas), na ordem em que foi selecionada.
+    // Busca o QR de todo mundo ANTES de desenhar — mais simples do que
+    // misturar await no meio do loop da grade
+    botao.textContent = 'Buscando QR codes...';
+    const qrPorPessoa = [];
     for (let p = 0; p < pessoas.length; p++) {
-      if (p > 0) doc.addPage([85, 54], 'landscape'); // abre a FRENTE da próxima pessoa numa página nova
-      const { dadosFuncionario, cursosAtivos } = pessoas[p];
-      await desenharPessoa(dadosFuncionario, cursosAtivos, funcionarioIds[p] || p);
-      salvarQrNoDriveEmSegundoPlano(dadosEmpresa.nome, dadosFuncionario.nome, dadosFuncionario.cpf);
-      botao.textContent = pessoas.length > 1 ? `Gerando ${p+1}/${pessoas.length}...` : 'Gerando...';
+      const cpfLimpo = (pessoas[p].dadosFuncionario.cpf || '').replace(/\D/g, '');
+      qrPorPessoa.push(await buscarQrCodeBase64(cpfLimpo));
     }
+
+    // Monta as páginas em lotes do tamanho da grade: uma página com as
+    // FRENTES de todo o lote, a próxima com os VERSOS nas MESMAS posições
+    // — assim, imprimindo frente/verso (duplex, virando na borda curta) as
+    // carteirinhas já saem alinhadas certinho pra recortar
+    let primeiraPagina = true;
+    for (let inicio = 0; inicio < pessoas.length; inicio += porPagina) {
+      const lote = pessoas.slice(inicio, inicio + porPagina);
+      botao.textContent = `Gerando ${Math.min(inicio + porPagina, pessoas.length)}/${pessoas.length}...`;
+
+      if (!primeiraPagina) doc.addPage('a4', 'portrait');
+      primeiraPagina = false;
+      lote.forEach((p, i) => {
+        const col = i % cols, row = Math.floor(i / cols);
+        const ox = MARGEM + col * (CARD_W + GAP), oy = MARGEM + row * (CARD_H + GAP);
+        const cpfLimpo = (p.dadosFuncionario.cpf || '').replace(/\D/g, '');
+        const numeroCarteira = 'ST-' + (cpfLimpo ? cpfLimpo.slice(0,8) : String(funcionarioIds[inicio+i] || (inicio+i)).slice(0,8).toUpperCase());
+        desenharFrente(ox, oy, p.dadosFuncionario, numeroCarteira);
+      });
+
+      doc.addPage('a4', 'portrait');
+      lote.forEach((p, i) => {
+        const col = i % cols, row = Math.floor(i / cols);
+        const ox = MARGEM + col * (CARD_W + GAP), oy = MARGEM + row * (CARD_H + GAP);
+        desenharVerso(ox, oy, p.dadosFuncionario, p.cursosAtivos, qrPorPessoa[inicio + i]);
+      });
+    }
+
+    // Salva o QR de cada pessoa no Drive (em segundo plano, não trava o download)
+    pessoas.forEach(p => salvarQrNoDriveEmSegundoPlano(dadosEmpresa.nome, p.dadosFuncionario.nome, p.dadosFuncionario.cpf));
 
     const nomeArquivoPdf = pessoas.length === 1
       ? `Carteirinha_${(pessoas[0].dadosFuncionario.nome||'colaborador').replace(/[^a-zA-Z0-9]/g,'_')}.pdf`
