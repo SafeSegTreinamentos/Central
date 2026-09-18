@@ -148,10 +148,29 @@
             </div>
           </div>
           <table class="itens-table">
-            <thead><tr><th>Curso</th><th>Carga h.</th><th>Modalidade</th><th style="width:60px;">Qtd</th><th style="width:100px;">Vlr Unit.</th><th style="width:100px;">Total</th><th></th></tr></thead>
+            <thead><tr><th>Curso</th><th style="width:70px;">NR</th><th>Carga h.</th><th>Modalidade</th><th style="width:60px;">Qtd</th><th style="width:100px;">Vlr Unit.</th><th style="width:100px;">Total</th><th></th></tr></thead>
             <tbody id="itensBody"></tbody>
           </table>
           <div id="itensVazio" class="text-muted" style="text-align:center; padding:20px;">Nenhum item ainda — busca no catálogo ou adiciona manual.</div>
+
+          <details id="custosExtrasDetails" style="margin-top:14px; border:1px solid var(--paper-200); border-radius:8px; padding:10px 14px;">
+            <summary style="cursor:pointer; font-weight:700; font-size:13px; color:var(--graphite-700);">💰 Custos Extras (opcional) — deslocamento, hospedagem, alimentação</summary>
+            <div class="row" style="margin-top:12px;">
+              <div class="field">
+                <label>Deslocamento (R$)</label>
+                <input type="number" id="pExtraDeslocamento" value="0" step="0.01" min="0" oninput="atualizarTotal()">
+              </div>
+              <div class="field">
+                <label>Hospedagem (R$)</label>
+                <input type="number" id="pExtraHospedagem" value="0" step="0.01" min="0" oninput="atualizarTotal()">
+              </div>
+              <div class="field">
+                <label>Alimentação (R$)</label>
+                <input type="number" id="pExtraAlimentacao" value="0" step="0.01" min="0" oninput="atualizarTotal()">
+              </div>
+            </div>
+            <div class="text-muted" style="font-size:11.5px; margin-top:6px;">Some direto no total da proposta (não entra no cálculo do desconto). Só aparece como linha separada no PDF se algum valor for maior que zero.</div>
+          </details>
 
           <div class="row" style="margin-top:16px; align-items:flex-end;">
             <div class="field" style="max-width:160px;">
@@ -1257,12 +1276,16 @@ window.filtrarBuscaCurso = function(q) {
 window.selecionarCurso = function(idx) {
   const fonte = catalogoCache || DEFAULT_COURSES;
   const c = fonte[idx];
-  itens.push({ nome: c.nome, ch: c.ch, mod: c.mod, qtd: 1, valor: c.valor, validade: c.validade || '', prog: c.prog || '' });
+  // tenta extrair a NR do nome do curso (ex: "NR 05 - CIPA..." -> "NR-05") pra
+  // já vir preenchido — mas o campo continua livre pra editar/apagar
+  const nrMatch = (c.nome || '').match(/NR[\s-]?0*(\d{1,2})/i);
+  const nr = nrMatch ? 'NR-' + nrMatch[1].padStart(2, '0') : '';
+  itens.push({ nome: c.nome, nr, ch: c.ch, mod: c.mod, qtd: 1, valor: c.valor, validade: c.validade || '', prog: c.prog || '' });
   renderItens();
   fecharBuscaCurso();
 };
 window.addItemManual = function() {
-  itens.push({ nome: '', ch: '', mod: 'Online', qtd: 1, valor: 0 });
+  itens.push({ nome: '', nr: '', ch: '', mod: 'Online', qtd: 1, valor: 0 });
   renderItens();
 };
 
@@ -1279,6 +1302,7 @@ function renderItens() {
   tbody.innerHTML = itens.map((it, i) => `
     <tr>
       <td><input type="text" value="${(it.nome||'').replace(/"/g,'&quot;')}" oninput="itens[${i}].nome=this.value"></td>
+      <td><input type="text" value="${(it.nr||'').replace(/"/g,'&quot;')}" style="width:60px;" placeholder="NR-35" oninput="itens[${i}].nr=this.value"></td>
       <td><input type="text" value="${it.ch||''}" style="width:60px;" oninput="itens[${i}].ch=this.value"></td>
       <td>
         <select onchange="itens[${i}].mod=this.value" style="border:1px solid var(--paper-200); border-radius:5px; padding:5px 7px; font-size:12.5px; width:100%;">
@@ -1307,8 +1331,16 @@ function getDesconto() {
   if (tipo === 'fixo') return valor;
   return 0;
 }
+// Custos extras (deslocamento/hospedagem/alimentação) — somam direto no
+// total, DEPOIS do desconto (não fazem parte do valor descontável)
+function getCustosExtras() {
+  const deslocamento = Number(document.getElementById('pExtraDeslocamento').value) || 0;
+  const hospedagem = Number(document.getElementById('pExtraHospedagem').value) || 0;
+  const alimentacao = Number(document.getElementById('pExtraAlimentacao').value) || 0;
+  return { deslocamento, hospedagem, alimentacao, total: deslocamento + hospedagem + alimentacao };
+}
 window.atualizarTotal = function() {
-  const total = Math.max(0, subtotal() - getDesconto());
+  const total = Math.max(0, subtotal() - getDesconto()) + getCustosExtras().total;
   document.getElementById('totalDisplay').textContent = money(total);
 };
 
@@ -1335,6 +1367,10 @@ window.limparFormulario = function() {
   document.getElementById('pDescValor').value = 0;
   document.getElementById('pDescMotivo').value = '';
   document.getElementById('pStatus').value = 'enviada';
+  document.getElementById('pExtraDeslocamento').value = 0;
+  document.getElementById('pExtraHospedagem').value = 0;
+  document.getElementById('pExtraAlimentacao').value = 0;
+  document.getElementById('custosExtrasDetails').open = false;
   itens = [];
   renderItens();
   atualizarNumero();
@@ -1399,6 +1435,10 @@ window.editarProposta = function(id) {
   document.getElementById('pDescMotivo').value = p.descMotivo || '';
   document.getElementById('pStatus').value = p.status || 'enviada';
   document.getElementById('pNumeroPreview').value = p.num || '';
+  document.getElementById('pExtraDeslocamento').value = p.deslocamento || 0;
+  document.getElementById('pExtraHospedagem').value = p.hospedagem || 0;
+  document.getElementById('pExtraAlimentacao').value = p.alimentacao || 0;
+  document.getElementById('custosExtrasDetails').open = !!(p.deslocamento || p.hospedagem || p.alimentacao);
   itens = JSON.parse(JSON.stringify(p.itens || []));
   renderItens();
   mudarAba('novo');
@@ -1459,6 +1499,7 @@ window.salvarProposta = async function() {
     if (propostaAnterior) { empresaId = propostaAnterior.empresaId || null; leadId = propostaAnterior.leadId || null; }
   }
 
+  const custosExtras = getCustosExtras();
   const dados = {
     cliente,
     cnpj: document.getElementById('pCnpj').value.trim(),
@@ -1469,7 +1510,10 @@ window.salvarProposta = async function() {
     descTipo: document.getElementById('pDescTipo').value,
     descValor: Number(document.getElementById('pDescValor').value) || 0,
     descMotivo: document.getElementById('pDescMotivo').value.trim(),
-    total: Math.max(0, subtotal() - getDesconto()),
+    deslocamento: custosExtras.deslocamento,
+    hospedagem: custosExtras.hospedagem,
+    alimentacao: custosExtras.alimentacao,
+    total: Math.max(0, subtotal() - getDesconto()) + custosExtras.total,
     status: document.getElementById('pStatus').value,
     empresaId, leadId
   };
@@ -1502,7 +1546,8 @@ window.gerarPDF = async function() {
   const cnpj = document.getElementById('pCnpj').value.trim();
   const dataF = fmtDateBR(document.getElementById('pData').value);
   const desc = getDesconto();
-  const total = Math.max(0, subtotal() - desc);
+  const custosExtras = getCustosExtras();
+  const total = Math.max(0, subtotal() - desc) + custosExtras.total;
 
   function header() {
     doc.setFillColor(...PDF_COL.ink); doc.rect(0,0,W,3,'F');
@@ -1545,7 +1590,7 @@ window.gerarPDF = async function() {
   if (cnpj) { doc.setFont('helvetica','bold'); doc.text('CNPJ/CPF:', M+5, y+15); doc.setFont('helvetica','normal'); doc.text(sanitizePdf(cnpj), M+30, y+15); }
   y += (cnpj?20:14) + 10;
 
-  const cols = [{t:'Treinamento / Serviço', w:64, a:'left'},{t:'Carga h.', w:18, a:'center'},{t:'Modalidade', w:28, a:'center'},{t:'Qtd', w:12, a:'center'},{t:'Vlr Unit.', w:26, a:'right'},{t:'Total', w:26, a:'right'}];
+  const cols = [{t:'Treinamento / Serviço', w:54, a:'left'},{t:'NR', w:16, a:'center'},{t:'Carga h.', w:16, a:'center'},{t:'Modalidade', w:24, a:'center'},{t:'Qtd', w:10, a:'center'},{t:'Vlr Unit.', w:26, a:'right'},{t:'Total', w:28, a:'right'}];
   let x=M; const colX = cols.map(c => { const cx=x; x+=c.w; return cx; });
   doc.setFillColor(...PDF_COL.ink); doc.rect(M,y,W-2*M,9,'F');
   doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(...PDF_COL.goldBright);
@@ -1558,11 +1603,12 @@ window.gerarPDF = async function() {
     if (idx%2===1) { doc.setFillColor(248,246,240); doc.rect(M,y,W-2*M,rowH,'F'); }
     doc.setDrawColor(...PDF_COL.grayLine); doc.setLineWidth(0.2); doc.line(M,y+rowH,W-M,y+rowH);
     doc.text(nameLines, colX[0]+2, y+5);
-    doc.text(String(it.ch||'-'), colX[1]+cols[1].w/2, y+5, {align:'center'});
-    doc.text(String(it.mod||'-'), colX[2]+cols[2].w/2, y+5, {align:'center'});
-    doc.text(String(it.qtd), colX[3]+cols[3].w/2, y+5, {align:'center'});
-    doc.text(money(it.valor), colX[4]+cols[4].w-2, y+5, {align:'right'});
-    doc.text(money(it.qtd*it.valor), colX[5]+cols[5].w-2, y+5, {align:'right'});
+    doc.text(String(it.nr||'-'), colX[1]+cols[1].w/2, y+5, {align:'center'});
+    doc.text(String(it.ch||'-'), colX[2]+cols[2].w/2, y+5, {align:'center'});
+    doc.text(String(it.mod||'-'), colX[3]+cols[3].w/2, y+5, {align:'center'});
+    doc.text(String(it.qtd), colX[4]+cols[4].w/2, y+5, {align:'center'});
+    doc.text(money(it.valor), colX[5]+cols[5].w-2, y+5, {align:'right'});
+    doc.text(money(it.qtd*it.valor), colX[6]+cols[6].w-2, y+5, {align:'right'});
     y += rowH;
     if (y > H - 40) { footer('pág. 1'); doc.addPage(); y = header() + 10; }
   });
@@ -1579,6 +1625,19 @@ window.gerarPDF = async function() {
     if (motivoDesc) rotuloDesc += ' - ' + motivoDesc;
     doc.text(sanitizePdf(rotuloDesc) + ':', W-M-70, y);
     doc.text('- ' + money(desc), W-M, y, {align:'right'});
+    y += 6;
+  }
+  if (custosExtras.total > 0) {
+    const partesExtras = [];
+    if (custosExtras.deslocamento > 0) partesExtras.push(`Deslocamento ${money(custosExtras.deslocamento)}`);
+    if (custosExtras.hospedagem > 0) partesExtras.push(`Hospedagem ${money(custosExtras.hospedagem)}`);
+    if (custosExtras.alimentacao > 0) partesExtras.push(`Alimentação ${money(custosExtras.alimentacao)}`);
+    doc.text('Custos Extras:', W-M-70, y);
+    doc.text(money(custosExtras.total), W-M, y, {align:'right'});
+    y += 4.5;
+    doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...PDF_COL.grayText);
+    doc.text(sanitizePdf(partesExtras.join('  ·  ')), W-M, y, {align:'right'});
+    doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(...PDF_COL.ink);
     y += 6;
   }
   doc.setFontSize(13); doc.setTextColor(...PDF_COL.goldDeep);
