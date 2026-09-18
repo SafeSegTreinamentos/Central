@@ -14,6 +14,7 @@
   .topbar .sub { font-size: var(--text-sm); color: var(--graphite-600); margin-top: 2px; }
 
   .scripts-col { background: var(--paper-50); border-right: 1px solid var(--paper-200); overflow-y: auto; padding: var(--space-4); }
+  .busca-script { width: 100%; border: 1px solid var(--paper-200); border-radius: 8px; padding: 9px 12px; font-size: 13px; margin-bottom: 14px; background: #fff; }
   .scripts-group-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--graphite-600); letter-spacing: .03em; margin: 16px 0 8px; }
   .scripts-group-label:first-child { margin-top: 0; }
   .script-item { background: #fff; border: 1px solid var(--paper-200); border-radius: 8px; padding: 10px 12px; margin-bottom: 6px; cursor: pointer; transition: border-color .15s; }
@@ -104,7 +105,10 @@
     </button>
   </nav>
 
-  <div class="scripts-col" id="scriptsCol"></div>
+  <div class="scripts-col">
+    <input type="text" id="buscaScript" class="busca-script" placeholder="🔍 Buscar (ex: NR-35, desconto, follow-up)" oninput="renderListaLateral()">
+    <div id="scriptsListBox"></div>
+  </div>
 
   <div class="main">
     <div class="hazard-stripe"></div>
@@ -117,11 +121,27 @@
       <div class="personalizar-box">
         <div class="field">
           <label>Personalizar pra (nome)</label>
-          <input type="text" id="pNome" placeholder="Ex: João da Metalúrgica" oninput="renderScript()">
+          <input type="text" id="pNome" placeholder="Ex: João da Metalúrgica" oninput="salvarPersonalizacao(); renderScript()">
         </div>
         <div class="field">
           <label>Telefone (WhatsApp) — só números</label>
-          <input type="text" id="pTelefone" placeholder="46999999999" oninput="renderScript()">
+          <input type="text" id="pTelefone" placeholder="46999999999" oninput="salvarPersonalizacao(); renderScript()">
+        </div>
+        <div class="field">
+          <label>Segmento</label>
+          <input type="text" id="pSegmento" placeholder="Ex: metalúrgico" oninput="salvarPersonalizacao(); renderScript()">
+        </div>
+        <div class="field">
+          <label>Treinamento/Serviço</label>
+          <input type="text" id="pTreinamento" placeholder="Ex: NR-35" oninput="salvarPersonalizacao(); renderScript()">
+        </div>
+        <div class="field">
+          <label>Valor</label>
+          <input type="text" id="pValor" placeholder="Ex: 890,00" oninput="salvarPersonalizacao(); renderScript()">
+        </div>
+        <div class="field">
+          <label>Data</label>
+          <input type="text" id="pData" placeholder="Ex: 26/09" oninput="salvarPersonalizacao(); renderScript()">
         </div>
       </div>
 
@@ -629,11 +649,61 @@ const CATEGORIAS = [
 let scriptAtualId = null;
 let vtabAtual = null;
 
+// Normaliza pra busca (sem acento, minúsculo) — assim "esocial" acha "eSocial" etc.
+function normalizaBusca(s) {
+  return (s || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+// ---------- Uso recente (localStorage) — pra destacar os scripts que você mais usa ----------
+function obterUsoScripts() {
+  try { return JSON.parse(localStorage.getItem('safeseg_msg_uso') || '{}'); } catch(e) { return {}; }
+}
+function registrarUsoScript(id) {
+  const uso = obterUsoScripts();
+  uso[id] = (uso[id] || 0) + 1;
+  try { localStorage.setItem('safeseg_msg_uso', JSON.stringify(uso)); } catch(e) {}
+}
+
 function renderListaLateral() {
-  const box = document.getElementById('scriptsCol');
-  box.innerHTML = CATEGORIAS.map(cat => `
+  const termoBusca = normalizaBusca(document.getElementById('buscaScript')?.value || '');
+  const box = document.getElementById('scriptsListBox');
+
+  function scriptBate(k) {
+    if (!termoBusca) return true;
+    const s = SCRIPTS[k];
+    return normalizaBusca(s.title + ' ' + s.etapa + ' ' + s.canal + ' ' + (s.desc||'')).includes(termoBusca);
+  }
+
+  let html = '';
+
+  // "Mais usados" só aparece sem busca ativa, pra não confundir o filtro
+  if (!termoBusca) {
+    const uso = obterUsoScripts();
+    const maisUsados = Object.keys(uso)
+      .filter(k => SCRIPTS[k] && uso[k] > 0)
+      .sort((a,b) => uso[b] - uso[a])
+      .slice(0, 5);
+    if (maisUsados.length > 0) {
+      html += `<div class="scripts-group-label">⭐ Mais Usados</div>`;
+      html += maisUsados.map(k => {
+        const s = SCRIPTS[k];
+        return `<div class="script-item ${k === scriptAtualId ? 'active' : ''}" onclick="abrirScript('${k}')">
+          <div class="titulo">${s.title}</div>
+          <div class="etapa">${s.etapa}</div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  const categoriasFiltradas = CATEGORIAS.map(cat => ({ ...cat, chaves: cat.chaves.filter(k => SCRIPTS[k] && scriptBate(k)) })).filter(cat => cat.chaves.length > 0);
+
+  if (termoBusca && categoriasFiltradas.length === 0) {
+    html += `<div class="text-muted" style="font-size:12.5px; padding:12px 4px;">Nenhum script encontrado pra "${document.getElementById('buscaScript').value}".</div>`;
+  }
+
+  html += categoriasFiltradas.map(cat => `
     <div class="scripts-group-label">${cat.label}</div>
-    ${cat.chaves.filter(k => SCRIPTS[k]).map(k => {
+    ${cat.chaves.map(k => {
       const s = SCRIPTS[k];
       return `<div class="script-item ${k === scriptAtualId ? 'active' : ''}" onclick="abrirScript('${k}')">
         <div class="titulo">${s.title}</div>
@@ -641,12 +711,52 @@ function renderListaLateral() {
       </div>`;
     }).join('')}
   `).join('');
+
+  box.innerHTML = html;
 }
 
 function personalizarTexto(txt) {
   const nome = document.getElementById('pNome').value.trim();
-  if (!nome) return txt;
-  return txt.replace(/\[Nome\]/g, nome).replace(/\[NOME\]/g, nome.toUpperCase());
+  const segmento = document.getElementById('pSegmento').value.trim();
+  const treinamento = document.getElementById('pTreinamento').value.trim();
+  const valorBruto = document.getElementById('pValor').value.trim();
+  const data = document.getElementById('pData').value.trim();
+  const valor = valorBruto ? (valorBruto.toUpperCase().startsWith('R$') ? valorBruto : 'R$ ' + valorBruto) : '';
+
+  let resultado = txt;
+  if (nome) resultado = resultado.replace(/\[Nome\]/g, nome).replace(/\[NOME\]/g, nome.toUpperCase());
+  if (segmento) resultado = resultado.replace(/\[SEGMENTO\]/gi, segmento);
+  if (treinamento) resultado = resultado.replace(/\[TREINAMENTO\]/gi, treinamento).replace(/\[SERVIÇO\]/gi, treinamento).replace(/\[NR\]/g, treinamento);
+  if (valor) resultado = resultado.replace(/\[VALOR\]/g, valor);
+  if (data) resultado = resultado.replace(/\[DATA\]/g, data);
+  return resultado;
+}
+
+// Guarda os campos de personalização no navegador — assim não precisa
+// redigitar nome/segmento/valor toda vez que troca de script no meio de
+// uma ligação ou atendimento. O pré-preenchimento vindo de um Lead
+// (?nome=X&telefone=Y) sempre tem prioridade sobre o que estava salvo.
+function salvarPersonalizacao() {
+  const dados = {
+    nome: document.getElementById('pNome').value,
+    telefone: document.getElementById('pTelefone').value,
+    segmento: document.getElementById('pSegmento').value,
+    treinamento: document.getElementById('pTreinamento').value,
+    valor: document.getElementById('pValor').value,
+    data: document.getElementById('pData').value
+  };
+  try { localStorage.setItem('safeseg_msg_personalizacao', JSON.stringify(dados)); } catch(e) {}
+}
+function carregarPersonalizacao() {
+  try {
+    const dados = JSON.parse(localStorage.getItem('safeseg_msg_personalizacao') || '{}');
+    if (dados.nome) document.getElementById('pNome').value = dados.nome;
+    if (dados.telefone) document.getElementById('pTelefone').value = dados.telefone;
+    if (dados.segmento) document.getElementById('pSegmento').value = dados.segmento;
+    if (dados.treinamento) document.getElementById('pTreinamento').value = dados.treinamento;
+    if (dados.valor) document.getElementById('pValor').value = dados.valor;
+    if (dados.data) document.getElementById('pData').value = dados.data;
+  } catch(e) {}
 }
 
 function copiarTexto(texto, btn) {
@@ -666,6 +776,7 @@ function linkWhatsApp(texto) {
 window.abrirScript = function(id) {
   scriptAtualId = id;
   vtabAtual = null;
+  registrarUsoScript(id);
   renderListaLateral();
   renderScript();
 };
@@ -702,6 +813,10 @@ window.renderScript = function() {
       <a class="btn btn--secondary" href="mailto:?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(corpoTxt)}" style="text-decoration:none;">✉️ Abrir e-mail</a>
     </div>`;
   } else if (s.type === 'obj') {
+    const respostasCompletas = s.objs.map(o => `${o.p}\n${personalizarTexto(o.r)}`).join('\n\n');
+    corpo += `<div class="msg-actions" style="margin-bottom:4px;">
+      <button class="btn btn--secondary" style="padding:6px 12px; font-size:12px;" onclick="copiarTexto(\`${respostasCompletas.replace(/`/g,'\\`')}\`, this)">📋 Copiar todas as respostas</button>
+    </div>`;
     corpo += s.objs.map(o => {
       const r = personalizarTexto(o.r);
       return `<div class="obj-item">
@@ -711,6 +826,10 @@ window.renderScript = function() {
       </div>`;
     }).join('');
   } else if (s.type === 'tel' || s.type === 'vis') {
+    const roteiroCompleto = s.fases.map(f => `${f.num}. ${f.lbl}\n${personalizarTexto(f.txt)}`).join('\n\n');
+    corpo += `<div class="msg-actions" style="margin-bottom:4px;">
+      <button class="btn btn--secondary" style="padding:6px 12px; font-size:12px;" onclick="copiarTexto(\`${roteiroCompleto.replace(/`/g,'\\`')}\`, this)">📋 Copiar roteiro completo</button>
+    </div>`;
     corpo += s.fases.map(f => {
       const t = personalizarTexto(f.txt);
       return `<div class="fase-item">
@@ -733,13 +852,16 @@ window.renderScript = function() {
     </div>`;
 };
 
-// Se veio de um Lead (leads.html?nome=X&telefone=Y), já pré-preenche
+// Se veio de um Lead (leads.html?nome=X&telefone=Y), já pré-preenche —
+// isso tem prioridade sobre o que estava salvo no navegador
+carregarPersonalizacao();
 (function preencherDaURL() {
   const params = new URLSearchParams(location.search);
   const nome = params.get('nome');
   const telefone = params.get('telefone');
   if (nome) document.getElementById('pNome').value = nome;
   if (telefone) document.getElementById('pTelefone').value = telefone;
+  if (nome || telefone) salvarPersonalizacao();
 })();
 
 renderListaLateral();
