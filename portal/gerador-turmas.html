@@ -542,9 +542,9 @@ document.documentElement.style.setProperty('--doc-accent', '#F59E0B'); // cor Sa
 // Externo, Dossiê, Carteirinha, e agora também aqui no Gerador de Turmas)
 
 function loadTurmas(){ try{ return JSON.parse(localStorage.getItem(LS_TURMAS)||'[]'); }catch(e){ return []; } }
-function saveTurmas(list){
+async function saveTurmas(list){
   localStorage.setItem(LS_TURMAS, JSON.stringify(list));
-  sincronizarTurmasComFirestore(list); // espelha em segundo plano, não trava a tela esperando
+  await sincronizarTurmasComFirestore(list); // espera terminar de verdade — antes era "atira e esquece", e navegar pra outra página logo em seguida (ex: botão Nota/Aprovação) cancelava o envio no meio do caminho
 }
 
 // Espelha a lista de turmas (localStorage) no Firestore, coleção 'turmas' —
@@ -557,6 +557,7 @@ async function sincronizarTurmasComFirestore(list){
     await Promise.all(list.map(t => setDoc(doc(db, 'turmas', String(t.id)), t)));
   } catch (e) {
     console.error('Falha ao sincronizar turmas com o Firestore (não crítico, localStorage continua funcionando):', e);
+    toast('⚠️ Turma salva localmente, mas não sincronizou com a nuvem — a aba "Turmas" pode não mostrar ela ainda. Erro: ' + e.message);
   }
 }
 function loadSeq(){ try{ return JSON.parse(localStorage.getItem(LS_SEQ)||'{}'); }catch(e){ return {}; } }
@@ -1171,20 +1172,20 @@ function updateActiveTurmaBanner(){
     : '';
 }
 
-function buildLocalTurma(f, status){
+async function buildLocalTurma(f, status){
   const codigo = nextTurmaCode(f.dias[0].date);
   const turma = { id:'T'+Date.now(), codigo, status, ...f, createdAt:new Date().toISOString() };
   const list = loadTurmas();
   list.unshift(turma);
-  saveTurmas(list);
+  await saveTurmas(list);
   return turma;
 }
-function updateLocalTurma(id, f, status){
+async function updateLocalTurma(id, f, status){
   const list = loadTurmas();
   const idx = list.findIndex(t=>t.id===id);
   if(idx===-1) return null;
   list[idx] = { ...list[idx], ...f, status, updatedAt:new Date().toISOString() };
-  saveTurmas(list);
+  await saveTurmas(list);
   return list[idx];
 }
 
@@ -1197,6 +1198,7 @@ document.getElementById('btnSalvarTurma').addEventListener('click', async ()=>{
 
   if(currentTurmaId){
     // já existe rascunho ativo -> atualiza (mantém o mesmo código)
+    let idCloud = currentTurmaId, codigoCloud = currentTurmaCodigo;
     if(url){
       try{
         const data = await cloudPost({action:'saveTurma', turma:{...f, id:currentTurmaId, codigo:currentTurmaCodigo, status:'rascunho'}});
@@ -1204,10 +1206,14 @@ document.getElementById('btnSalvarTurma').addEventListener('click', async ()=>{
         // (cidade, art, instrutoresAuxiliares, etc.) sempre vêm do formulário
         // real (f), nunca do que esse sistema devolve, porque ele não
         // conhece campos novos e os apagava silenciosamente
-        if(data && data.ok && data.turma){ turma = { ...f, id: data.turma.id || currentTurmaId, codigo: data.turma.codigo || currentTurmaCodigo, status: 'rascunho' }; }
+        if(data && data.ok && data.turma){ idCloud = data.turma.id || currentTurmaId; codigoCloud = data.turma.codigo || currentTurmaCodigo; }
       }catch(e){ /* segue com salvamento local */ }
     }
-    if(!turma) turma = updateLocalTurma(currentTurmaId, f, 'rascunho');
+    // SEMPRE persiste local + Firestore aqui, tenha a nuvem antiga respondido
+    // ou não — antes, quando ela respondia com sucesso, esse passo era
+    // pulado inteiro e a turma nunca chegava no Firestore (por isso "Turmas"
+    // ficava vazia mesmo com a turma aparecendo certinho aqui no Gerador)
+    turma = await updateLocalTurma(currentTurmaId, { ...f, id: idCloud, codigo: codigoCloud }, 'rascunho');
     toast(`Turma ${turma.codigo} atualizada — ${f.alunos.length} aluno(s) salvos`);
   } else {
     // primeira vez salvando -> gera o código agora e ele fica fixo
@@ -1219,12 +1225,12 @@ document.getElementById('btnSalvarTurma').addEventListener('click', async ()=>{
         turma = { ...f, id: data.turma.id, codigo: data.turma.codigo, status: 'rascunho' };
         const list = loadTurmas().filter(t=>t.id!==turma.id);
         list.unshift(turma);
-        saveTurmas(list);
+        await saveTurmas(list);
       }catch(e){
         toast('Não foi possível salvar na nuvem — salvando localmente ('+e.message+')');
       }
     }
-    if(!turma) turma = buildLocalTurma(f, 'rascunho');
+    if(!turma) turma = await buildLocalTurma(f, 'rascunho');
     currentTurmaId = turma.id;
     toast(`Turma salva! Código reservado: ${turma.codigo}${url?' (sincronizado)':''} — a data já está marcada na Agenda.`);
   }
@@ -1244,13 +1250,18 @@ document.getElementById('btnGerarTurma').addEventListener('click', async ()=>{
 
   if(currentTurmaId){
     // finaliza o rascunho já existente — mesmo código, agora com a lista completa
+    let idCloud = currentTurmaId, codigoCloud = currentTurmaCodigo;
     if(url){
       try{
         const data = await cloudPost({action:'saveTurma', turma:{...f, id:currentTurmaId, codigo:currentTurmaCodigo, status:'gerado'}});
-        if(data && data.ok && data.turma){ turma = { ...f, id: data.turma.id || currentTurmaId, codigo: data.turma.codigo || currentTurmaCodigo, status: 'gerado' }; }
+        if(data && data.ok && data.turma){ idCloud = data.turma.id || currentTurmaId; codigoCloud = data.turma.codigo || currentTurmaCodigo; }
       }catch(e){ /* segue local */ }
     }
-    if(!turma) turma = updateLocalTurma(currentTurmaId, f, 'gerado');
+    // SEMPRE persiste local + Firestore aqui — ver comentário equivalente
+    // no botão Salvar Turma logo acima. Esse é o caminho mais comum (rascunho
+    // salvo em vários dias, depois finalizado), então esse bug era o principal
+    // motivo de "Turmas" aparecer vazia mesmo com a turma pronta aqui.
+    turma = await updateLocalTurma(currentTurmaId, { ...f, id: idCloud, codigo: codigoCloud }, 'gerado');
   } else {
     // fluxo rápido: gera direto sem ter salvado rascunho antes
     if(url){
@@ -1261,13 +1272,13 @@ document.getElementById('btnGerarTurma').addEventListener('click', async ()=>{
         turma = { ...f, id: data.turma.id, codigo: data.turma.codigo, status: 'gerado' };
         const list = loadTurmas().filter(t=>t.id!==turma.id);
         list.unshift(turma);
-        saveTurmas(list);
+        await saveTurmas(list);
       }catch(e){
         toast('Não foi possível salvar na nuvem — gerando localmente ('+e.message+')');
-        turma = buildLocalTurma(f, 'gerado');
+        turma = await buildLocalTurma(f, 'gerado');
       }
     } else {
-      turma = buildLocalTurma(f, 'gerado');
+      turma = await buildLocalTurma(f, 'gerado');
     }
   }
 
@@ -1381,7 +1392,7 @@ async function renderHistorico(){
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           ${t.status==='rascunho' ? `<button class="btn secondary small" onclick="editarTurma('${t.id}')">✏️ Continuar editando</button>` : ''}
-          <a href="turmas.html" class="btn secondary small" style="text-decoration:none;">✅ Nota/Aprovação</a>
+          <a href="turmas.html?turmaId=${t.id}" class="btn secondary small" style="text-decoration:none;">✅ Nota/Aprovação</a>
           <button class="btn small" onclick="emitirCertificadosDaTurma('${t.id}')">📄 Emitir certificados</button>
           ${t.pdfUrl ? `<a class="btn secondary small" href="${t.pdfUrl}" target="_blank" rel="noopener">Abrir PDF</a>` : ''}
           <button class="btn ghost small" onclick="copyTurmaLink('${t.id}')">Copiar link</button>
@@ -1394,12 +1405,12 @@ async function renderHistorico(){
 }
 document.getElementById('histSearch').addEventListener('input', renderHistorico);
 
-function alternarConcluida(id){
+async function alternarConcluida(id){
   const list = loadTurmas();
   const idx = list.findIndex(t=>t.id===id);
   if(idx===-1) return;
   list[idx].concluida = !list[idx].concluida;
-  saveTurmas(list);
+  await saveTurmas(list);
   renderHistorico();
 }
 
@@ -1827,7 +1838,7 @@ async function deleteTurma(id){
     catch(e){ toast('Erro ao excluir na nuvem: '+e.message); }
   }
   const list = loadTurmas().filter(x=>x.id!==id);
-  saveTurmas(list);
+  await saveTurmas(list);
   renderHistorico();
   toast('Turma excluída');
 }

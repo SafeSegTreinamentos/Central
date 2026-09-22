@@ -446,6 +446,23 @@
   };
 
   carregarTurmasIniciais();
+
+  // Se veio de "✅ Nota/Aprovação" no Gerador de Turmas (?turmaId=...),
+  // já abre e rola até a turma certa, em vez de largar numa lista longa
+  (function abrirTurmaDaURL() {
+    const turmaId = new URLSearchParams(location.search).get('turmaId');
+    if (!turmaId) return;
+    const tentar = (restante) => {
+      const el = document.getElementById(`turma-${turmaId}`);
+      if (el) {
+        el.classList.add('open');
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else if (restante > 0) {
+        setTimeout(() => tentar(restante - 1), 200); // a lista ainda pode estar carregando
+      }
+    };
+    tentar(15);
+  })();
 </script>
 <script type="module">
   import { auth, signOut } from "../assets/js/firebase-init.js";
