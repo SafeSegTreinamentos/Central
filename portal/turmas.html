@@ -129,6 +129,13 @@
     window.escapeHtml = escapeHtml; // expõe globalmente — o resto do arquivo usa funções fora desse escopo de módulo
     await esperarAuth();
     window.__firestore = { db, collection, getDocs, addDoc, updateDoc, doc, setDoc };
+    // IMPORTANTE: só chama aqui, DEPOIS que o Firestore está pronto de
+    // verdade — script type="module" sempre roda depois do resto da página
+    // (é assim que o navegador funciona), então chamar isso lá no script
+    // comum de baixo significava rodar ANTES do login terminar de conferir,
+    // toda vez, sem exceção. Por isso a tela carregava só o que tinha em
+    // localStorage (às vezes nada) e nunca conferia o Firestore de verdade.
+    if (window.carregarTurmasIniciais) window.carregarTurmasIniciais();
   } catch (err) {
     console.error('Erro ao verificar login:', err);
     document.body.innerHTML = `
@@ -169,6 +176,7 @@
   // Se o Firestore ainda estiver vazio mas tiver dado salvo só localmente
   // (turma criada antes dessa atualização), migra automaticamente pra nuvem.
   async function carregarTurmasIniciais(){
+    window.__turmasCarregouUmaVez = true;
     const localData = (() => { try { return JSON.parse(localStorage.getItem(LS_TURMAS)||'[]'); } catch(e) { return []; } })();
 
     if (!window.__firestore) { turmasCache = localData; renderTurmas(); return; }
@@ -198,12 +206,20 @@
   }
 
   function renderTurmas(){
+    const box = document.getElementById('turmasList');
+    try {
+      renderTurmasInterno_(box);
+    } catch (e) {
+      console.error('Erro ao renderizar turmas:', e);
+      box.innerHTML = `<div class="empty-state" style="color:#b91c1c;">⚠️ Deu erro ao mostrar as turmas: ${e.message}<br><span style="font-size:11.5px; color:var(--graphite-600);">Abre o console (F12) pra ver o detalhe técnico, ou manda essa mensagem pro suporte.</span></div>`;
+    }
+  }
+  function renderTurmasInterno_(box){
     const turmas = loadTurmas().slice().sort((a,b) => {
       const da = a.dias && a.dias[0] ? a.dias[0].date : '';
       const db = b.dias && b.dias[0] ? b.dias[0].date : '';
       return db.localeCompare(da); // mais recente primeiro
     });
-    const box = document.getElementById('turmasList');
 
     if (turmas.length === 0) {
       box.innerHTML = `<div class="empty-state">Nenhuma turma salva ainda. Crie uma no <a href="gerador-turmas.html" style="color:var(--gold-600); font-weight:600;">Gerador de Turmas</a>.</div>`;
@@ -445,7 +461,18 @@
     alert(resumo);
   };
 
-  carregarTurmasIniciais();
+  window.carregarTurmasIniciais = carregarTurmasIniciais; // acessível pro módulo de login chamar no momento certo
+
+  // Rede de segurança: se por algum motivo o módulo de login nunca chamar
+  // (ex: trava esperando resposta do Firebase), carrega mesmo assim depois
+  // de alguns segundos, usando o que tiver no localStorage — melhor que
+  // ficar em branco pra sempre.
+  setTimeout(() => {
+    if (!window.__turmasCarregouUmaVez) {
+      console.warn('Login demorou demais pra confirmar — carregando com o que tem localmente.');
+      carregarTurmasIniciais();
+    }
+  }, 6000);
 
   // Se veio de "✅ Nota/Aprovação" no Gerador de Turmas (?turmaId=...),
   // já abre e rola até a turma certa, em vez de largar numa lista longa

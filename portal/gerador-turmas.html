@@ -515,7 +515,11 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
   <div class="panel" id="panel-hist">
     <div class="card">
       <h2>Turmas geradas</h2>
-      <input id="histSearch" placeholder="Buscar por código, curso ou empresa..." style="margin-bottom:14px;">
+      <div style="display:flex; gap:10px; align-items:center; margin-bottom:14px; flex-wrap:wrap;">
+        <input id="histSearch" placeholder="Buscar por código, curso ou empresa..." style="flex:1; min-width:200px; margin-bottom:0;">
+        <button class="btn secondary small" id="btnForcarSync" type="button">🔄 Sincronizar com a nuvem</button>
+      </div>
+      <div id="syncStatus" style="font-size:12.5px; margin-bottom:10px;"></div>
       <div id="histList"></div>
     </div>
   </div>
@@ -1404,6 +1408,50 @@ async function renderHistorico(){
     </div>`).join('');
 }
 document.getElementById('histSearch').addEventListener('input', renderHistorico);
+
+// Sincronização MANUAL e forçada — ignora qualquer lógica automática e tenta
+// gravar cada turma do localStorage direto no Firestore, uma por uma, com
+// relatório de erro específico se alguma falhar (em vez de falhar em
+// silêncio como o sincronismo automático em segundo plano fazia antes).
+document.getElementById('btnForcarSync').addEventListener('click', async () => {
+  const statusBox = document.getElementById('syncStatus');
+  const btn = document.getElementById('btnForcarSync');
+  const list = loadTurmas();
+
+  if (list.length === 0) {
+    statusBox.innerHTML = '<span style="color:#F5A623;">Não tem nenhuma turma salva localmente nesse navegador pra sincronizar.</span>';
+    return;
+  }
+  if (!window.__firestore) {
+    statusBox.innerHTML = '<span style="color:#ef5350;">⚠️ Ainda não conectou no Firestore (login não confirmado) — espera um instante e tenta de novo.</span>';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Sincronizando...';
+  statusBox.innerHTML = `Sincronizando ${list.length} turma(s)...`;
+
+  const { db, doc, setDoc } = window.__firestore;
+  let sucesso = 0;
+  const erros = [];
+  for (const t of list) {
+    try {
+      await setDoc(doc(db, 'turmas', String(t.id)), t);
+      sucesso++;
+    } catch (e) {
+      erros.push(`${t.codigo || t.id}: ${e.message}`);
+    }
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🔄 Sincronizar com a nuvem';
+
+  if (erros.length === 0) {
+    statusBox.innerHTML = `<span style="color:#4caf50;">✅ ${sucesso} turma(s) sincronizada(s) com sucesso — já pode abrir em "Turmas".</span>`;
+  } else {
+    statusBox.innerHTML = `<span style="color:#ef5350;">⚠️ ${sucesso} sincronizada(s), ${erros.length} falharam:<br>${erros.map(e => window.escapeHtml ? window.escapeHtml(e) : e).join('<br>')}</span>`;
+  }
+});
 
 async function alternarConcluida(id){
   const list = loadTurmas();
