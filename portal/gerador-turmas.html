@@ -378,8 +378,11 @@ table.tbl td input{padding:6px 8px;font-size:13px;}
           <div class="small-note">Essa é a mesma lista usada pra escolher quem assina depois da emissão. Pra adicionar um novo instrutor aqui, cadastra em <a href="instrutores.html">Instrutores</a> — precisa também bater com o nome no <code>ASSINAFY_INSTRUTORES</code> do Apps Script pra assinatura eletrônica funcionar.</div>
         </div>
         <div class="field">
-          <label>Curso <small style="color:var(--amber); font-weight:400;">— só mostra cursos com modelo cadastrado pra esse instrutor</small></label>
-          <select id="fCurso"><option value="">Carregando modelos...</option></select>
+          <label>Curso <small style="color:var(--amber); font-weight:400;">— só cursos ATIVOS no Catálogo, com modelo cadastrado pra esse instrutor</small></label>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <select id="fCurso" style="flex:1;"><option value="">Carregando modelos...</option></select>
+            <button type="button" class="btn secondary small" id="btnAtualizarCursos" title="Recarrega a lista de cursos/modelos (útil se você acabou de editar algo no Catálogo)">🔄</button>
+          </div>
         </div>
         <div class="field">
           <label>Tipo</label>
@@ -1526,16 +1529,34 @@ window.atualizarCursosDoInstrutor = async function() {
       modelosCache = resultado.modelos || [];
     }
 
+    // Cruza com o Catálogo de Cursos (Firestore) e mostra só quem está
+    // ATIVO lá — isso evita mostrar curso residual/descontinuado que ainda
+    // tem uma linha velha em Modelos mas já não é mais oferecido de verdade.
+    // Se não conseguir carregar o Catálogo por algum erro de rede, não
+    // filtra nada (melhor mostrar demais do que esconder tudo por engano).
+    if (!catalogoCursosCache && window.__firestore) {
+      const { db, collection, getDocs } = window.__firestore;
+      try {
+        const snap = await getDocs(collection(db, 'catalogoCursos'));
+        catalogoCursosCache = snap.docs.map(d => d.data());
+      } catch (e) { console.error('Erro ao buscar Catálogo de Cursos:', e); }
+    }
+    const normalizaNomeCurso = s => (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+    const nomesAtivosNoCatalogo = catalogoCursosCache
+      ? new Set(catalogoCursosCache.filter(c => c.ativo !== false).map(c => normalizaNomeCurso(c.nome)))
+      : null;
+
     const alvo = chaveCombinacaoInstrutores([instrutorAtual, ...auxiliaresAtuais]);
     const cursosDoInstrutor = modelosCache
       .filter(m => chaveCombinacaoInstrutores(m.instrutor) === alvo)
       .map(m => m.curso)
-      .filter(Boolean);
+      .filter(Boolean)
+      .filter(curso => !nomesAtivosNoCatalogo || nomesAtivosNoCatalogo.has(normalizaNomeCurso(curso)));
     const cursosUnicos = [...new Set(cursosDoInstrutor)].sort();
 
     const rotuloCombo = auxiliaresAtuais.length > 0 ? `${instrutorAtual} + ${auxiliaresAtuais.join(' + ')}` : instrutorAtual;
     if (cursosUnicos.length === 0) {
-      selectCurso.innerHTML = `<option value="">Nenhum modelo cadastrado pra ${rotuloCombo}</option>`;
+      selectCurso.innerHTML = `<option value="">Nenhum curso ativo com modelo pra ${rotuloCombo}</option>`;
       return;
     }
     selectCurso.innerHTML = cursosUnicos.map(c => `<option value="${c.replace(/"/g,'&quot;')}">${c}</option>`).join('');
@@ -1547,6 +1568,15 @@ window.atualizarCursosDoInstrutor = async function() {
   }
 };
 document.getElementById('fInstrutoresAuxiliares').addEventListener('change', atualizarCursosDoInstrutor);
+
+// Botão "🔄" — limpa as duas caches (Modelos e Catálogo) e busca tudo de
+// novo na hora, pra refletir qualquer edição recente sem precisar recarregar
+// a página inteira.
+document.getElementById('btnAtualizarCursos').addEventListener('click', async () => {
+  modelosCache = null;
+  catalogoCursosCache = null;
+  await atualizarCursosDoInstrutor();
+});
 
 // Turmas "Abertas" (CT SafeSeg, sem empresa vinculada) não tinham pra onde ir
 // no Firestore — o certificado era gerado no Drive normalmente, mas ficava
@@ -1616,6 +1646,7 @@ async function emitirCertificadosDaTurma(id){
         cpf: aluno.cpf,
         curso: t.curso,
         instrutor: t.instrutor,
+        instrutoresAuxiliares: t.instrutoresAuxiliares || [], // faltava — sem isso, turma com 2+ instrutores assinando podia casar com o modelo errado (de instrutor só) na hora de gravar
         dataInicioISO, dataFimISO,
         carga: t.carga,
         empresa: t.empresa,
