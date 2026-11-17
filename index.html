@@ -106,7 +106,18 @@ h1,h2,h3{font-family:'Bebas Neue',Arial,sans-serif;letter-spacing:.5px;margin:0;
     const perfil = await obterMeuPerfil();
 
     if (perfil && perfil.role === 'cliente') {
-      window.location.href = 'dashboard-cliente.html';
+      window.location.replace('portal/dashboard-cliente.html');
+    } else if (!perfil || perfil.role !== 'admin') {
+      // Usuário logado mas sem perfil liberado: não mostra o painel de gestão.
+      await signOut(auth);
+      document.body.innerHTML = `
+        <div style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; text-align:center; color:#E9E9E7; font-family:Inter,Arial,sans-serif;">
+          <div>
+            <div style="font-size:16px; font-weight:700; margin-bottom:6px;">Esta conta ainda não tem acesso ao portal</div>
+            <div style="font-size:13px; color:#9AA0A6; margin-bottom:16px;">Fale com a SafeSeg pelo WhatsApp (46) 99920-3945 para liberar o acesso.</div>
+            <button onclick="location.reload()" style="background:#F59E0B; color:#111; border:none; padding:10px 20px; border-radius:8px; font-weight:700; cursor:pointer;">Entrar com outra conta</button>
+          </div>
+        </div>`;
     } else {
       document.querySelector('.wrap').classList.add('autenticado');
       carregarPainelExecutivo(db, collection, getDocs);
