@@ -97,6 +97,32 @@
        data/status noutra, em qualquer largura de tela */
     .cert-row__meta { flex: 1 1 100%; margin-left: 0; justify-content: space-between; }
   }
+
+  /* Visual 2026-11: faixa de status do colaborador e menu de ações por certificado */
+  .collab-card { border-left: 6px solid var(--status-ok); box-shadow: none; }
+  .collab-card--warn { border-left-color: #F59E0B; }
+  .collab-card--danger { border-left-color: var(--status-danger); }
+  .collab-card--pending { border-left-color: var(--status-pending); }
+  .collab-head:hover { background: #FBFAF6; }
+  .collab-name { font-size: 16px; }
+  .cert-nr { font-family: var(--font-display); font-weight: 400; font-size: 22px; color: var(--graphite-900); letter-spacing: .02em; min-width: 64px; }
+  .acoes { position: relative; }
+  .acoes summary { list-style: none; cursor: pointer; font: 600 13px var(--font-body); padding: 6px 12px; border: 1.5px solid var(--paper-200); border-radius: 6px; background: #fff; user-select: none; }
+  .acoes summary::-webkit-details-marker { display: none; }
+  .acoes summary::after { content: ' ▾'; color: var(--graphite-600); }
+  .acoes[open] summary { border-color: #F59E0B; }
+  .acoes-lista { position: absolute; right: 0; top: calc(100% + 4px); z-index: 20; background: #fff; border: 1px solid var(--paper-200); border-radius: 8px; box-shadow: var(--shadow-elevated); padding: 6px; min-width: 200px; display: flex; flex-direction: column; }
+  .acao-item { text-align: left; background: none; border: 0; padding: 9px 10px; border-radius: 6px; font: 500 14px var(--font-body); cursor: pointer; color: var(--graphite-900); }
+  .acao-item:hover { background: var(--paper-100); }
+  .acao-item--perigo { color: var(--status-danger); }
+  @media (max-width: 600px) {
+    .collab-head { flex-wrap: wrap; padding: 14px; }
+    .collab-info { flex: 1 1 calc(100% - 100px); }
+    .collab-summary { order: 3; width: 100%; justify-content: flex-start !important; padding-left: 52px; }
+    .cert-cont { white-space: nowrap; }
+    .cert-row__meta { margin-left: 0; width: 100%; flex-wrap: wrap; }
+    .acoes { margin-left: auto; }
+  }
 </style>
 <script src="../assets/js/menu.js" defer></script>
 </head>
@@ -433,21 +459,24 @@
               <span class="cert-data">${c.data || '—'}</span>
               ${estaInativo ? `<span class="selo selo--pending">⏸️ Inativo</span>` : (c.substituidoPor ? `<span class="selo selo--pending">🔄 Renovado (veja o mais novo)</span>` : `<span class="selo selo--${st.cls}">${st.label}</span>`)}
               ${c.origem === 'externo' ? `<span class="selo" style="background:#EFE9FE; color:#6B46C1;">🌐 Externo</span>` : ''}
-              <button class="btn btn--ghost" style="padding:4px 9px; font-size:11px;" onclick="abrirModalEditarCert('${c.id}', '${c.empresaId}', '${c.campoData}', '${(c.nr||'').replace(/'/g,"\\'")}', '${escapeHtml(col.nome).replace(/'/g,"\\'")}')">✏️ Editar</button>
-              <button class="btn btn--ghost" style="padding:4px 9px; font-size:11px;" onclick="abrirModalRegenerar('${(col.nome||'').replace(/'/g,"\\'")}', '${(c.cpf||'').replace(/'/g,"\\'")}', '${(c.nr||'').replace(/'/g,"\\'")}', '${(col.empresa||'').replace(/'/g,"\\'")}', '${c.id}', '${c.empresaId}')">🔄 Regenerar</button>
-              <button class="btn btn--ghost" style="padding:4px 9px; font-size:11px;" onclick="alternarStatusCertificado('${c.id}', '${c.empresaId}', '${escapeHtml(col.nome).replace(/'/g,"\\'")}', '${estaInativo ? 'ativo' : 'inativo'}')">${estaInativo ? '▶️ Reativar' : '⏸️ Inativar'}</button>
-              <button class="btn btn--ghost" style="padding:4px 9px; font-size:11px; color:var(--status-danger);" onclick="excluirCertificado('${c.id}', '${c.empresaId}', '${escapeHtml(col.nome).replace(/'/g,"\\'")}', '${(c.nr||'').replace(/'/g,"\\'")}')">🗑️ Excluir</button>
+              <details class="acoes"><summary>Ações</summary><div class="acoes-lista">
+              <button class="acao-item" onclick="abrirModalEditarCert('${c.id}', '${c.empresaId}', '${c.campoData}', '${(c.nr||'').replace(/'/g,"\\'")}', '${escapeHtml(col.nome).replace(/'/g,"\\'")}')">✏️ Editar</button>
+              <button class="acao-item" onclick="abrirModalRegenerar('${(col.nome||'').replace(/'/g,"\\'")}', '${(c.cpf||'').replace(/'/g,"\\'")}', '${(c.nr||'').replace(/'/g,"\\'")}', '${(col.empresa||'').replace(/'/g,"\\'")}', '${c.id}', '${c.empresaId}')">🔄 Regenerar</button>
+              <button class="acao-item" onclick="alternarStatusCertificado('${c.id}', '${c.empresaId}', '${escapeHtml(col.nome).replace(/'/g,"\\'")}', '${estaInativo ? 'ativo' : 'inativo'}')">${estaInativo ? '▶️ Reativar' : '⏸️ Inativar'}</button>
+              <button class="acao-item acao-item--perigo" onclick="excluirCertificado('${c.id}', '${c.empresaId}', '${escapeHtml(col.nome).replace(/'/g,"\\'")}', '${(c.nr||'').replace(/'/g,"\\'")}')">🗑️ Excluir</button>
+              </div></details>
             </div>
           </div>`;
       }).join('');
 
       const counts = { danger: 0, warn: 0, ok: 0, pending: 0 };
       col.certificados.forEach(c => counts[statusPorData(c.data).cls]++);
+      const pior = counts.danger ? 'danger' : counts.warn ? 'warn' : counts.pending ? 'pending' : 'ok';
       const resumoHtml = Object.entries(counts).filter(([,n]) => n > 0)
         .map(([cls, n]) => `<span class="selo selo--${cls}">${n} ${cls==='ok'?'válido(s)':cls==='danger'?'vencido(s)':cls==='warn'?'atenção':'pendente(s)'}</span>`).join('');
 
       return `
-        <div class="collab-card ${i === 0 ? 'open' : ''}">
+        <div class="collab-card collab-card--${pior} ${i === 0 ? 'open' : ''}">
           <div class="collab-head" onclick="this.parentElement.classList.toggle('open')">
             <div class="collab-avatar">${iniciais(col.nome)}</div>
             <div class="collab-info">
@@ -741,5 +770,12 @@
   };
 </script>
 
+<script>
+// Fecha o menu "Ações" ao tocar fora dele ou ao abrir outro
+document.addEventListener('click', (e) => {
+  document.querySelectorAll('details.acoes[open]').forEach(d => { if (!d.contains(e.target)) d.removeAttribute('open'); });
+});
+document.addEventListener('click', (e) => { if (e.target.closest('.acao-item')) e.target.closest('details.acoes').removeAttribute('open'); });
+</script>
 </body>
 </html>

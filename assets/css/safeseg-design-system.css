@@ -534,3 +534,8 @@ a.kpi-card:hover, .kpi-card[onclick]:hover { border-color: #F59E0B; }
   .content .kpi-grid:not(.kpi-grid--secondary) .trend { display: none; }
 }
 @media (max-width: 900px) { .app { align-content: start; } .sidebar.sidebar--js { align-self: start; } }
+@media (max-width: 600px) {
+  .app .topbar > div:last-child:not(:first-child) { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; }
+  .app .topbar > div:last-child:not(:first-child) .btn { flex: 1 1 calc(50% - 8px); justify-content: center; padding: 11px 10px; font-size: 13.5px; }
+}
+a.btn { text-decoration: none; }
