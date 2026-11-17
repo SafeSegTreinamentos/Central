@@ -83,6 +83,10 @@
       ['certificados-cliente.html', 'Certificados', 'certificado'],
       ['funcionarios-cliente.html', 'Funcionários', 'turma'],
       ['agenda-cliente.html', 'Agenda de turmas', 'agenda']
+    ]},
+    { titulo: 'Precisa de algo?', itens: [
+      ['https://wa.me/5546999203945?text=' + encodeURIComponent('Olá, sou cliente do Portal SafeSeg e preciso de ajuda'), 'Falar com a SafeSeg', 'msg'],
+      ['../validador/', 'Validar um certificado', 'escudo']
     ]}
   ];
 

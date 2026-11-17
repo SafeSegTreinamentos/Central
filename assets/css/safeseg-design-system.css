@@ -533,3 +533,4 @@ a.kpi-card:hover, .kpi-card[onclick]:hover { border-color: #F59E0B; }
   .content .kpi-grid:not(.kpi-grid--secondary) .kpi-card__meta,
   .content .kpi-grid:not(.kpi-grid--secondary) .trend { display: none; }
 }
+@media (max-width: 900px) { .app { align-content: start; } .sidebar.sidebar--js { align-self: start; } }
