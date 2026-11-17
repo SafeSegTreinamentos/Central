@@ -4,89 +4,93 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SafeSeg | QG</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preload" href="assets/fonts/bebas-neue-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+@font-face{font-family:'Bebas Neue';font-display:swap;src:url(assets/fonts/bebas-neue-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'Inter';font-weight:400;font-display:swap;src:url(assets/fonts/inter-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'Inter';font-weight:500;font-display:swap;src:url(assets/fonts/inter-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:'Inter';font-weight:600;font-display:swap;src:url(assets/fonts/inter-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'Inter';font-weight:700;font-display:swap;src:url(assets/fonts/inter-latin-700-normal.woff2) format('woff2')}
 :root{
-  --amber:#F59E0B;
-  --amber-dark:#B45309;
-  --graphite:#14171B;
-  --graphite2:#1D2126;
-  --graphite3:#262B32;
-  --line:#33393f;
-  --text:#E9E9E7;
-  --muted:#9AA0A6;
-  --ok:#22C55E;
+  --amber:#F59E0B; --amber-dark:#B45309;
+  --graphite:#14171B; --graphite2:#1C2026; --graphite3:#262B33;
+  --line:rgba(236,231,221,.12); --text:#ECE7DD; --muted:#9AA0A8; --ok:#22B573;
 }
-*{box-sizing:border-box;}
-body{margin:0;font-family:'Inter',Arial,sans-serif;background:var(--graphite);color:var(--text);}
-h1,h2,h3{font-family:'Bebas Neue',Arial,sans-serif;letter-spacing:.5px;margin:0;}
-.hazard{height:6px;background:repeating-linear-gradient(45deg,var(--amber) 0 14px,#111 14px 28px);}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Inter',system-ui,Arial,sans-serif;background:var(--graphite);color:var(--text);font-size:15px}
+h1,h2,h3{font-family:'Bebas Neue',Impact,Arial,sans-serif;font-weight:400;letter-spacing:.01em;margin:0}
+:focus-visible{outline:3px solid var(--amber);outline-offset:2px;border-radius:3px}
+.hazard{display:none}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px 80px}
 
-.wrap{max-width:1100px;margin:0 auto;padding:0 20px 80px;}
+/* topo */
+.header{display:flex;align-items:center;gap:14px;padding:18px 0 16px;border-bottom:1px solid var(--line);position:relative}
+.header img{height:48px;width:auto}
+.header .titulos{margin-right:auto}
+.header h1{font-size:30px;color:#fff;line-height:1}
+.header .sub{color:var(--muted);font-size:13.5px;margin-top:2px}
+.header .acoes{display:flex;gap:8px}
+#btnSino,#btnSair{position:static!important;display:inline-flex!important;align-items:center;gap:6px;padding:9px 14px!important;border-radius:8px!important;font:600 14px Inter,Arial,sans-serif!important;background:transparent!important;border:1.5px solid var(--line)!important;cursor:pointer}
+#btnSino{color:var(--text)!important}
+#btnSair{color:#F2A099!important}
+#btnSino:hover,#btnSair:hover{border-color:var(--amber)!important}
 
-/* HEADER */
-.header{display:flex;flex-direction:column;align-items:center;text-align:center;padding:28px 20px 24px;gap:8px;}
-.header img{height:56px;margin-bottom:6px;}
-.header h1{font-size:28px;letter-spacing:2px;color:#fff;}
-.header .sub{color:var(--muted);font-size:13px;}
+/* placa de números */
+.exec-panel{position:relative;margin-top:22px;background:var(--amber);border-radius:10px;padding:8px;display:block}
+.exec-panel::before{content:"";position:absolute;inset:0;border-radius:10px;padding:8px;background:repeating-linear-gradient(-45deg,var(--graphite) 0 12px,var(--amber) 12px 24px);-webkit-mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
+.exec-miolo{position:relative;display:grid;grid-template-columns:repeat(4,1fr);border:3px solid var(--graphite);border-radius:4px;background:var(--amber)}
+.exec-item{padding:16px 18px;color:var(--graphite);text-decoration:none;display:block}
+.exec-item+.exec-item{border-left:2px solid rgba(20,23,27,.25)}
+.exec-item .val{font:400 52px/0.95 'Bebas Neue',Impact,Arial,sans-serif;color:var(--graphite)}
+.exec-item .lbl{font-size:14px;font-weight:600;margin-top:4px;color:#2b2f35}
+a.exec-item:hover{background:rgba(255,255,255,.18)}
 
-/* BUSCA + FAVORITOS */
-.search-row{display:flex;gap:10px;max-width:520px;margin:20px auto 0;}
-.search-row input{flex:1;background:var(--graphite2);border:1px solid var(--line);color:var(--text);padding:12px 16px;border-radius:8px;font-size:14px;}
-.search-row input:focus{outline:none;border-color:var(--amber);}
+/* busca e abas */
+.search-row{display:flex;gap:10px;margin:28px 0 0}
+.search-row input{flex:1;max-width:420px;background:var(--graphite2);border:1.5px solid var(--line);color:var(--text);padding:12px 16px;border-radius:8px;font-size:15px}
+.search-row input:focus{outline:none;border-color:var(--amber)}
+.cat-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 4px}
+.cat-tab{background:transparent;border:1.5px solid var(--line);color:var(--muted);padding:8px 15px;border-radius:999px;cursor:pointer;font:600 14px Inter,Arial,sans-serif}
+.cat-tab:hover{color:var(--text)}
+.cat-tab.active{background:var(--text);color:var(--graphite);border-color:var(--text)}
 
-/* CATEGORIAS (TABS) */
-.cat-tabs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:24px 0 8px;}
-.cat-tab{background:var(--graphite2);border:1px solid var(--line);color:var(--muted);padding:9px 16px;border-radius:20px;cursor:pointer;font-weight:600;font-size:12.5px;}
-.cat-tab.active{background:var(--amber);color:#111;border-color:var(--amber);}
+/* seções e cards */
+.cat-section{margin-top:30px}
+.cat-section.hidden{display:none}
+.cat-title{font:400 28px/1 'Bebas Neue',Impact,Arial,sans-serif;color:#fff;margin-bottom:12px;letter-spacing:.01em}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.sys-card{background:var(--graphite2);border:1px solid var(--line);border-radius:10px;padding:14px 16px;text-decoration:none;color:var(--text);display:grid;grid-template-columns:42px 1fr;grid-template-areas:"ic nome" "ic desc";column-gap:14px;row-gap:2px;align-items:start;position:relative}
+.sys-card:hover{border-color:var(--amber);background:#20252C}
+.sys-card.disabled{opacity:.55;cursor:default}
+.sys-icon{grid-area:ic;width:42px;height:42px;border-radius:10px;background:var(--graphite3);display:flex;align-items:center;justify-content:center;color:var(--amber)}
+.sys-icon svg{width:22px;height:22px}
+.sys-name{grid-area:nome;font:600 15.5px/1.3 Inter,Arial,sans-serif;color:#fff;padding-right:8px}
+.sys-desc{grid-area:desc;font-size:13.5px;color:var(--muted);line-height:1.4}
+.sys-badge{display:none}
+.empty-msg{text-align:center;color:var(--muted);padding:30px;font-size:14px}
+#painelNotificacoes{margin-top:14px!important;border-radius:10px!important}
 
-/* SEÇÃO */
-.cat-section{margin-top:28px;}
-.cat-section.hidden{display:none;}
-.cat-title{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:14px;padding-left:2px;}
-
-/* GRID DE CARDS */
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;}
-.sys-card{
-  background:var(--graphite2);border:1px solid var(--line);border-radius:12px;
-  padding:18px;text-decoration:none;color:var(--text);
-  display:flex;flex-direction:column;gap:10px;position:relative;
-  transition:border-color .15s ease, transform .15s ease;
+@media (max-width:760px){
+  .wrap{padding:0 14px 60px}
+  .header{flex-wrap:wrap;padding:14px 0}
+  .header img{height:38px}
+  .header h1{font-size:26px}
+  .header .sub{display:none}
+  .exec-miolo{grid-template-columns:1fr 1fr}
+  .exec-item:nth-child(3){border-left:0}
+  .exec-item:nth-child(n+3){border-top:2px solid rgba(20,23,27,.25)}
+  .exec-item .val{font-size:44px}
+  .exec-item .lbl{font-size:13px}
+  .grid{grid-template-columns:1fr}
+  .cat-tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-14px;padding-inline:14px}
+  .cat-tabs::-webkit-scrollbar{display:none}
+  .cat-tab{flex:none}
+  .search-row input{max-width:none}
 }
-.sys-card:hover{border-color:var(--amber);transform:translateY(-2px);}
-.sys-card.disabled{opacity:.55;cursor:default;}
-.sys-card.disabled:hover{transform:none;border-color:var(--line);}
-.sys-icon{
-  width:42px;height:42px;border-radius:10px;background:var(--graphite3);
-  display:flex;align-items:center;justify-content:center;color:var(--amber);
-}
-.sys-icon svg{width:22px;height:22px;}
-.sys-name{font-family:'Bebas Neue',Arial,sans-serif;font-size:18px;letter-spacing:.5px;color:#fff;}
-.sys-desc{font-size:12px;color:var(--muted);line-height:1.4;}
-.sys-badge{
-  position:absolute;top:14px;right:14px;font-size:9px;font-weight:700;text-transform:uppercase;
-  letter-spacing:.04em;padding:3px 8px;border-radius:5px;
-}
-.sys-badge.ativo{background:rgba(34,197,94,.14);color:var(--ok);border:1px solid var(--ok);}
-.sys-badge.interno{background:var(--graphite3);color:var(--amber);border:1px solid var(--amber-dark);}
-.sys-badge.breve{background:var(--graphite3);color:var(--muted);border:1px solid var(--line);}
 
-/* PAINEL EXECUTIVO MINI */
-.exec-panel{
-  display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;
-  background:var(--graphite2);border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:18px;
-}
-.exec-item{text-align:center;}
-.exec-item .val{font-family:'Bebas Neue',Arial,sans-serif;font-size:26px;color:var(--amber);line-height:1;}
-.exec-item .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:4px;}
-
-.empty-msg{text-align:center;color:var(--muted);padding:30px;font-size:13px;}
-
-/* Esconde o conteúdo até confirmar login — evita a brecha de aparecer
-   uma fração de segundo antes da tela de login carregar */
-.wrap{visibility:hidden;}
-.wrap.autenticado{visibility:visible;}
+/* Esconde o conteúdo até confirmar login */
+.wrap{visibility:hidden}
+.wrap.autenticado{visibility:visible}
 </style>
 </head>
 <body>
@@ -121,6 +125,9 @@ h1,h2,h3{font-family:'Bebas Neue',Arial,sans-serif;letter-spacing:.5px;margin:0;
     } else {
       document.querySelector('.wrap').classList.add('autenticado');
       carregarPainelExecutivo(db, collection, getDocs);
+      const hr = new Date().getHours();
+      const nome = (perfil && perfil.nome ? ' ' + String(perfil.nome).split(' ')[0] : '');
+      document.getElementById('saudacao').textContent = (hr < 12 ? 'Bom dia' : hr < 18 ? 'Boa tarde' : 'Boa noite') + nome + '. Por onde vamos começar?';
     }
   } catch (err) {
     console.error('Erro ao verificar login:', err);
@@ -240,14 +247,16 @@ h1,h2,h3{font-family:'Bebas Neue',Arial,sans-serif;letter-spacing:.5px;margin:0;
 
 <div class="wrap">
 
-  <div class="header" style="position:relative;">
-    <button id="btnSino" onclick="alternarPainelNotificacoes()" style="position:absolute; top:0; left:0; background:var(--graphite2); border:1px solid var(--line); color:var(--amber); padding:7px 12px; border-radius:20px; font-size:14px; cursor:pointer; display:flex; align-items:center; gap:5px;">
-      🔔 <span id="sinoContagem" style="display:none; background:#F87171; color:#111; font-size:10px; font-weight:700; padding:1px 6px; border-radius:10px;">0</span>
-    </button>
-    <button onclick="fazerLogout()" style="position:absolute; top:0; right:0; background:var(--graphite2); border:1px solid var(--line); color:#F87171; padding:7px 14px; border-radius:20px; font-size:12px; cursor:pointer;">Sair</button>
-    <img src="assets/logo-dark.png" alt="SafeSeg">
-    <h1>QG SAFESEG</h1>
-    <div class="sub">Central de gestão — tudo em um só lugar</div>
+  <div class="header">
+    <img src="assets/img/logo-safeseg.webp" alt="SafeSeg" width="160" height="124">
+    <div class="titulos">
+      <h1>QG SafeSeg</h1>
+      <div class="sub" id="saudacao">Central de gestão, tudo em um só lugar</div>
+    </div>
+    <div class="acoes">
+      <button id="btnSino" onclick="alternarPainelNotificacoes()" aria-label="Avisos">🔔 Avisos <span id="sinoContagem" style="display:none; background:#F87171; color:#111; font-size:11px; font-weight:700; padding:1px 7px; border-radius:10px;">0</span></button>
+      <button id="btnSair" onclick="fazerLogout()">Sair</button>
+    </div>
   </div>
 
   <!-- PAINEL DE NOTIFICAÇÕES (escondido até clicar no sino) -->
@@ -256,15 +265,15 @@ h1,h2,h3{font-family:'Bebas Neue',Arial,sans-serif;letter-spacing:.5px;margin:0;
   </div>
 
   <!-- PAINEL EXECUTIVO MINI -->
-  <div class="exec-panel">
-    <div class="exec-item"><div class="val" id="statTurmas30d">—</div><div class="lbl">Turmas próx. 30d</div></div>
-    <div class="exec-item"><div class="val" id="statPendencias">—</div><div class="lbl">Colaboradores c/ pendência</div></div>
-    <div class="exec-item"><div class="val" id="statEmpresas">—</div><div class="lbl">Empresas cadastradas</div></div>
-    <div class="exec-item"><div class="val" id="statCertificados">—</div><div class="lbl">Certificados válidos</div></div>
-  </div>
+  <div class="exec-panel"><div class="exec-miolo">
+    <a class="exec-item" href="portal/agenda-turmas.html"><div class="val" id="statTurmas30d">—</div><div class="lbl">Turmas nos próximos 30 dias</div></a>
+    <a class="exec-item" href="portal/certificados-pendentes.html"><div class="val" id="statPendencias">—</div><div class="lbl">Colaboradores com pendência</div></a>
+    <a class="exec-item" href="portal/empresas.html"><div class="val" id="statEmpresas">—</div><div class="lbl">Empresas cadastradas</div></a>
+    <a class="exec-item" href="portal/certificados.html"><div class="val" id="statCertificados">—</div><div class="lbl">Certificados válidos</div></a>
+  </div></div>
 
   <div class="search-row">
-    <input type="text" id="buscaInput" placeholder="Buscar sistema..." oninput="filtrar()">
+    <input type="text" id="buscaInput" placeholder="Buscar uma tela do portal" oninput="filtrar()">
   </div>
 
   <div class="cat-tabs" id="catTabs">
