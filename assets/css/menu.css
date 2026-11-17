@@ -1,0 +1,31 @@
+/* Menu lateral do portal para páginas que não usam o safeseg-design-system.css.
+   Carregado automaticamente por assets/js/menu.js quando preciso. */
+.sidebar.sidebar--js{position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column;gap:0;padding:0 0 16px;background:#14171B;color:#ECE7DD;scrollbar-width:thin;scrollbar-color:#343B44 transparent;font-family:'Inter',system-ui,Arial,sans-serif;border-right:1px solid rgba(236,231,221,.08)}
+.sidebar--js .sidebar__topo{display:flex;align-items:center;justify-content:space-between;padding:18px 16px 14px;border-bottom:1px solid rgba(236,231,221,.08);margin-bottom:6px;position:sticky;top:0;background:#14171B;z-index:1}
+.sidebar--js .sidebar__logo{padding:0;display:block}
+.sidebar--js .sidebar__logo img{width:112px;height:auto;display:block}
+.sidebar--js .sidebar__abrir{display:none}
+.sidebar--js .sidebar__lista{display:flex;flex-direction:column;gap:1px;padding:0 10px}
+.sidebar--js .nav-section-label{font-size:12px;font-weight:600;color:#F59E0B;padding:16px 10px 4px;opacity:.9}
+.sidebar--js .nav-item{display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:6px;color:#C9C4BA;font-size:14px;font-weight:500;text-decoration:none;position:relative;border:0;background:transparent;width:100%;text-align:left;font-family:inherit;cursor:pointer}
+.sidebar--js .nav-item svg{width:18px;height:18px;flex-shrink:0;opacity:.85}
+.sidebar--js .nav-item:hover{background:#1F242B;color:#fff}
+.sidebar--js .nav-item.active{background:#262B33;color:#fff;font-weight:600}
+.sidebar--js .nav-item.active svg{color:#F59E0B;opacity:1}
+.sidebar--js .nav-item.active::before{content:'';position:absolute;left:-10px;top:0;bottom:0;width:4px;border-radius:0 3px 3px 0;background:#F59E0B}
+.sidebar--js .nav-item--sair{margin-top:14px;color:#E07A72}
+.sidebar--js .nav-item--sair:hover{background:rgba(198,66,58,.15);color:#FF9C94}
+.sidebar--js :focus-visible{outline:2px solid #F59E0B;outline-offset:2px}
+@media (max-width:900px){
+  .sidebar.sidebar--js{position:sticky;top:0;z-index:40;height:auto;max-height:100vh;flex-direction:column!important;align-items:stretch!important;white-space:normal!important;padding:0!important;gap:0!important;border-right:0;border-bottom:3px solid #F59E0B;overflow-x:hidden}
+  .sidebar--js .sidebar__topo{padding:10px 14px;margin:0;border:0}
+  .sidebar--js .sidebar__logo img{width:72px}
+  .sidebar--js .sidebar__abrir{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:8px;border:1.5px solid rgba(236,231,221,.3);background:transparent;color:#ECE7DD;font:600 14px Inter,Arial,sans-serif;cursor:pointer}
+  .sidebar--js .sidebar__abrir svg{width:20px;height:20px}
+  .sidebar--js .sidebar__lista{display:none;padding:0 12px 14px}
+  .sidebar--js.sidebar--aberto .sidebar__lista{display:flex}
+  .sidebar--js .nav-section-label{display:block!important}
+  .sidebar--js .nav-item{flex-direction:row!important;font-size:15px!important;padding:11px 10px!important;text-align:left!important;gap:12px!important;white-space:normal!important}
+  .sidebar--js .nav-item.active::before{display:block!important}
+}
+@media print{.sidebar.sidebar--js{display:none!important}}

@@ -7,6 +7,7 @@
    O botão Sair chama window.fazerLogout(), que cada página já define.
    ============================================================ */
 (function () {
+  const SCRIPT_SRC = document.currentScript ? document.currentScript.src : '';
   const I = {
     casa: '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
     painel: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
@@ -140,7 +141,15 @@
     if (ativo && window.matchMedia('(min-width: 901px)').matches) ativo.scrollIntoView({ block: 'nearest' });
   }
 
-  function iniciar() { document.querySelectorAll('nav.sidebar[data-menu]').forEach(montar); }
+  // Páginas que não carregam o design system recebem o CSS do menu
+  function garantirCss() {
+    if (document.querySelector('link[href*="safeseg-design-system"], link[href*="/menu.css"]')) return;
+    const l = document.createElement('link');
+    l.rel = 'stylesheet';
+    l.href = new URL('../css/menu.css', SCRIPT_SRC || location.href).href;
+    document.head.appendChild(l);
+  }
+  function iniciar() { garantirCss(); document.querySelectorAll('nav.sidebar[data-menu]').forEach(montar); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar);
   else iniciar();
 })();
