@@ -499,3 +499,37 @@ th { text-transform: none; letter-spacing: 0; font-size: 13px; font-weight: 600;
 .selo { text-transform: none; letter-spacing: 0; font-size: 12.5px; }
 /* A faixa zebrada agora fica embaixo da barra do topo; a antiga, acima dela, sai */
 .app .main > .hazard-stripe:first-child { display: none; }
+
+/* ---- Indicadores com a cor do status bem marcada (Painel e portal do cliente) ---- */
+.kpi-card[class*="hazard-edge--"] {
+  border-left: 1px solid var(--paper-200); border-image: none;
+  position: relative; overflow: hidden; padding-top: calc(var(--space-5) + 8px);
+}
+.kpi-card[class*="hazard-edge--"]::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 8px; background: var(--status-pending);
+}
+.kpi-card.hazard-edge--ok::before     { background: var(--status-ok); }
+.kpi-card.hazard-edge--warn::before   { background: repeating-linear-gradient(135deg, #14171B 0 8px, #F59E0B 8px 16px); }
+.kpi-card.hazard-edge--danger::before { background: var(--status-danger); }
+.kpi-card.hazard-edge--ok     .kpi-card__value { color: #1F7A45; }
+.kpi-card.hazard-edge--warn   .kpi-card__value { color: #A65E06; }
+.kpi-card.hazard-edge--danger .kpi-card__value { color: #A8332C; }
+.kpi-card.hazard-edge--danger { background: #FFF8F7; }
+.kpi-card.hazard-edge--warn   { background: #FFFBF3; }
+.kpi-card__value { font-size: 3.6rem; line-height: .95; }
+.kpi-card .selo { align-self: flex-start; }
+a.kpi-card:hover, .kpi-card[onclick]:hover { border-color: #F59E0B; }
+
+/* Cartões e títulos de seção um pouco mais firmes */
+.card { box-shadow: none; border-color: #E2DCCB; }
+.section-title { font-size: 1.5rem !important; }
+.content .kpi-grid--secondary { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)) !important; max-width: none; }
+@media (max-width: 520px) { .content .kpi-grid--secondary { grid-template-columns: 1fr !important; } }
+@media (max-width: 520px) {
+  .content .kpi-grid:not(.kpi-grid--secondary) { grid-template-columns: repeat(3, 1fr) !important; gap: 8px !important; }
+  .content .kpi-grid:not(.kpi-grid--secondary) .kpi-card { padding: 16px 10px 12px; gap: 4px; }
+  .content .kpi-grid:not(.kpi-grid--secondary) .kpi-card__label { font-size: 12.5px; line-height: 1.25; min-height: 2.5em; }
+  .content .kpi-grid:not(.kpi-grid--secondary) .kpi-card__value { font-size: 2.6rem; }
+  .content .kpi-grid:not(.kpi-grid--secondary) .kpi-card__meta,
+  .content .kpi-grid:not(.kpi-grid--secondary) .trend { display: none; }
+}
