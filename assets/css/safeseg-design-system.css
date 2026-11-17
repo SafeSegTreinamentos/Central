@@ -539,3 +539,4 @@ a.kpi-card:hover, .kpi-card[onclick]:hover { border-color: #F59E0B; }
   .app .topbar > div:last-child:not(:first-child) .btn { flex: 1 1 calc(50% - 8px); justify-content: center; padding: 11px 10px; font-size: 13.5px; }
 }
 a.btn { text-decoration: none; }
+.app .topbar .sub, .app .topbar p { color: #9AA0A8 !important; }
