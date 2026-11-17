@@ -4,7 +4,16 @@
    Fonte da paleta: logo oficial SafeSeg (dourado metálico / grafite)
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
+/* Fontes hospedadas no próprio portal (antes vinham do Google, mais lentas) */
+@font-face{font-family:'Bebas Neue';font-weight:400;font-display:swap;src:url(../fonts/bebas-neue-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'Inter';font-weight:400;font-display:swap;src:url(../fonts/inter-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'Inter';font-weight:500;font-display:swap;src:url(../fonts/inter-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:'Inter';font-weight:600;font-display:swap;src:url(../fonts/inter-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'Inter';font-weight:700;font-display:swap;src:url(../fonts/inter-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'Inter';font-weight:800;font-display:swap;src:url(../fonts/inter-latin-800-normal.woff2) format('woff2')}
+@font-face{font-family:'Space Mono';font-weight:400;font-display:swap;src:url(../fonts/space-mono-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'Space Mono';font-weight:700;font-display:swap;src:url(../fonts/space-mono-latin-700-normal.woff2) format('woff2')}
+
 
 :root {
   /* ---- Paleta base (extraída da logo) ---- */
@@ -139,10 +148,10 @@ button { font-family: var(--font-body); cursor: pointer; }
 .btn:active { transform: translateY(1px); }
 
 .btn--primary {
-  background: linear-gradient(135deg, var(--gold-300), var(--gold-600));
+  background: #F59E0B;
   color: var(--graphite-900);
 }
-.btn--primary:hover { background: linear-gradient(135deg, var(--gold-100), var(--gold-400)); }
+.btn--primary:hover { background: #FFB02E; }
 
 .btn--secondary {
   background: transparent;
@@ -396,3 +405,97 @@ tr:hover td { background: var(--paper-100); }
 .gap-2 { gap: var(--space-2); }
 .gap-4 { gap: var(--space-4); }
 .gap-5 { gap: var(--space-5); }
+
+
+/* ============================================================
+   VISUAL 2026-11 — alinhado ao site novo (grafite + âmbar)
+   Estas regras vêm por último de propósito: ajustam todas as
+   páginas sem mexer no CSS próprio de cada uma.
+   ============================================================ */
+:root { --ambar: #F59E0B; }
+
+/* ---- Menu lateral único (montado por assets/js/menu.js) ---- */
+.sidebar.sidebar--js {
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 0;
+  padding: 0 0 16px; background: var(--graphite-900);
+  scrollbar-width: thin; scrollbar-color: #343B44 transparent;
+}
+.sidebar--js .sidebar__topo {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 16px 14px; border-bottom: 1px solid rgba(236,231,221,.08); margin-bottom: 6px;
+  position: sticky; top: 0; background: var(--graphite-900); z-index: 1;
+}
+.sidebar--js .sidebar__logo { padding: 0; }
+.sidebar--js .sidebar__logo img { width: 112px; max-width: none; height: auto; background: none !important; padding: 0 !important; }
+.sidebar--js .sidebar__abrir { display: none; }
+.sidebar--js .sidebar__lista { display: flex; flex-direction: column; gap: 1px; padding: 0 10px; }
+.sidebar--js .nav-section-label {
+  text-transform: none; letter-spacing: 0; font-size: 12px; font-weight: 600;
+  color: #F59E0B; padding: 16px 10px 4px; opacity: .9;
+}
+.sidebar--js .nav-item {
+  flex-direction: row; text-align: left; font-size: 14px; padding: 8px 10px;
+  color: #C9C4BA; border: 0; background: transparent; width: 100%; font-family: var(--font-body);
+}
+.sidebar--js .nav-item svg { width: 18px; height: 18px; opacity: .85; }
+.sidebar--js .nav-item:hover { background: #1F242B; color: #fff; }
+.sidebar--js .nav-item.active { background: #262B33; color: #fff; font-weight: 600; }
+.sidebar--js .nav-item.active svg { color: #F59E0B; opacity: 1; }
+.sidebar--js .nav-item.active::before {
+  left: -10px; width: 4px; border-radius: 0 3px 3px 0;
+  background: #F59E0B;
+}
+.sidebar--js .nav-item--sair { margin-top: 14px; color: #E07A72; cursor: pointer; }
+.sidebar--js .nav-item--sair:hover { background: rgba(198,66,58,.15); color: #FF9C94; }
+
+@media (max-width: 900px) {
+  .sidebar.sidebar--js {
+    position: sticky; top: 0; z-index: 40; height: auto; max-height: 100vh; overflow-y: auto;
+    flex-direction: column !important; align-items: stretch !important; white-space: normal !important;
+    padding: 0 !important; gap: 0 !important; border-bottom: 3px solid #F59E0B;
+  }
+  .sidebar--js .sidebar__topo { padding: 10px 14px; margin: 0; border: 0; }
+  .sidebar--js .sidebar__logo img { width: 72px; }
+  .sidebar--js .sidebar__abrir {
+    display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; border-radius: 8px;
+    border: 1.5px solid rgba(236,231,221,.3); background: transparent; color: #ECE7DD; font: 600 14px var(--font-body);
+  }
+  .sidebar--js .sidebar__abrir svg { width: 20px; height: 20px; }
+  .sidebar--js .sidebar__lista { display: none; padding: 0 12px 14px; }
+  .sidebar--js.sidebar--aberto .sidebar__lista { display: flex; }
+  .sidebar--js .nav-section-label { display: block !important; }
+  .sidebar--js .nav-item { flex-direction: row !important; font-size: 15px !important; padding: 11px 10px !important; text-align: left !important; gap: 12px !important; }
+  .sidebar--js .nav-item.active { box-shadow: none !important; border-radius: 6px !important; }
+  .sidebar--js .nav-item.active::before { display: block !important; }
+}
+
+/* ---- Barra do topo de cada página: faixa grafite com título grande ---- */
+.app .topbar {
+  background: var(--graphite-900);
+  color: #ECE7DD;
+  border-bottom: 0;
+  position: relative;
+  padding-bottom: calc(var(--space-4) + 6px);
+}
+.app .topbar::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 6px;
+  background: repeating-linear-gradient(135deg, var(--graphite-900) 0 10px, #F59E0B 10px 20px);
+}
+.app .topbar h1 { color: #fff; font-size: 2rem; letter-spacing: .02em; line-height: 1; }
+.app .topbar .sub, .app .topbar p { color: #9AA0A8; }
+.app .topbar .btn--secondary, .app .topbar .btn--ghost { color: #ECE7DD; border-color: rgba(236,231,221,.35); background: transparent; }
+.app .topbar .btn--secondary:hover, .app .topbar .btn--ghost:hover { background: rgba(236,231,221,.08); }
+.app .topbar input, .app .topbar select { color: var(--graphite-900); }
+
+/* ---- Indicadores (KPI) ---- */
+.kpi-card { transition: none; }
+.kpi-card:hover { transform: none; box-shadow: var(--shadow-card); }
+.kpi-card__label { text-transform: none; letter-spacing: 0; font-size: 13.5px; color: #4A515B; }
+.kpi-card__value { font-size: 3.4rem; }
+
+/* ---- Títulos e tabelas: menos caixa-alta, mais leitura ---- */
+th { text-transform: none; letter-spacing: 0; font-size: 13px; font-weight: 600; color: #4A515B; }
+.selo { text-transform: none; letter-spacing: 0; font-size: 12.5px; }
+/* A faixa zebrada agora fica embaixo da barra do topo; a antiga, acima dela, sai */
+.app .main > .hazard-stripe:first-child { display: none; }
