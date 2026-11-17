@@ -90,19 +90,53 @@ function mostrarTelaLogin() {
 
     const overlay = document.createElement('div');
     overlay.id = 'authOverlay';
-    overlay.style.cssText = 'position:fixed;inset:0;background:#14171B;display:flex;align-items:center;justify-content:center;z-index:99999;font-family:Inter,Arial,sans-serif;padding:16px;';
+    const LOGO = new URL('../img/logo-safeseg.webp', import.meta.url).href;
+    const BEBAS = new URL('../fonts/bebas-neue-latin-400-normal.woff2', import.meta.url).href;
+    const SITE = 'https://www.safeseg.eng.br/';
+    const WA = 'https://wa.me/5546999203945?text=' + encodeURIComponent('Olá, preciso de ajuda para entrar no Portal SafeSeg');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;overflow-y:auto;background:#14171B;font-family:Inter,system-ui,Arial,sans-serif;color:#ECE7DD;';
     overlay.innerHTML = `
-      <div style="background:#fff;border-radius:16px;padding:32px 28px;max-width:360px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,0.4);">
-        <div style="font-family:'Bebas Neue',Arial,sans-serif;font-size:26px;letter-spacing:.03em;color:#14171B;margin-bottom:2px;">SAFESEG</div>
-        <p style="font-size:13px;color:#667085;margin:0 0 20px;">Entre com sua conta pra continuar</p>
-        <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:#667085;display:block;margin-bottom:4px;">E-mail</label>
-        <input id="authEmail" type="email" placeholder="seuemail@exemplo.com" autocomplete="username"
-          style="width:100%;padding:10px 12px;border:1px solid #E7E2D4;border-radius:8px;margin-bottom:12px;font-size:14px;box-sizing:border-box;">
-        <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:#667085;display:block;margin-bottom:4px;">Senha</label>
-        <input id="authSenha" type="password" placeholder="••••••••" autocomplete="current-password"
-          style="width:100%;padding:10px 12px;border:1px solid #E7E2D4;border-radius:8px;margin-bottom:14px;font-size:14px;box-sizing:border-box;">
-        <div id="authErro" style="color:#C6423A;font-size:12.5px;margin-bottom:12px;display:none;"></div>
-        <button id="authBtnEntrar" style="width:100%;padding:12px;background:linear-gradient(135deg,#F8CC3E,#C6900A);color:#14171B;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:14px;">Entrar</button>
+      <style>
+        @font-face{font-family:'Bebas Neue';font-display:swap;src:url(${BEBAS}) format('woff2')}
+        #authOverlay *{box-sizing:border-box}
+        #authOverlay .al-wrap{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 16px 40px;gap:22px}
+        #authOverlay .al-logo{width:132px;height:auto}
+        #authOverlay .al-placa{position:relative;width:100%;max-width:400px;background:#F59E0B;border-radius:10px;padding:10px}
+        #authOverlay .al-placa::before{content:"";position:absolute;inset:0;border-radius:10px;padding:10px;background:repeating-linear-gradient(-45deg,#14171B 0 12px,#F59E0B 12px 24px);-webkit-mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
+        #authOverlay .al-miolo{position:relative;background:#F59E0B;border:3px solid #14171B;border-radius:4px;padding:24px 22px 22px;color:#14171B}
+        #authOverlay h1{font:400 44px/.9 'Bebas Neue',Impact,'Arial Narrow',sans-serif;margin:0 0 6px;letter-spacing:.01em}
+        #authOverlay .al-sub{font-size:15px;font-weight:500;margin:0 0 18px}
+        #authOverlay label{display:block;font-size:14px;font-weight:600;margin:0 0 6px}
+        #authOverlay .al-campo{position:relative;margin-bottom:14px}
+        #authOverlay input{width:100%;padding:13px 14px;font-size:16px;border:2px solid #14171B;border-radius:8px;background:#FFFBF2;color:#14171B;font-family:inherit}
+        #authOverlay input:focus{outline:3px solid #14171B;outline-offset:1px}
+        #authOverlay .al-ver{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:0;font:600 13px Inter,Arial,sans-serif;color:#14171B;padding:6px 8px;cursor:pointer;text-decoration:underline}
+        #authOverlay .al-erro{display:none;background:#14171B;color:#FF9C94;border-radius:6px;padding:10px 12px;font-size:14px;margin-bottom:12px}
+        #authOverlay .al-entrar{width:100%;padding:15px;border:0;border-radius:8px;background:#14171B;color:#fff;font:700 16px Inter,Arial,sans-serif;cursor:pointer}
+        #authOverlay .al-entrar:hover{background:#000}
+        #authOverlay .al-entrar:disabled{opacity:.7;cursor:wait}
+        #authOverlay .al-links{display:flex;flex-wrap:wrap;gap:10px 22px;justify-content:center;font-size:14.5px}
+        #authOverlay .al-links a{color:#ECE7DD;text-decoration:none;border-bottom:1.5px solid rgba(245,158,11,.6);padding-bottom:2px}
+        #authOverlay .al-links a:hover{color:#F59E0B}
+        #authOverlay .al-nota{max-width:400px;text-align:center;color:#9AA0A8;font-size:13.5px;line-height:1.5;margin:0}
+      </style>
+      <div class="al-wrap">
+        <a href="${SITE}" aria-label="Voltar ao site da SafeSeg"><img class="al-logo" src="${LOGO}" alt="SafeSeg Segurança do Trabalho"></a>
+        <div class="al-placa"><form class="al-miolo" id="authForm" novalidate>
+          <h1>Portal SafeSeg</h1>
+          <p class="al-sub">Entre para ver os certificados e os treinamentos da sua empresa.</p>
+          <label for="authEmail">E-mail</label>
+          <div class="al-campo"><input id="authEmail" type="email" inputmode="email" placeholder="seuemail@empresa.com" autocomplete="username"></div>
+          <label for="authSenha">Senha</label>
+          <div class="al-campo"><input id="authSenha" type="password" placeholder="Sua senha" autocomplete="current-password" style="padding-right:76px"><button type="button" class="al-ver" id="authVer" aria-pressed="false">Mostrar</button></div>
+          <div class="al-erro" id="authErro" role="alert"></div>
+          <button type="submit" class="al-entrar" id="authBtnEntrar">Entrar</button>
+        </form></div>
+        <div class="al-links">
+          <a href="${WA}">Esqueci a senha ou não tenho acesso</a>
+          <a href="${SITE}">Voltar ao site</a>
+        </div>
+        <p class="al-nota">O acesso é liberado pela SafeSeg para cada empresa cliente. Cada empresa vê só os próprios dados.</p>
       </div>`;
     document.body.appendChild(overlay);
 
@@ -129,14 +163,20 @@ function mostrarTelaLogin() {
       } catch (err) {
         erroBox.textContent = 'E-mail ou senha incorretos.';
         erroBox.style.display = 'block';
+        senhaInput.select();
         btn.disabled = false;
         btn.textContent = 'Entrar';
       }
     }
 
-    btn.addEventListener('click', tentarLogin);
-    senhaInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') tentarLogin(); });
-    emailInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') senhaInput.focus(); });
+    document.getElementById('authForm').addEventListener('submit', (e) => { e.preventDefault(); tentarLogin(); });
+    const ver = document.getElementById('authVer');
+    ver.addEventListener('click', () => {
+      const mostrar = senhaInput.type === 'password';
+      senhaInput.type = mostrar ? 'text' : 'password';
+      ver.textContent = mostrar ? 'Ocultar' : 'Mostrar';
+      ver.setAttribute('aria-pressed', mostrar);
+    });
     emailInput.focus();
   });
 }
