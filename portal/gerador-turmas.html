@@ -1558,17 +1558,21 @@ async function obterOuCriarEmpresaNaoAlocados_() {
   }
 }
 
-async function emitirCertificadosDaTurma(id){
+async function emitirCertificadosDaTurma(id, somenteNomes){
   const t = loadTurmas().find(x=>x.id===id);
   if(!t){ toast('Turma não encontrada'); return; }
   if(!t.alunos || t.alunos.length===0){ toast('Essa turma não tem aluno cadastrado'); return; }
 
-  const aprovados = t.alunos.filter(a => a.aprovado);
+  let aprovados = t.alunos.filter(a => a.aprovado);
+  // "Tentar de novo só os que falharam": refaz apenas esses alunos — o
+  // Apps Script reaproveita o mesmo número (CONT) e a mesma linha da planilha
+  const repeticao = Array.isArray(somenteNomes) && somenteNomes.length > 0;
+  if (repeticao) aprovados = aprovados.filter(a => somenteNomes.includes(a.nome));
   if(aprovados.length===0){
     toast('Nenhum aluno aprovado ainda — marca a aprovação na aba "Turmas" antes de emitir.');
     return;
   }
-  if(!confirm(`Gerar ${aprovados.length} certificado(s) real(is) — só dos alunos já aprovados (de ${t.alunos.length} no total)? Isso cria os PDFs no Drive.`)) return;
+  if(!repeticao && !confirm(`Gerar ${aprovados.length} certificado(s) real(is) — só dos alunos já aprovados (de ${t.alunos.length} no total)? Isso cria os PDFs no Drive.`)) return;
 
   // resolve UMA VEZ (antes do loop) pra onde grava no Firestore — empresa
   // real da turma, ou "Não Alocados" se a turma for aberta
@@ -1580,7 +1584,7 @@ async function emitirCertificadosDaTurma(id){
   const dataInicioISO = t.dias && t.dias[0] ? t.dias[0].date : '';
   const dataFimISO = t.dias && t.dias.length ? t.dias[t.dias.length-1].date : dataInicioISO;
 
-  let sucesso = 0, falhas = [], emitidos = [];
+  let sucesso = 0, falhas = [], emitidos = [], nomesFalha = [];
   for (let i=0; i<aprovados.length; i++){
     const aluno = aprovados[i];
     statusBox.innerHTML = `Emitindo ${i+1}/${aprovados.length} — ${aluno.nome}...`;
@@ -1668,9 +1672,10 @@ async function emitirCertificadosDaTurma(id){
           }
         }
       }
-      else{ falhas.push(`${aluno.nome}: ${resultado ? resultado.erro : 'sem resposta'}`); }
+      else{ falhas.push(`${aluno.nome}: ${resultado ? resultado.erro : 'sem resposta'}`); nomesFalha.push(aluno.nome); }
     }catch(err){
       falhas.push(`${aluno.nome}: ${err.message}`);
+      nomesFalha.push(aluno.nome);
     }
   }
 
@@ -1691,10 +1696,14 @@ async function emitirCertificadosDaTurma(id){
 
   statusBox.innerHTML = `✅ ${sucesso} certificado(s) gerado(s) com sucesso.` +
     (naoAprovados > 0 ? `<br><span class="muted">${naoAprovados} aluno(s) não aprovado(s) ainda foram pulados.</span>` : '') +
-    (falhas.length ? `<br>⚠️ ${falhas.length} falha(s):<br>` + falhas.join('<br>') : '') +
+    (falhas.length ? `<br>⚠️ ${falhas.length} falha(s):<br>` + falhas.join('<br>') +
+      `<br><button class="btn small" style="margin-top:8px;" onclick="emitirCertificadosDaTurma('${id}', window['__falhas_${id}'])">🔁 Tentar de novo só os que falharam (${falhas.length})</button>` +
+      `<br><span class="muted">O número do certificado fica reservado e é reaproveitado na nova tentativa.</span>` : '') +
     `<br><span class="muted">Os PDFs já estão na pasta Certificados-PDF do Drive.</span>` +
     listaAssinaturaHtml;
 
+  window[`__falhas_${id}`] = nomesFalha;
+  if (repeticao && window[`__emitidos_${id}`]) emitidos = window[`__emitidos_${id}`].concat(emitidos);
   window[`__emitidos_${id}`] = emitidos; // guarda pra o clique do botão achar o link certo
   toast(`Emissão concluída: ${sucesso} de ${aprovados.length} aprovado(s)`);
 }
